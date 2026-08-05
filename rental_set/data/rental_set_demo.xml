@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         Component Products
+         ══════════════════════════════════════════════════════════════════════ -->
+
+    <record id="product_led_par" model="product.product">
+        <field name="name">LED Par 64</field>
+        <field name="list_price">25.0</field>
+        <field name="type">consu</field>
+        <field name="sale_ok" eval="True"/>
+        <field name="rent_ok" eval="True"/>
+        <field name="description_sale">RGBW LED Par Can, 18x10W</field>
+    </record>
+
+    <record id="product_cable" model="product.product">
+        <field name="name">DMX Cable 5m</field>
+        <field name="list_price">5.0</field>
+        <field name="type">consu</field>
+        <field name="sale_ok" eval="True"/>
+        <field name="rent_ok" eval="True"/>
+    </record>
+
+    <record id="product_truss" model="product.product">
+        <field name="name">Truss Section 2m</field>
+        <field name="list_price">40.0</field>
+        <field name="type">consu</field>
+        <field name="sale_ok" eval="True"/>
+        <field name="rent_ok" eval="True"/>
+        <field name="description_sale">Aluminium box truss, 290mm</field>
+    </record>
+
+    <record id="product_clamp" model="product.product">
+        <field name="name">Half Coupler Clamp</field>
+        <field name="list_price">3.0</field>
+        <field name="type">consu</field>
+        <field name="sale_ok" eval="True"/>
+        <field name="rent_ok" eval="True"/>
+    </record>
+
+    <record id="product_controller" model="product.product">
+        <field name="name">DMX Controller</field>
+        <field name="list_price">35.0</field>
+        <field name="type">consu</field>
+        <field name="sale_ok" eval="True"/>
+        <field name="rent_ok" eval="True"/>
+        <field name="description_sale">24-channel DMX-512 lighting console</field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         Nested Set: Front Light Set (sum pricing)
+         4 x LED Par + 3 x DMX Cable + 4 x Clamp
+         ══════════════════════════════════════════════════════════════════════ -->
+
+    <record id="product_tmpl_front_light_set" model="product.template">
+        <field name="name">Front Light Set</field>
+        <field name="list_price">0.0</field>
+        <field name="type">consu</field>
+        <field name="sale_ok" eval="False"/>
+        <field name="rent_ok" eval="True"/>
+        <field name="is_rental_set" eval="True"/>
+        <field name="set_pricing_mode">sum</field>
+    </record>
+
+    <record id="comp_fls_led" model="rental.set.component">
+        <field name="set_product_tmpl_id" ref="product_tmpl_front_light_set"/>
+        <field name="product_id" ref="product_led_par"/>
+        <field name="quantity">4</field>
+        <field name="sequence">10</field>
+    </record>
+    <record id="comp_fls_cable" model="rental.set.component">
+        <field name="set_product_tmpl_id" ref="product_tmpl_front_light_set"/>
+        <field name="product_id" ref="product_cable"/>
+        <field name="quantity">3</field>
+        <field name="sequence">20</field>
+    </record>
+    <record id="comp_fls_clamp" model="rental.set.component">
+        <field name="set_product_tmpl_id" ref="product_tmpl_front_light_set"/>
+        <field name="product_id" ref="product_clamp"/>
+        <field name="quantity">4</field>
+        <field name="sequence">30</field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         Top-level Set: Lighting Package (fixed pricing, contains nested set)
+         1 x Front Light Set + 2 x Truss Section + 1 x DMX Controller
+         ══════════════════════════════════════════════════════════════════════ -->
+
+    <record id="product_tmpl_lighting_package" model="product.template">
+        <field name="name">Lighting Package</field>
+        <field name="list_price">250.0</field>
+        <field name="type">consu</field>
+        <field name="sale_ok" eval="True"/>
+        <field name="rent_ok" eval="True"/>
+        <field name="is_rental_set" eval="True"/>
+        <field name="set_pricing_mode">fixed</field>
+    </record>
+
+    <!-- Front Light Set as nested set component -->
+    <record id="comp_lp_front_light" model="rental.set.component">
+        <field name="set_product_tmpl_id" ref="product_tmpl_lighting_package"/>
+        <field name="product_id" search="[('product_tmpl_id', '=', ref('product_tmpl_front_light_set'))]" model="product.product"/>
+        <field name="quantity">1</field>
+        <field name="sequence">10</field>
+    </record>
+    <record id="comp_lp_truss" model="rental.set.component">
+        <field name="set_product_tmpl_id" ref="product_tmpl_lighting_package"/>
+        <field name="product_id" ref="product_truss"/>
+        <field name="quantity">2</field>
+        <field name="sequence">20</field>
+    </record>
+    <record id="comp_lp_controller" model="rental.set.component">
+        <field name="set_product_tmpl_id" ref="product_tmpl_lighting_package"/>
+        <field name="product_id" ref="product_controller"/>
+        <field name="quantity">1</field>
+        <field name="sequence">30</field>
+    </record>
+
+</odoo>

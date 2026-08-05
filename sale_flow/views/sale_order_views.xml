@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Smart button on sale order form to access flow lines -->
+    <record id="sale_order_view_form_flow" model="ir.ui.view">
+        <field name="name">sale.order.form.flow</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_flow_lines"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-exchange"
+                        invisible="flow_line_count == 0">
+                    <field name="flow_line_count" widget="statinfo"
+                           string="Flow Lines"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Server action: Initialize Sale Flow Lines (admin action) -->
+    <record id="action_initialize_flow_lines" model="ir.actions.server">
+        <field name="name">Initialize Sale Flow Lines</field>
+        <field name="model_id" ref="sale.model_sale_order"/>
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">
+if records:
+    records.action_initialize_flow_lines()
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,748 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* rental_coefficient_dynamic_pricing
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0+e\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-27 05:37+0000\n"
+"PO-Revision-Date: 2026-06-27 05:37+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.rental_dynamic_pricing_table_view_form
+msgid "100% = no change, 120% = +20% surcharge, 80% = -20% discount."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.actions.act_window,help:rental_coefficient_dynamic_pricing.rental_dynamic_pricing_table_action
+msgid ""
+"<b>100%</b> = no price change.\n"
+"                <b>120%</b> = +20% surcharge (e.g. peak season).\n"
+"                <b>80%</b> = -20% discount (e.g. low season)."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.constraint,message:rental_coefficient_dynamic_pricing.constraint_rental_coefficient_type_name_company_uniq
+msgid "A coefficient type with this name already exists for this company."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.constraint,message:rental_coefficient_dynamic_pricing.constraint_rental_product_warehouse_pricing_config_unique_product_cbc1e637
+msgid "A pricing configuration already exists for this product and warehouse."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_type__active
+msgid "Active"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_res_partner__allowed_coefficient_table_ids
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_res_users__allowed_coefficient_table_ids
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.res_partner_form_view_coefficient_tables
+msgid "Allowed Coefficient Tables"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.rental_coefficient_table_view_form
+msgid "As From (Duration)"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_table_line__as_from_duration
+msgid "As From Duration"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.sale_order_form_view_pricing_columns
+msgid "Base Price"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_sale_order_line__base_rental_price
+msgid "Base Rental Price"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,help:rental_coefficient_dynamic_pricing.field_sale_order_line__applied_coefficient
+msgid ""
+"Charged-duration multiplier applied to the base rental price. Example: "
+"coefficient 5 for a 7-day rental means the customer pays 5 × the base daily "
+"price instead of 7×."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.sale_order_form_view_pricing_columns
+msgid ""
+"Charged-duration multiplier. Example: coefficient 5 for a 7-day rental means"
+" the customer pays for 5 units of the base price."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.rental_coefficient_table_view_form
+msgid ""
+"Charged-duration multiplier. Example: coefficient 5 for a 7-day rental means"
+" the customer pays for 5 units."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.rental_coefficient_table_view_form
+msgid "Classification"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.sale_order_form_view_pricing_columns
+msgid "Coeff."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_table_line__coefficient
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_sale_order_line__applied_coefficient
+msgid "Coefficient"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.product_template_form_view_pricing_config
+msgid "Coefficient & Dynamic Pricing"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_table__line_ids
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.rental_coefficient_table_view_form
+msgid "Coefficient Lines"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_sale_order_line__applied_coefficient_table_id
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.rental_coefficient_table_view_form
+msgid "Coefficient Table"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.actions.act_window,name:rental_coefficient_dynamic_pricing.rental_coefficient_table_action
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_product_warehouse_pricing_config__coefficient_table_ids
+#: model:ir.ui.menu,name:rental_coefficient_dynamic_pricing.menu_rental_coefficient_tables
+#: model:ir.ui.menu,name:rental_coefficient_dynamic_pricing.menu_sale_coefficient_tables
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.product_template_form_view_pricing_config
+msgid "Coefficient Tables"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_table__coefficient_type_id
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_sale_order_line__applied_coefficient_type_id
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.rental_coefficient_type_view_form
+msgid "Coefficient Type"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.actions.act_window,name:rental_coefficient_dynamic_pricing.rental_coefficient_type_action
+#: model:ir.ui.menu,name:rental_coefficient_dynamic_pricing.menu_rental_coefficient_types
+#: model:ir.ui.menu,name:rental_coefficient_dynamic_pricing.menu_sale_coefficient_types
+msgid "Coefficient Types"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.constraint,message:rental_coefficient_dynamic_pricing.constraint_rental_coefficient_table_line_positive_coefficient
+msgid "Coefficient must be positive."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.actions.act_window,help:rental_coefficient_dynamic_pricing.rental_coefficient_table_action
+msgid ""
+"Coefficient tables define degressive pricing for rental durations.\n"
+"                Each line specifies a minimum duration threshold and a coefficient\n"
+"                (charged-duration multiplier)."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,help:rental_coefficient_dynamic_pricing.field_res_partner__allowed_coefficient_table_ids
+#: model:ir.model.fields,help:rental_coefficient_dynamic_pricing.field_res_users__allowed_coefficient_table_ids
+msgid ""
+"Coefficient tables that may be used when computing rental prices for this "
+"customer. Leave empty to use the standard defaults."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.res_partner_form_view_coefficient_tables
+msgid ""
+"Coefficient tables used for this customer's rental pricing. When a product "
+"also has tables configured, the intersection determines which table applies."
+" Leave empty to use the standard default."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.actions.act_window,help:rental_coefficient_dynamic_pricing.rental_coefficient_type_action
+msgid ""
+"Coefficient types categorise your coefficient tables.\n"
+"                Examples: Standard, Professional, VIP, Weekend, Campaign."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.ui.menu,name:rental_coefficient_dynamic_pricing.menu_rental_coefficients
+#: model:ir.ui.menu,name:rental_coefficient_dynamic_pricing.menu_sale_coefficients
+msgid "Coefficients"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_table__company_id
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_type__company_id
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_dynamic_pricing_table__company_id
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_product_warehouse_pricing_config__company_id
+msgid "Company"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.product_template_form_view_pricing_config
+msgid ""
+"Configure per-warehouse coefficient tables and dynamic pricing\n"
+"                        for this product. The final rental price is calculated as:\n"
+"                        <br/>\n"
+"                        <b>Base rental price × Coefficient × Dynamic pricing factor</b>"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model,name:rental_coefficient_dynamic_pricing.model_res_partner
+msgid "Contact"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model,website_form_label:rental_coefficient_dynamic_pricing.model_res_partner
+msgid "Create a Customer"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.actions.act_window,help:rental_coefficient_dynamic_pricing.rental_coefficient_table_action
+msgid "Create a new coefficient table"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.actions.act_window,help:rental_coefficient_dynamic_pricing.rental_coefficient_type_action
+msgid "Create a new coefficient type"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.actions.act_window,help:rental_coefficient_dynamic_pricing.rental_dynamic_pricing_table_action
+msgid "Create a new dynamic pricing table"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_table__create_uid
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_table_line__create_uid
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_type__create_uid
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_dynamic_pricing_table__create_uid
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_dynamic_pricing_table_line__create_uid
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_product_warehouse_pricing_config__create_uid
+msgid "Created by"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_table__create_date
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_table_line__create_date
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_type__create_date
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_dynamic_pricing_table__create_date
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_dynamic_pricing_table_line__create_date
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_product_warehouse_pricing_config__create_date
+msgid "Created on"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields.selection,name:rental_coefficient_dynamic_pricing.selection__rental_coefficient_table__duration_unit__day
+msgid "Day"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,help:rental_coefficient_dynamic_pricing.field_rental_coefficient_table__is_standard
+msgid "Default coefficient table for this company and coefficient type."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.rental_dynamic_pricing_table_view_form
+msgid ""
+"Define date/time periods and their pricing factor as a percentage.\n"
+"                                <br/>\n"
+"                                <b>100%</b> = no price change.\n"
+"                                <b>120%</b> = +20% surcharge (peak season).\n"
+"                                <b>80%</b> = -20% discount (low season).\n"
+"                                <br/>\n"
+"                                Lines within the same table may not overlap.\n"
+"                                If a rental period spans multiple lines, a weighted average is calculated.\n"
+"                                Uncovered periods default to 100%."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.rental_coefficient_table_view_form
+msgid ""
+"Define duration thresholds and their coefficients.\n"
+"                                The coefficient acts as a charged-duration multiplier:\n"
+"                                the final price = base price per unit × coefficient.\n"
+"                                <br/>\n"
+"                                Example: base price €20/day, 7-day rental with coefficient 5\n"
+"                                → charged price = €20 × 5 = €100."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.rental_dynamic_pricing_table_view_form
+msgid "Determines the time granularity for weighted factor computation."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,help:rental_coefficient_dynamic_pricing.field_rental_dynamic_pricing_table__selection_calendar
+msgid ""
+"Determines the time granularity for weighted factor computation. \"Start "
+"Hour\" weighs by hours, \"Start Day\" weighs by days."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_product_template__display_name
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_table__display_name
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_table_line__display_name
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_type__display_name
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_dynamic_pricing_table__display_name
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_dynamic_pricing_table_line__display_name
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_pricing_service__display_name
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_product_warehouse_pricing_config__display_name
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_res_partner__display_name
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_sale_order__display_name
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_sale_order_line__display_name
+msgid "Display Name"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.constraint,message:rental_coefficient_dynamic_pricing.constraint_rental_coefficient_table_line_unique_duration_per_table
+msgid "Duplicate duration value within the same coefficient table."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.rental_coefficient_table_view_form
+msgid "Duration"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_table__duration_unit
+msgid "Duration Unit"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.constraint,message:rental_coefficient_dynamic_pricing.constraint_rental_coefficient_table_line_non_negative_duration
+msgid "Duration must be zero or a positive integer."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.sale_order_form_view_pricing_columns
+msgid "Dyn. %"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_sale_order_line__applied_dynamic_factor_percentage
+msgid "Dynamic Factor (%)"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_sale_order_line__applied_dynamic_multiplier
+msgid "Dynamic Multiplier"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_res_partner__use_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_res_users__use_dynamic_pricing
+#: model:ir.ui.menu,name:rental_coefficient_dynamic_pricing.menu_rental_dynamic_pricing
+#: model:ir.ui.menu,name:rental_coefficient_dynamic_pricing.menu_sale_dynamic_pricing
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.res_partner_form_view_coefficient_tables
+msgid "Dynamic Pricing"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model,name:rental_coefficient_dynamic_pricing.model_rental_dynamic_pricing_table
+msgid "Dynamic Pricing Factor Table"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model,name:rental_coefficient_dynamic_pricing.model_rental_dynamic_pricing_table_line
+msgid "Dynamic Pricing Factor Table Line"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_product_warehouse_pricing_config__dynamic_pricing_table_id
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_sale_order_line__applied_dynamic_pricing_table_id
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.product_template_form_view_pricing_config
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.rental_dynamic_pricing_table_view_form
+msgid "Dynamic Pricing Table"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.actions.act_window,name:rental_coefficient_dynamic_pricing.rental_dynamic_pricing_table_action
+#: model:ir.ui.menu,name:rental_coefficient_dynamic_pricing.menu_rental_dynamic_pricing_tables
+#: model:ir.ui.menu,name:rental_coefficient_dynamic_pricing.menu_sale_dynamic_pricing_tables
+msgid "Dynamic Pricing Tables"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.sale_order_form_view_pricing_columns
+msgid ""
+"Dynamic pricing factor as a percentage. 100% = no change, 120% = +20% "
+"surcharge, 80% = -20% discount."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,help:rental_coefficient_dynamic_pricing.field_sale_order_line__applied_dynamic_factor_percentage
+msgid ""
+"Dynamic pricing factor as a percentage. 100% = no price change, 120% = +20% "
+"surcharge (peak season), 80% = -20% discount (low season)."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#. odoo-python
+#: code:addons/rental_coefficient_dynamic_pricing/models/rental_dynamic_pricing_table_line.py:0
+msgid ""
+"Dynamic pricing lines in the same table may not overlap. Line '%(start)s – "
+"%(end)s' overlaps with an existing line."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.actions.act_window,help:rental_coefficient_dynamic_pricing.rental_dynamic_pricing_table_action
+msgid ""
+"Dynamic pricing tables define seasonal or time-based adjustments.\n"
+"                Each line specifies a period and a factor percentage."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.actions.act_window,help:rental_coefficient_dynamic_pricing.rental_coefficient_type_action
+msgid ""
+"Each coefficient table belongs to exactly one type.\n"
+"                Customers can be assigned specific types via their\n"
+"                allowed coefficient tables."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_dynamic_pricing_table_line__end_datetime
+msgid "End"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.actions.act_window,help:rental_coefficient_dynamic_pricing.rental_coefficient_table_action
+msgid ""
+"Example: a product with a €20/day base price and a coefficient of 5\n"
+"                for 7 days will cost €100 instead of €140."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_dynamic_pricing_table_line__factor_percentage
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.rental_dynamic_pricing_table_view_form
+msgid "Factor (%)"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_dynamic_pricing_table__line_ids
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.rental_dynamic_pricing_table_view_form
+msgid "Factor Lines"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.constraint,message:rental_coefficient_dynamic_pricing.constraint_rental_dynamic_pricing_table_line_positive_factor
+msgid "Factor percentage must be positive."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_dynamic_pricing_table__selection_calendar
+msgid "Granularity"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields.selection,name:rental_coefficient_dynamic_pricing.selection__rental_coefficient_table__duration_unit__hour
+msgid "Hour"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_product_template__id
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_table__id
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_table_line__id
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_type__id
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_dynamic_pricing_table__id
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_dynamic_pricing_table_line__id
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_pricing_service__id
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_product_warehouse_pricing_config__id
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_res_partner__id
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_sale_order__id
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_sale_order_line__id
+msgid "ID"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,help:rental_coefficient_dynamic_pricing.field_sale_order_line__applied_dynamic_multiplier
+msgid "Internal multiplier = dynamic factor percentage / 100."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_table__write_uid
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_table_line__write_uid
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_type__write_uid
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_dynamic_pricing_table__write_uid
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_dynamic_pricing_table_line__write_uid
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_product_warehouse_pricing_config__write_uid
+msgid "Last Updated by"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_table__write_date
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_table_line__write_date
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_type__write_date
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_dynamic_pricing_table__write_date
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_dynamic_pricing_table_line__write_date
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_product_warehouse_pricing_config__write_date
+msgid "Last Updated on"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.rental_coefficient_table_view_form
+msgid "Lower sequence = higher priority when multiple tables match."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_sale_order_line__manual_coefficient_override
+msgid "Manual Coefficient"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_sale_order_line__manual_dynamic_factor_override
+msgid "Manual Dynamic Factor"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.rental_coefficient_table_view_form
+msgid ""
+"Mark as the default table for this company and coefficient type. Only one "
+"standard table per company and type is allowed."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,help:rental_coefficient_dynamic_pricing.field_rental_coefficient_table_line__as_from_duration
+msgid "Minimum duration (inclusive) for this coefficient to apply."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.rental_coefficient_table_view_form
+msgid "Minimum rental duration (inclusive) for this coefficient to apply."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields.selection,name:rental_coefficient_dynamic_pricing.selection__rental_coefficient_table__duration_unit__minute
+msgid "Minute"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields.selection,name:rental_coefficient_dynamic_pricing.selection__rental_coefficient_table__duration_unit__month
+msgid "Month"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_table__name
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_type__name
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_dynamic_pricing_table__name
+msgid "Name"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.sale_order_form_view_pricing_columns
+msgid ""
+"Odoo-native rental price before coefficient and dynamic pricing adjustments."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.rental_dynamic_pricing_table_view_form
+msgid "Period"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,help:rental_coefficient_dynamic_pricing.field_rental_dynamic_pricing_table_line__factor_percentage
+msgid ""
+"Pricing factor as a percentage. 100 = no change, 120 = +20%, 80 = -20%."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model,name:rental_coefficient_dynamic_pricing.model_product_template
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_product_warehouse_pricing_config__product_tmpl_id
+msgid "Product"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model,name:rental_coefficient_dynamic_pricing.model_rental_product_warehouse_pricing_config
+msgid "Product Warehouse Pricing Configuration"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model,name:rental_coefficient_dynamic_pricing.model_rental_coefficient_table
+msgid "Rental Coefficient Table"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model,name:rental_coefficient_dynamic_pricing.model_rental_coefficient_table_line
+msgid "Rental Coefficient Table Line"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model,name:rental_coefficient_dynamic_pricing.model_rental_coefficient_type
+msgid "Rental Coefficient Type"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model,name:rental_coefficient_dynamic_pricing.model_rental_pricing_service
+msgid "Rental Pricing Service"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model,name:rental_coefficient_dynamic_pricing.model_sale_order
+msgid "Sales Order"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model,name:rental_coefficient_dynamic_pricing.model_sale_order_line
+msgid "Sales Order Line"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_table__sequence
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_table_line__sequence
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_type__sequence
+msgid "Sequence"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,help:rental_coefficient_dynamic_pricing.field_sale_order_line__manual_coefficient_override
+msgid "Set automatically when the coefficient is manually edited."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,help:rental_coefficient_dynamic_pricing.field_sale_order_line__manual_dynamic_factor_override
+msgid "Set automatically when the dynamic factor is manually edited."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_table__is_standard
+#: model:rental.coefficient.type,name:rental_coefficient_dynamic_pricing.rental_coefficient_type_standard
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.rental_coefficient_table_view_form
+msgid "Standard"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_dynamic_pricing_table_line__start_datetime
+msgid "Start"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields.selection,name:rental_coefficient_dynamic_pricing.selection__rental_dynamic_pricing_table__selection_calendar__start_day
+msgid "Start Day"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields.selection,name:rental_coefficient_dynamic_pricing.selection__rental_dynamic_pricing_table__selection_calendar__start_hour
+msgid "Start Hour"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.constraint,message:rental_coefficient_dynamic_pricing.constraint_rental_dynamic_pricing_table_line_start_before_end
+msgid "Start date/time must be before end date/time."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_coefficient_table_line__table_id
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_dynamic_pricing_table_line__table_id
+msgid "Table"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,help:rental_coefficient_dynamic_pricing.field_sale_order_line__applied_coefficient_table_id
+msgid "The coefficient table used for this line."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,help:rental_coefficient_dynamic_pricing.field_rental_product_warehouse_pricing_config__company_id
+msgid "The company is automatically set from your user preferences."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,help:rental_coefficient_dynamic_pricing.field_sale_order_line__applied_dynamic_pricing_table_id
+msgid "The dynamic pricing table used for this line."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,help:rental_coefficient_dynamic_pricing.field_sale_order_line__base_rental_price
+msgid ""
+"The rental price as calculated by Odoo before coefficient and dynamic "
+"pricing adjustments are applied."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.rental_coefficient_table_view_form
+msgid ""
+"The time unit used for the 'As From Duration' thresholds in the lines below."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,help:rental_coefficient_dynamic_pricing.field_sale_order_line__applied_coefficient_type_id
+msgid "The type of the coefficient table used for this line."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#. odoo-python
+#: code:addons/rental_coefficient_dynamic_pricing/models/rental_coefficient_table.py:0
+msgid ""
+"There can only be one standard coefficient table per company and coefficient"
+" type. A standard table already exists for company '%(company)s' with type "
+"'%(type)s'."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_rental_product_warehouse_pricing_config__warehouse_id
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.product_template_form_view_pricing_config
+msgid "Warehouse"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_product_product__rental_pricing_config_ids
+#: model:ir.model.fields,field_description:rental_coefficient_dynamic_pricing.field_product_template__rental_pricing_config_ids
+msgid "Warehouse Pricing Configuration"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields.selection,name:rental_coefficient_dynamic_pricing.selection__rental_coefficient_table__duration_unit__week
+msgid "Week"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model:ir.model.fields,help:rental_coefficient_dynamic_pricing.field_res_partner__use_dynamic_pricing
+#: model:ir.model.fields,help:rental_coefficient_dynamic_pricing.field_res_users__use_dynamic_pricing
+msgid ""
+"When enabled, dynamic pricing factors (seasonal, peak, etc.) are applied to "
+"rental prices for this customer. When disabled, the dynamic pricing factor "
+"is always 100%."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.res_partner_form_view_coefficient_tables
+msgid ""
+"When enabled, seasonal/time-based dynamic pricing factors are applied to "
+"this customer's rental prices. Disable to always use factor 100% (no "
+"adjustment)."
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.rental_coefficient_table_view_form
+msgid "e.g. Standard Daily Coefficients"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.rental_coefficient_type_view_form
+msgid "e.g. Standard, Professional, Weekend"
+msgstr ""
+
+#. module: rental_coefficient_dynamic_pricing
+#: model_terms:ir.ui.view,arch_db:rental_coefficient_dynamic_pricing.rental_dynamic_pricing_table_view_form
+msgid "e.g. Summer Peak Season 2026"
+msgstr ""

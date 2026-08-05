@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ── List view ─────────────────────────────────────────────────── -->
+
+    <record id="sale_flow_line_view_list" model="ir.ui.view">
+        <field name="name">sale.flow.line.list</field>
+        <field name="model">sale.flow.line</field>
+        <field name="arch" type="xml">
+            <list string="Sale Flow Lines"
+                  decoration-warning="invoice_warning_level == 'orange'"
+                  decoration-danger="invoice_warning_level == 'red'">
+                <field name="sequence" widget="handle"/>
+                <field name="product_id"/>
+                <field name="name" optional="hide"/>
+                <field name="confirmed_qty"/>
+                <field name="current_qty"/>
+                <field name="delivered_qty"/>
+                <field name="returned_qty"/>
+                <field name="lost_qty" optional="show"/>
+                <field name="broken_qty" optional="show"/>
+                <field name="invoice_candidate_qty"/>
+                <field name="confirmed_unit_price" optional="hide"/>
+                <field name="unit_price_effective" optional="hide"/>
+                <field name="confirmed_subtotal" optional="hide"/>
+                <field name="subtotal_effective" optional="hide"/>
+                <field name="invoice_warning_level"
+                       widget="badge"
+                       decoration-warning="invoice_warning_level == 'orange'"
+                       decoration-danger="invoice_warning_level == 'red'"/>
+                <field name="state"
+                       widget="badge"
+                       decoration-info="state == 'confirmed'"
+                       decoration-success="state in ('delivered', 'returned', 'invoiced')"
+                       decoration-warning="state in ('prepared', 'partially_returned')"
+                       decoration-danger="state in ('cancelled', 'lost', 'broken')"/>
+                <field name="commercial_policy" optional="hide"/>
+                <field name="is_rental" optional="hide"/>
+                <field name="is_charge_only" optional="hide"/>
+                <field name="was_changed_after_confirmation" optional="hide"/>
+                <field name="currency_id" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ── Form view ─────────────────────────────────────────────────── -->
+
+    <record id="sale_flow_line_view_form" model="ir.ui.view">
+        <field name="name">sale.flow.line.form</field>
+        <field name="model">sale.flow.line</field>
+        <field name="arch" type="xml">
+            <form string="Sale Flow Line">
+                <header>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,confirmed,delivered,returned,invoiced"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_outgoing_moves"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-truck">
+                            <field name="outgoing_move_ids" invisible="1"/>
+                            <span>Outgoing Moves</span>
+                        </button>
+                        <button name="action_view_return_moves"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-undo">
+                            <field name="return_move_ids" invisible="1"/>
+                            <span>Return Moves</span>
+                        </button>
+                        <button name="action_view_invoice_lines"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-file-text-o">
+                            <field name="invoice_line_ids" invisible="1"/>
+                            <span>Invoice Lines</span>
+                        </button>
+                    </div>
+
+                    <group>
+                        <group string="Identity">
+                            <field name="name"/>
+                            <field name="sale_order_id"/>
+                            <field name="sale_line_id"/>
+                            <field name="product_id"/>
+                            <field name="product_uom_id"/>
+                            <field name="company_id" invisible="1"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group string="Classification">
+                            <field name="is_rental"/>
+                            <field name="is_sale"/>
+                            <field name="is_charge_only"/>
+                            <field name="skip_delivery"/>
+                            <field name="commercial_policy"/>
+                            <field name="visible_to_customer"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Commercial Baseline" name="baseline">
+                            <group>
+                                <group>
+                                    <field name="confirmed_qty"/>
+                                    <field name="confirmed_unit_price"/>
+                                    <field name="confirmed_discount"/>
+                                    <field name="confirmed_subtotal"/>
+                                </group>
+                                <group>
+                                    <field name="confirmed_description"/>
+                                    <field name="confirmed_at"/>
+                                    <field name="confirmed_by_id"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page string="Operational" name="operational">
+                            <group>
+                                <group>
+                                    <field name="current_qty"/>
+                                    <field name="prepared_qty"/>
+                                    <field name="delivered_qty"/>
+                                    <field name="returned_qty"/>
+                                </group>
+                                <group>
+                                    <field name="cancelled_qty"/>
+                                    <field name="lost_qty"/>
+                                    <field name="broken_qty"/>
+                                    <field name="credited_qty"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page string="Invoicing" name="invoicing">
+                            <group>
+                                <group>
+                                    <field name="invoice_candidate_qty"/>
+                                    <field name="invoiced_qty"/>
+                                    <field name="invoice_warning_level"
+                                           widget="badge"
+                                           decoration-warning="invoice_warning_level == 'orange'"
+                                           decoration-danger="invoice_warning_level == 'red'"/>
+                                </group>
+                                <group>
+                                    <field name="unit_price_effective"/>
+                                    <field name="subtotal_effective"/>
+                                    <field name="broken_lost_unit_price"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page string="Changes" name="changes">
+                            <group>
+                                <group>
+                                    <field name="was_changed_after_confirmation"/>
+                                    <field name="added_after_confirmation"/>
+                                    <field name="added_during_delivery"/>
+                                    <field name="change_origin"/>
+                                </group>
+                                <group>
+                                    <field name="change_note"/>
+                                    <field name="origin_flow_line_id"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page string="Set Hierarchy" name="set_hierarchy"
+                              invisible="not is_set_component">
+                            <group>
+                                <field name="is_set_component"/>
+                                <field name="set_parent_flow_line_id"/>
+                                <field name="set_root_flow_line_id"/>
+                                <field name="set_parent_sale_line_id"/>
+                                <field name="set_path"/>
+                            </group>
+                        </page>
+
+                        <page string="Audit" name="audit">
+                            <group>
+                                <field name="last_flow_update_at"/>
+                                <field name="last_flow_update_by_id"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ── Search view ───────────────────────────────────────────────── -->
+
+    <record id="sale_flow_line_view_search" model="ir.ui.view">
+        <field name="name">sale.flow.line.search</field>
+        <field name="model">sale.flow.line</field>
+        <field name="arch" type="xml">
+            <search string="Sale Flow Lines">
+                <field name="name"/>
+                <field name="product_id"/>
+                <field name="sale_order_id"/>
+                <field name="sale_line_id"/>
+                <filter string="Warning: Orange" name="warning_orange"
+                        domain="[('invoice_warning_level', '=', 'orange')]"/>
+                <filter string="Warning: Red" name="warning_red"
+                        domain="[('invoice_warning_level', '=', 'red')]"/>
+                <separator/>
+                <filter string="Changed" name="changed"
+                        domain="[('was_changed_after_confirmation', '=', True)]"/>
+                <filter string="Added After Confirmation" name="added_after"
+                        domain="[('added_after_confirmation', '=', True)]"/>
+                <separator/>
+                <filter string="Rental" name="rental"
+                        domain="[('is_rental', '=', True)]"/>
+                <filter string="Sale" name="sale"
+                        domain="[('is_sale', '=', True)]"/>
+                <filter string="Charge Only" name="charge_only"
+                        domain="[('is_charge_only', '=', True)]"/>
+                <separator/>
+                <filter string="Sale Order" name="group_order"
+                        context="{'group_by': 'sale_order_id'}"/>
+                <filter string="State" name="group_state"
+                        context="{'group_by': 'state'}"/>
+                <filter string="Warning Level" name="group_warning"
+                        context="{'group_by': 'invoice_warning_level'}"/>
+                <filter string="Commercial Policy" name="group_policy"
+                        context="{'group_by': 'commercial_policy'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ── Action ────────────────────────────────────────────────────── -->
+
+    <record id="sale_flow_line_action" model="ir.actions.act_window">
+        <field name="name">Sale Flow Lines</field>
+        <field name="res_model">sale.flow.line</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="sale_flow_line_view_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No flow lines yet
+            </p>
+            <p>
+                Sale flow lines are created automatically when sale orders
+                are confirmed.  They track the relationship between what
+                was agreed, delivered, returned, and invoiced.
+            </p>
+        </field>
+    </record>
+
+    <!-- ── Menu (under Sales > Configuration, not as an app) ─────────── -->
+
+    <menuitem id="sale_flow_line_menu"
+              name="Sale Flow Lines"
+              parent="sale.sale_order_menu"
+              action="sale_flow_line_action"
+              sequence="20"/>
+
+</odoo>

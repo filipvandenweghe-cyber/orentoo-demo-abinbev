@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="rental_dynamic_pricing_table_view_list" model="ir.ui.view">
+        <field name="name">rental.dynamic.pricing.table.list</field>
+        <field name="model">rental.dynamic.pricing.table</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="selection_calendar"/>
+                <field name="company_id" groups="base.group_multi_company" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="rental_dynamic_pricing_table_view_form" model="ir.ui.view">
+        <field name="name">rental.dynamic.pricing.table.form</field>
+        <field name="model">rental.dynamic.pricing.table</field>
+        <field name="arch" type="xml">
+            <form string="Dynamic Pricing Table">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name" placeholder="e.g. Summer Peak Season 2026"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="selection_calendar"
+                                   help="Determines the time granularity for weighted factor computation."/>
+                        </group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Factor Lines" name="lines">
+                            <p class="text-muted mb-3">
+                                Define date/time periods and their pricing factor as a percentage.
+                                <br/>
+                                <b>100%</b> = no price change.
+                                <b>120%</b> = +20% surcharge (peak season).
+                                <b>80%</b> = -20% discount (low season).
+                                <br/>
+                                Lines within the same table may not overlap.
+                                If a rental period spans multiple lines, a weighted average is calculated.
+                                Uncovered periods default to 100%.
+                            </p>
+                            <field name="line_ids">
+                                <list editable="bottom">
+                                    <field name="start_datetime" string="Period"
+                                           widget="daterange"
+                                           options="{'end_date_field': 'end_datetime'}"/>
+                                    <field name="end_datetime" column_invisible="True"/>
+                                    <field name="factor_percentage" string="Factor (%)"
+                                           help="100% = no change, 120% = +20% surcharge, 80% = -20% discount."/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="rental_dynamic_pricing_table_action" model="ir.actions.act_window">
+        <field name="name">Dynamic Pricing Tables</field>
+        <field name="res_model">rental.dynamic.pricing.table</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a new dynamic pricing table
+            </p>
+            <p>
+                Dynamic pricing tables define seasonal or time-based adjustments.
+                Each line specifies a period and a factor percentage.
+            </p>
+            <p>
+                <b>100%</b> = no price change.
+                <b>120%</b> = +20% surcharge (e.g. peak season).
+                <b>80%</b> = -20% discount (e.g. low season).
+            </p>
+        </field>
+    </record>
+
+</odoo>

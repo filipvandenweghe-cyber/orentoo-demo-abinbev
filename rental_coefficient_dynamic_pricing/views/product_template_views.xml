@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Add Coefficient & Dynamic Pricing tab to product form -->
+    <record id="product_template_form_view_pricing_config" model="ir.ui.view">
+        <field name="name">product.template.form.pricing.config</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Coefficient &amp; Dynamic Pricing"
+                      name="rental_pricing_config"
+                      invisible="not rent_ok">
+                    <p class="text-muted mb-3">
+                        Configure per-warehouse coefficient tables and dynamic pricing
+                        for this product. The final rental price is calculated as:
+                        <br/>
+                        <b>Base rental price × Coefficient × Dynamic pricing factor</b>
+                    </p>
+                    <field name="rental_pricing_config_ids">
+                        <list editable="bottom">
+                            <field name="warehouse_id"
+                                   string="Warehouse"/>
+                            <field name="company_id" column_invisible="True"/>
+                            <field name="coefficient_table_ids"
+                                   widget="many2many_tags"
+                                   string="Coefficient Tables"
+                                   domain="[('company_id', '=', company_id)]"/>
+                            <field name="dynamic_pricing_table_id"
+                                   string="Dynamic Pricing Table"
+                                   domain="[('company_id', '=', company_id)]"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

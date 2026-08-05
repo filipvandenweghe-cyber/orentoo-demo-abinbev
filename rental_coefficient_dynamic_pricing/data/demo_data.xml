@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- ==========================================================
+             Coefficient Types
+             ========================================================== -->
+
+        <!-- "Standard" type already exists as rental_coefficient_type_standard
+             in rental_coefficient_data.xml — reuse it. -->
+
+        <record id="demo_coeff_type_canadese_kano" model="rental.coefficient.type">
+            <field name="name">Canadese Kano</field>
+            <field name="sequence">20</field>
+        </record>
+
+        <record id="demo_coeff_type_kayak_1p" model="rental.coefficient.type">
+            <field name="name">Kayak 1-persoons</field>
+            <field name="sequence">30</field>
+        </record>
+
+        <record id="demo_coeff_type_kayak_2p" model="rental.coefficient.type">
+            <field name="name">Kayak 2-persoons</field>
+            <field name="sequence">40</field>
+        </record>
+
+        <!-- ==========================================================
+             Dynamic Pricing Table
+             ========================================================== -->
+
+        <record id="demo_dynamic_pricing_table" model="rental.dynamic.pricing.table">
+            <field name="name">Seizoensprijzen Kano's &amp; Kayaks</field>
+            <field name="selection_calendar">start_hour</field>
+        </record>
+
+        <!-- ==========================================================
+             Coefficient Tables — Standard
+             ========================================================== -->
+
+        <record id="demo_coeff_table_standard" model="rental.coefficient.table">
+            <field name="name">Standard</field>
+            <field name="coefficient_type_id" ref="rental_coefficient_type_standard"/>
+            <field name="is_standard" eval="True"/>
+            <field name="duration_unit">hour</field>
+        </record>
+
+        <record id="demo_coeff_table_standard_line_1h" model="rental.coefficient.table.line">
+            <field name="table_id" ref="demo_coeff_table_standard"/>
+            <field name="as_from_duration">1</field>
+            <field name="coefficient">1.0</field>
+        </record>
+        <record id="demo_coeff_table_standard_line_2h" model="rental.coefficient.table.line">
+            <field name="table_id" ref="demo_coeff_table_standard"/>
+            <field name="as_from_duration">2</field>
+            <field name="coefficient">1.2439</field>
+        </record>
+        <record id="demo_coeff_table_standard_line_4h" model="rental.coefficient.table.line">
+            <field name="table_id" ref="demo_coeff_table_standard"/>
+            <field name="as_from_duration">4</field>
+            <field name="coefficient">1.8293</field>
+        </record>
+        <record id="demo_coeff_table_standard_line_8h" model="rental.coefficient.table.line">
+            <field name="table_id" ref="demo_coeff_table_standard"/>
+            <field name="as_from_duration">8</field>
+            <field name="coefficient">2.3659</field>
+        </record>
+
+        <!-- ==========================================================
+             Coefficient Tables — Canadese Kano
+             ========================================================== -->
+
+        <record id="demo_coeff_table_canadese_kano" model="rental.coefficient.table">
+            <field name="name">Canadese Kano</field>
+            <field name="coefficient_type_id" ref="demo_coeff_type_canadese_kano"/>
+            <field name="is_standard" eval="False"/>
+            <field name="duration_unit">hour</field>
+        </record>
+
+        <record id="demo_coeff_table_canadese_kano_line_1h" model="rental.coefficient.table.line">
+            <field name="table_id" ref="demo_coeff_table_canadese_kano"/>
+            <field name="as_from_duration">1</field>
+            <field name="coefficient">1.0</field>
+        </record>
+        <record id="demo_coeff_table_canadese_kano_line_2h" model="rental.coefficient.table.line">
+            <field name="table_id" ref="demo_coeff_table_canadese_kano"/>
+            <field name="as_from_duration">2</field>
+            <field name="coefficient">1.2439</field>
+        </record>
+        <record id="demo_coeff_table_canadese_kano_line_4h" model="rental.coefficient.table.line">
+            <field name="table_id" ref="demo_coeff_table_canadese_kano"/>
+            <field name="as_from_duration">4</field>
+            <field name="coefficient">1.8293</field>
+        </record>
+        <record id="demo_coeff_table_canadese_kano_line_8h" model="rental.coefficient.table.line">
+            <field name="table_id" ref="demo_coeff_table_canadese_kano"/>
+            <field name="as_from_duration">8</field>
+            <field name="coefficient">2.3659</field>
+        </record>
+
+        <!-- ==========================================================
+             Coefficient Tables — Kayak 1-persoons
+             ========================================================== -->
+
+        <record id="demo_coeff_table_kayak_1p" model="rental.coefficient.table">
+            <field name="name">Kayak 1-persoons</field>
+            <field name="coefficient_type_id" ref="demo_coeff_type_kayak_1p"/>
+            <field name="is_standard" eval="False"/>
+            <field name="duration_unit">hour</field>
+        </record>
+
+        <record id="demo_coeff_table_kayak_1p_line_1h" model="rental.coefficient.table.line">
+            <field name="table_id" ref="demo_coeff_table_kayak_1p"/>
+            <field name="as_from_duration">1</field>
+            <field name="coefficient">1.0</field>
+        </record>
+        <record id="demo_coeff_table_kayak_1p_line_2h" model="rental.coefficient.table.line">
+            <field name="table_id" ref="demo_coeff_table_kayak_1p"/>
+            <field name="as_from_duration">2</field>
+            <field name="coefficient">1.3478</field>
+        </record>
+        <record id="demo_coeff_table_kayak_1p_line_4h" model="rental.coefficient.table.line">
+            <field name="table_id" ref="demo_coeff_table_kayak_1p"/>
+            <field name="as_from_duration">4</field>
+            <field name="coefficient">1.6957</field>
+        </record>
+        <record id="demo_coeff_table_kayak_1p_line_8h" model="rental.coefficient.table.line">
+            <field name="table_id" ref="demo_coeff_table_kayak_1p"/>
+            <field name="as_from_duration">8</field>
+            <field name="coefficient">2.5652</field>
+        </record>
+
+        <!-- ==========================================================
+             Coefficient Tables — Kayak 2-persoons
+             ========================================================== -->
+
+        <record id="demo_coeff_table_kayak_2p" model="rental.coefficient.table">
+            <field name="name">Kayak 2-persoons</field>
+            <field name="coefficient_type_id" ref="demo_coeff_type_kayak_2p"/>
+            <field name="is_standard" eval="False"/>
+            <field name="duration_unit">hour</field>
+        </record>
+
+        <record id="demo_coeff_table_kayak_2p_line_1h" model="rental.coefficient.table.line">
+            <field name="table_id" ref="demo_coeff_table_kayak_2p"/>
+            <field name="as_from_duration">1</field>
+            <field name="coefficient">1.0</field>
+        </record>
+        <record id="demo_coeff_table_kayak_2p_line_2h" model="rental.coefficient.table.line">
+            <field name="table_id" ref="demo_coeff_table_kayak_2p"/>
+            <field name="as_from_duration">2</field>
+            <field name="coefficient">1.2286</field>
+        </record>
+        <record id="demo_coeff_table_kayak_2p_line_4h" model="rental.coefficient.table.line">
+            <field name="table_id" ref="demo_coeff_table_kayak_2p"/>
+            <field name="as_from_duration">4</field>
+            <field name="coefficient">1.6857</field>
+        </record>
+        <record id="demo_coeff_table_kayak_2p_line_8h" model="rental.coefficient.table.line">
+            <field name="table_id" ref="demo_coeff_table_kayak_2p"/>
+            <field name="as_from_duration">8</field>
+            <field name="coefficient">2.2571</field>
+        </record>
+
+        <!-- ==========================================================
+             Pricing Configs — link products to tables
+             (uses product templates from multi_channel_rental_flow)
+             ========================================================== -->
+
+        <record id="demo_pricing_config_kayak_1p" model="rental.product.warehouse.pricing.config">
+            <field name="product_tmpl_id" ref="multi_channel_rental_flow.demo_product_tmpl_kayak_1p"/>
+            <field name="warehouse_id" ref="stock.warehouse0"/>
+            <field name="dynamic_pricing_table_id" ref="demo_dynamic_pricing_table"/>
+            <field name="coefficient_table_ids" eval="[(6, 0, [ref('demo_coeff_table_kayak_1p')])]"/>
+        </record>
+
+        <record id="demo_pricing_config_kayak_2p" model="rental.product.warehouse.pricing.config">
+            <field name="product_tmpl_id" ref="multi_channel_rental_flow.demo_product_tmpl_kayak_2p"/>
+            <field name="warehouse_id" ref="stock.warehouse0"/>
+            <field name="dynamic_pricing_table_id" ref="demo_dynamic_pricing_table"/>
+            <field name="coefficient_table_ids" eval="[(6, 0, [ref('demo_coeff_table_kayak_2p')])]"/>
+        </record>
+
+    </data>
+</odoo>

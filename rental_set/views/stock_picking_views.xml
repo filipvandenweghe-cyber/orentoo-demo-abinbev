@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Rental Set collapse/expand on the picking form.
+
+        Business requirements:
+        1. On all pickings in the OUTBOUND SALE CHAIN (Pick → Pack → Ship
+           in multi-step flows): the operations list shows set component
+           moves grouped under their set parent with a collapsible chevron,
+           identical to the rental order form.  The picker sees which items
+           belong together in one set.
+        2. On RETURN pickings: the grouped/collapsible view is NOT shown
+           because the warehouse has no control over how items are returned
+           (they may arrive individually or out of order).
+        3. The set name prefix on each move's description_picking
+           (implemented in stock_move.py) follows the same rule: shown on
+           outbound chain pickings, hidden on returns.
+
+        Outbound chain detection:
+        A picking belongs to the outbound chain when it has a sale_id
+        (originates from a sale order) AND return_id is not set (is not
+        a return).  The computed field rental_set_show_grouping on
+        stock.picking encapsulates this logic.
+    -->
+    <record id="view_picking_form_rental_set" model="ir.ui.view">
+        <field name="name">stock.picking.form.rental.set</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="priority">50</field>
+        <field name="arch" type="xml">
+
+            <!-- Expose the outbound-chain flag for visibility control -->
+            <xpath expr="//field[@name='move_ids']" position="before">
+                <field name="rental_set_show_grouping" invisible="1"/>
+            </xpath>
+
+            <!-- Add rental set fields to the move list for collapse/expand.
+                 Only visible on outbound sale chain pickings. -->
+            <xpath expr="//field[@name='move_ids']//list//field[@name='product_id']"
+                   position="before">
+                <field name="rental_set_is_set" column_invisible="True"/>
+                <field name="rental_set_is_component" column_invisible="True"/>
+                <field name="rental_set_parent_move_id" column_invisible="True"/>
+                <field name="rental_set_level" column_invisible="True"/>
+                <field name="rental_set_folded" column_invisible="True"/>
+                <field name="rental_set_indent_label" column_invisible="True"/>
+                <field name="rental_set_folded"
+                       widget="rental_set_picking_fold"
+                       string=" "
+                       optional="show"
+                       column_invisible="not parent.rental_set_show_grouping"
+                       nolabel="1"
+                       readonly="0"/>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

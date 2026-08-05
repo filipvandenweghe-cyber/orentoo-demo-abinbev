@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Extend the standard product form with a Rental Set tab -->
+    <record id="product_template_form_view_rental_set" model="ir.ui.view">
+        <field name="name">product.template.form.rental_set</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+
+            <!-- is_rental_set toggle inside General Information > left column group -->
+            <xpath expr="//page[@name='general_information']//group[@name='group_general']"
+                   position="inside">
+                <field name="is_rental_set" string="Set"/>
+            </xpath>
+
+            <!-- Rental Set Components page — appended after all existing tabs -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Rental Set Components"
+                      name="rental_set_components"
+                      invisible="not is_rental_set">
+
+                    <group col="2">
+                        <group>
+                            <field name="set_pricing_mode" widget="radio"/>
+                        </group>
+                        <group>
+                            <field name="set_availability"
+                                   string="Available Sets (current stock)"/>
+                        </group>
+                    </group>
+
+                    <field name="set_website_description"
+                           string="Website Description (auto-generated)"
+                           widget="html"/>
+
+                    <field name="set_component_ids">
+                        <list editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="product_id"/>
+                            <field name="quantity"/>
+                            <field name="parent_component_id" optional="hide"/>
+                        </list>
+                    </field>
+
+                </page>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

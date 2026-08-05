@@ -1,0 +1,23 @@
+// ── Rental Set collapse / expand ──────────────────────────────────────────────
+
+// Applied by the JS renderer to rows that belong to a collapsed set parent.
+.o_rental_set_hidden {
+    display: none !important;
+}
+
+// Tighten the fold toggle button so it fits in the narrow column cleanly.
+.o_rental_set_fold_btn {
+    line-height: 1;
+
+    .fa {
+        font-size: 0.75rem;
+    }
+}
+
+// Indent label in component rows: monospace so box-drawing chars align.
+.o_rental_set_indent {
+    font-family: monospace;
+    font-size: 0.85rem;
+    white-space: pre;
+}
+

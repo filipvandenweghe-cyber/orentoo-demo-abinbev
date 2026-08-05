@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="rental_coefficient_type_view_list" model="ir.ui.view">
+        <field name="name">rental.coefficient.type.list</field>
+        <field name="model">rental.coefficient.type</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="company_id" groups="base.group_multi_company" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="rental_coefficient_type_view_form" model="ir.ui.view">
+        <field name="name">rental.coefficient.type.form</field>
+        <field name="model">rental.coefficient.type</field>
+        <field name="arch" type="xml">
+            <form string="Coefficient Type">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name" placeholder="e.g. Standard, Professional, Weekend"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="sequence"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="rental_coefficient_type_action" model="ir.actions.act_window">
+        <field name="name">Coefficient Types</field>
+        <field name="res_model">rental.coefficient.type</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a new coefficient type
+            </p>
+            <p>
+                Coefficient types categorise your coefficient tables.
+                Examples: Standard, Professional, VIP, Weekend, Campaign.
+            </p>
+            <p>
+                Each coefficient table belongs to exactly one type.
+                Customers can be assigned specific types via their
+                allowed coefficient tables.
+            </p>
+        </field>
+    </record>
+
+</odoo>

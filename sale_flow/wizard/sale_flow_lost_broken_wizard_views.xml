@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="sale_flow_lost_broken_wizard_view_form" model="ir.ui.view">
+        <field name="name">sale.flow.lost.broken.wizard.form</field>
+        <field name="model">sale.flow.lost.broken.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Missing Rental Items">
+                <group>
+                    <field name="picking_id" readonly="1"/>
+                    <field name="sale_order_id" readonly="1"/>
+                </group>
+                <field name="line_ids">
+                    <list editable="bottom">
+                        <field name="product_id" readonly="1"/>
+                        <field name="delivered_qty" readonly="1"/>
+                        <field name="returned_qty" readonly="1"/>
+                        <field name="missing_qty" readonly="1"/>
+                        <field name="lost_qty"/>
+                        <field name="broken_qty"/>
+                        <field name="broken_lost_unit_price"/>
+                    </list>
+                </field>
+                <footer>
+                    <button name="action_confirm" type="object"
+                            string="Confirm" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

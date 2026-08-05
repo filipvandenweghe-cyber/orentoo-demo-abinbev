@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates>
+    <!--
+        rental_set.FoldField
+        ────────────────────
+        Single column that unifies hierarchy display and collapse toggle.
+
+        Set parent (is_set = True)
+          → chevron button (▼ expanded / ▶ folded), clickable unless readonly
+
+        Set component (is_set_component = True, is_set = False)
+          → indent label string (└─, ..└─, etc.) — read only
+
+        Nested set (is_set = True AND is_set_component = True)
+          → indent label + chevron button
+
+        Normal line
+          → empty cell
+    -->
+    <t t-name="rental_set.FoldField">
+        <t t-if="isSetParent and isSetComponent">
+            <!-- Nested set: indent prefix + chevron button -->
+            <span class="text-muted me-1 small" t-esc="indentLabel"/>
+            <!--
+                Always render a real <button> (never a plain <i>).
+                Odoo's CSS hides pointer-events on .form-check elements inside
+                non-selected rows, but our <button> bypasses that rule.
+                The .stop.prevent modifiers + special_click flag in onToggle
+                prevent onCellClicked from firing a second enterEditMode.
+            -->
+            <button type="button"
+                    class="btn btn-link p-0 border-0 align-baseline"
+                    t-att-title="isFolded ? 'Expand components' : 'Collapse components'"
+                    t-on-click.stop.prevent="onToggle">
+                <i class="fa fa-fw"
+                   t-att-class="isFolded ? 'fa-chevron-right text-muted' : 'fa-chevron-down text-primary'"/>
+            </button>
+        </t>
+        <t t-elif="isSetParent">
+            <!-- Top-level set parent: chevron only -->
+            <button type="button"
+                    class="btn btn-link p-0 border-0 align-baseline"
+                    t-att-title="isFolded ? 'Expand components' : 'Collapse components'"
+                    t-on-click.stop.prevent="onToggle">
+                <i class="fa fa-fw"
+                   t-att-class="isFolded ? 'fa-chevron-right text-muted' : 'fa-chevron-down text-primary'"/>
+            </button>
+        </t>
+        <t t-elif="isSetComponent">
+            <!-- Leaf component: indent label, not clickable -->
+            <span class="text-muted small" t-esc="indentLabel"/>
+        </t>
+        <!-- Normal line: render nothing -->
+    </t>
+</templates>

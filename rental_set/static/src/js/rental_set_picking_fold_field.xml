@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates>
+    <!--
+        rental_set.PickingFoldField
+        ───────────────────────────
+        Chevron + indent column for stock.move lines on the picking form.
+        Mirrors the sale order's rental_set.FoldField exactly.
+    -->
+    <t t-name="rental_set.PickingFoldField">
+        <t t-if="isSetParent and isSetComponent">
+            <!-- Nested set: indent prefix + chevron button -->
+            <span class="text-muted me-1 small" t-esc="indentLabel"/>
+            <button type="button"
+                    class="btn btn-link p-0 border-0 align-baseline"
+                    t-att-title="isFolded ? 'Expand components' : 'Collapse components'"
+                    t-on-click.stop.prevent="onToggle">
+                <i class="fa fa-fw"
+                   t-att-class="isFolded ? 'fa-chevron-right text-muted' : 'fa-chevron-down text-primary'"/>
+            </button>
+        </t>
+        <t t-elif="isSetParent">
+            <!-- Top-level set parent: chevron only -->
+            <button type="button"
+                    class="btn btn-link p-0 border-0 align-baseline"
+                    t-att-title="isFolded ? 'Expand components' : 'Collapse components'"
+                    t-on-click.stop.prevent="onToggle">
+                <i class="fa fa-fw"
+                   t-att-class="isFolded ? 'fa-chevron-right text-muted' : 'fa-chevron-down text-primary'"/>
+            </button>
+        </t>
+        <t t-elif="isSetComponent">
+            <!-- Leaf component: indent label, not clickable -->
+            <span class="text-muted small" t-esc="indentLabel"/>
+        </t>
+        <!-- Normal move: render nothing -->
+    </t>
+</templates>

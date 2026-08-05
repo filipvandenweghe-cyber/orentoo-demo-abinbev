@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Add Sale Flow fields to the product template form (General Information tab).
+         - Sales Price Broken / Lost: mainly for rental products
+         - Auto-reconcile Ordered Quantity: auto-adjust ordered qty to match delivered -->
+    <record id="product_template_view_form_flow" model="ir.ui.view">
+        <field name="name">product.template.form.sale.flow</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='group_standard_price']" position="after">
+                <group name="group_sale_flow" string="Sale Flow">
+                    <field name="sales_price_broken_lost"
+                           widget="monetary"
+                           options="{'currency_field': 'cost_currency_id'}"/>
+                    <field name="auto_reconcile_delivered_qty"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

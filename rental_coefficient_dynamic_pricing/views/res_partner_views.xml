@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Add Allowed Coefficient Tables and Dynamic Pricing toggle
+         to partner Sales & Purchase tab, below the pricelist field -->
+    <record id="res_partner_form_view_coefficient_tables" model="ir.ui.view">
+        <field name="name">res.partner.form.coefficient.tables</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <field name="property_product_pricelist" position="after">
+                <field name="allowed_coefficient_table_ids"
+                       widget="many2many_tags"
+                       string="Allowed Coefficient Tables"
+                       help="Coefficient tables used for this customer's rental pricing. When a product also has tables configured, the intersection determines which table applies. Leave empty to use the standard default."/>
+                <field name="use_dynamic_pricing"
+                       string="Dynamic Pricing"
+                       help="When enabled, seasonal/time-based dynamic pricing factors are applied to this customer's rental prices. Disable to always use factor 100% (no adjustment)."/>
+            </field>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates xml:space="preserve">
+
+    <!-- Icon: green chart if enough stock, red if not -->
+    <t t-name="rental_set.RentalSetQtyWidget">
+        <a t-if="calcData.show"
+           t-on-click="showPopup"
+           tabindex="0"
+           t-attf-class="fa fa-area-chart cursor-pointer {{ calcData.sufficient ? '' : 'text-danger' }}"
+           title="Set Availability"
+        />
+    </t>
+
+    <!-- Popover with set availability overview (no component links, kept simple) -->
+    <t t-name="rental_set.RentalSetAvailPopover">
+        <div class="p-2" style="min-width: 200px;">
+            <h6>Set Availability</h6>
+            <table class="table table-borderless table-sm mb-1">
+                <tbody>
+                    <tr>
+                        <td>Requested</td>
+                        <td class="text-end">
+                            <b t-out="props.calcData.requested"/>
+                            sets
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Available</td>
+                        <td class="text-end">
+                            <b t-out="Math.floor(props.calcData.available)"
+                               t-attf-class="{{ props.calcData.sufficient ? '' : 'text-danger' }}"/>
+                            sets
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <div t-if="props.calcData.sufficient" class="text-muted small">
+                <i class="fa fa-check-circle"/> Sufficient stock for this order.
+            </div>
+            <div t-else="" class="text-danger small">
+                <i class="fa fa-exclamation-triangle"/> Not enough stock to fulfil the requested quantity.
+            </div>
+        </div>
+    </t>
+
+
+</templates>

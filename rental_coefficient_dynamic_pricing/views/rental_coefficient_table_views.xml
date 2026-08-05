@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="rental_coefficient_table_view_list" model="ir.ui.view">
+        <field name="name">rental.coefficient.table.list</field>
+        <field name="model">rental.coefficient.table</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="coefficient_type_id"/>
+                <field name="duration_unit"/>
+                <field name="is_standard"/>
+                <field name="company_id" groups="base.group_multi_company" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="rental_coefficient_table_view_form" model="ir.ui.view">
+        <field name="name">rental.coefficient.table.form</field>
+        <field name="model">rental.coefficient.table</field>
+        <field name="arch" type="xml">
+            <form string="Coefficient Table">
+                <sheet>
+                    <widget name="web_ribbon" title="Standard"
+                            invisible="not is_standard"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name" placeholder="e.g. Standard Daily Coefficients"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Classification">
+                            <field name="coefficient_type_id"/>
+                            <field name="is_standard"
+                                   help="Mark as the default table for this company and coefficient type. Only one standard table per company and type is allowed."/>
+                            <field name="sequence"
+                                   help="Lower sequence = higher priority when multiple tables match."/>
+                        </group>
+                        <group string="Duration">
+                            <field name="duration_unit"
+                                   help="The time unit used for the 'As From Duration' thresholds in the lines below."/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Coefficient Lines" name="lines">
+                            <p class="text-muted mb-3">
+                                Define duration thresholds and their coefficients.
+                                The coefficient acts as a charged-duration multiplier:
+                                the final price = base price per unit × coefficient.
+                                <br/>
+                                Example: base price €20/day, 7-day rental with coefficient 5
+                                → charged price = €20 × 5 = €100.
+                            </p>
+                            <field name="line_ids">
+                                <list editable="bottom">
+                                    <field name="as_from_duration"
+                                           string="As From (Duration)"
+                                           help="Minimum rental duration (inclusive) for this coefficient to apply."/>
+                                    <field name="coefficient"
+                                           help="Charged-duration multiplier. Example: coefficient 5 for a 7-day rental means the customer pays for 5 units."/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="rental_coefficient_table_action" model="ir.actions.act_window">
+        <field name="name">Coefficient Tables</field>
+        <field name="res_model">rental.coefficient.table</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a new coefficient table
+            </p>
+            <p>
+                Coefficient tables define degressive pricing for rental durations.
+                Each line specifies a minimum duration threshold and a coefficient
+                (charged-duration multiplier).
+            </p>
+            <p>
+                Example: a product with a €20/day base price and a coefficient of 5
+                for 7 days will cost €100 instead of €140.
+            </p>
+        </field>
+    </record>
+
+</odoo>

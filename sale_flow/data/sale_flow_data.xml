@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Placeholder for future data records (e.g. default sequences, actions).
+         Currently empty — the module relies on user configuration for the
+         lost_broken_fee_product_id via Settings > Rental. -->
+</odoo>

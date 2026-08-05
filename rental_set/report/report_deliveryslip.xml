@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Extend the delivery slip to group Rental Set component moves under
+        a set header showing the parent set name and quantity.
+
+        Customer delivery slips show:
+          Set Name (x qty)
+            └ Component A    qty
+            └ Component B    qty
+
+        Internal pickings show the same flat component list (standard
+        behaviour) since the set parent has no stock move.
+    -->
+    <template id="report_delivery_document_rental_set"
+              inherit_id="stock.report_delivery_document"
+              priority="99">
+
+        <!-- Override the not-done table to group by rental set -->
+        <xpath expr="//table[@name='stock_move_table']//tbody" position="replace">
+            <tbody>
+                <t t-set="grouped" t-value="o._get_set_grouped_moves()"/>
+                <t t-foreach="grouped" t-as="group">
+
+                    <!-- ── Set group: header + indented components ── -->
+                    <t t-if="group['type'] == 'set'">
+                        <tr class="fw-bold" style="background-color: #f8f9fa;">
+                            <td colspan="3">
+                                <span t-out="group['set_line'].product_id.display_name"/>
+                                <span class="text-muted ms-2">
+                                    (x<t t-out="int(group['set_line'].product_uom_qty)
+                                               if group['set_line'].product_uom_qty == int(group['set_line'].product_uom_qty)
+                                               else group['set_line'].product_uom_qty"/>)
+                                </span>
+                            </td>
+                        </tr>
+                        <tr t-foreach="group['moves']" t-as="move">
+                            <td style="padding-left: 2em;">
+                                <span class="text-muted">└</span>
+                                <span t-field="move.product_id"/>
+                                <p t-if="move.description_picking and move.description_picking != move.product_id.name and move._get_report_description_picking()"
+                                   style="padding-left: 2em;">
+                                    <span t-out="move._get_report_description_picking()"
+                                          t-options="{'widget': 'text'}"/>
+                                </p>
+                            </td>
+                            <td class="o_td_quantity text-end">
+                                <span t-out="format_number(move.product_uom_qty)" class="text-nowrap"/>
+                                <span t-field="move.product_uom" groups="uom.group_uom"/>
+                            </td>
+                            <td class="o_td_quantity text-end">
+                                <span t-out="format_number(move.quantity)" class="text-nowrap"/>
+                                <span t-field="move.product_uom" groups="uom.group_uom"/>
+                            </td>
+                        </tr>
+                    </t>
+
+                    <!-- ── Regular (non-set) move ── -->
+                    <t t-elif="group['type'] == 'move'">
+                        <t t-set="move" t-value="group['move']"/>
+                        <tr>
+                            <td>
+                                <span t-field="move.product_id"/>
+                                <p t-if="move.description_picking and move.description_picking != move.product_id.name and move._get_report_description_picking()">
+                                    <span t-out="move._get_report_description_picking()"
+                                          t-options="{'widget': 'text'}"/>
+                                </p>
+                            </td>
+                            <td class="o_td_quantity text-end">
+                                <span t-out="format_number(move.product_uom_qty)" class="text-nowrap"/>
+                                <span t-field="move.product_uom" groups="uom.group_uom"/>
+                            </td>
+                            <td class="o_td_quantity text-end">
+                                <span t-out="format_number(move.quantity)" class="text-nowrap"/>
+                                <span t-field="move.product_uom" groups="uom.group_uom"/>
+                            </td>
+                        </tr>
+                    </t>
+
+                </t>
+            </tbody>
+        </xpath>
+
+    </template>
+
+</odoo>

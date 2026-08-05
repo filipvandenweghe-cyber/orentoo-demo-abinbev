@@ -1,0 +1,1243 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* sale_flow
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0+e\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-27 05:50+0000\n"
+"PO-Revision-Date: 2026-06-27 05:50+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: nl_NL\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. module: sale_flow
+#. odoo-python
+#: code:addons/sale_flow/services/sale_flow_lost_broken_service.py:0
+msgid "%(label)s/%(label2)s Fee — %(product)s"
+msgstr "%(label)s/%(label2)s kosten — %(product)s"
+
+#. module: sale_flow
+#. odoo-python
+#: code:addons/sale_flow/services/sale_flow_service.py:0
+msgid "%(product)s (added during delivery)"
+msgstr "%(product)s (toegevoegd tijdens levering)"
+
+#. module: sale_flow
+#. odoo-python
+#: code:addons/sale_flow/services/sale_flow_lost_broken_service.py:0
+msgid "%(type)s charge for %(product)s (%(qty)s units)"
+msgstr "%(type)s kosten voor %(product)s (%(qty)s eenheden)"
+
+#. module: sale_flow
+#: model_terms:ir.ui.view,arch_db:sale_flow.sale_flow_line_view_form
+msgid "<span>Invoice Lines</span>"
+msgstr "<span>Factuurlijnen</span>"
+
+#. module: sale_flow
+#: model_terms:ir.ui.view,arch_db:sale_flow.sale_flow_line_view_form
+msgid "<span>Outgoing Moves</span>"
+msgstr "<span>Uitgaande verplaatsingen</span>"
+
+#. module: sale_flow
+#: model_terms:ir.ui.view,arch_db:sale_flow.sale_flow_line_view_form
+msgid "<span>Return Moves</span>"
+msgstr "<span>Retourverplaatsingen</span>"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__message_needaction
+msgid "Action Needed"
+msgstr "Actie vereist"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__activity_ids
+msgid "Activities"
+msgstr "Activiteiten"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__activity_exception_decoration
+msgid "Activity Exception Decoration"
+msgstr "Activiteit uitzonderingsdecoratie"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__activity_state
+msgid "Activity State"
+msgstr "Activiteitsstatus"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__activity_type_icon
+msgid "Activity Type Icon"
+msgstr "Activiteitstype icoon"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__added_after_confirmation
+#: model_terms:ir.ui.view,arch_db:sale_flow.sale_flow_line_view_search
+msgid "Added After Confirmation"
+msgstr "Toegevoegd na bevestiging"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__added_during_delivery
+msgid "Added During Delivery"
+msgstr "Toegevoegd tijdens levering"
+
+#. module: sale_flow
+#. odoo-python
+#: code:addons/sale_flow/services/sale_flow_service.py:0
+msgid "Added during delivery on picking %s"
+msgstr "Toegevoegd tijdens levering op picking %s"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__message_attachment_count
+msgid "Attachment Count"
+msgstr "Aantal bijlagen"
+
+#. module: sale_flow
+#: model_terms:ir.ui.view,arch_db:sale_flow.sale_flow_line_view_form
+msgid "Audit"
+msgstr "Audit"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_product_product__auto_reconcile_delivered_qty
+#: model:ir.model.fields,field_description:sale_flow.field_product_template__auto_reconcile_delivered_qty
+msgid "Auto-reconcile Ordered Quantity"
+msgstr "Automatisch afstemmen bestelde hoeveelheid"
+
+#. module: sale_flow
+#. odoo-python
+#: code:addons/sale_flow/models/sale_order.py:0
+msgid ""
+"Auto-reconciled: ordered qty adjusted from %(old)s to %(new)s to match "
+"delivered"
+msgstr ""
+"Automatisch afgestemd: bestelde hvh aangepast van %(old)s naar %(new)s om "
+"overeen te komen met geleverd"
+
+#. module: sale_flow
+#. odoo-python
+#: code:addons/sale_flow/services/sale_flow_lost_broken_service.py:0
+#: model:ir.model.fields.selection,name:sale_flow.selection__sale_flow_line__state__broken
+msgid "Broken"
+msgstr "Gebroken"
+
+#. module: sale_flow
+#: model:ir.model.fields.selection,name:sale_flow.selection__sale_flow_line__commercial_policy__broken_charge
+msgid "Broken Charge"
+msgstr "Breukkosten"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__broken_qty
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_lost_broken_wizard_line__broken_qty
+msgid "Broken Qty"
+msgstr "Gebroken hvh"
+
+#. module: sale_flow
+#. odoo-python
+#: code:addons/sale_flow/services/sale_flow_lost_broken_service.py:0
+msgid ""
+"Broken item \"%(product)s\" (%(qty)s) returned. Repairs module not installed"
+" — item follows standard return flow."
+msgstr ""
+"Gebroken artikel \"%(product)s\" (%(qty)s) geretourneerd. Module Reparaties "
+"niet geïnstalleerd — artikel volgt standaard retourflow."
+
+#. module: sale_flow
+#. odoo-python
+#: code:addons/sale_flow/services/sale_flow_lost_broken_service.py:0
+msgid ""
+"Broken item \"%(product)s\" (%(qty)s) should be routed to repair location: "
+"%(location)s"
+msgstr ""
+"Gebroken artikel \"%(product)s\" (%(qty)s) moet worden doorgestuurd naar "
+"reparatielocatie: %(location)s"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__broken_lost_unit_price
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_lost_broken_wizard_line__broken_lost_unit_price
+msgid "Broken/Lost Unit Price"
+msgstr "Eenheidsprijs gebroken/verloren"
+
+#. module: sale_flow
+#: model_terms:ir.ui.view,arch_db:sale_flow.sale_flow_lost_broken_wizard_view_form
+msgid "Cancel"
+msgstr "Annuleren"
+
+#. module: sale_flow
+#: model:ir.model.fields.selection,name:sale_flow.selection__sale_flow_line__state__cancelled
+msgid "Cancelled"
+msgstr "Geannuleerd"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__cancelled_qty
+msgid "Cancelled Qty"
+msgstr "Geannuleerde hvh"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__change_note
+msgid "Change Note"
+msgstr "Wijzigingsnotitie"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__change_origin
+msgid "Change Origin"
+msgstr "Wijzigingsoorsprong"
+
+#. module: sale_flow
+#: model_terms:ir.ui.view,arch_db:sale_flow.sale_flow_line_view_search
+msgid "Changed"
+msgstr "Gewijzigd"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__was_changed_after_confirmation
+msgid "Changed After Confirmation"
+msgstr "Gewijzigd na bevestiging"
+
+#. module: sale_flow
+#: model_terms:ir.ui.view,arch_db:sale_flow.sale_flow_line_view_form
+msgid "Changes"
+msgstr "Wijzigingen"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__is_charge_only
+#: model_terms:ir.ui.view,arch_db:sale_flow.sale_flow_line_view_search
+msgid "Charge Only"
+msgstr "Alleen kosten"
+
+#. module: sale_flow
+#: model:ir.model.fields,help:sale_flow.field_sale_flow_line__is_charge_only
+msgid ""
+"Charge-only lines are invoiceable but never create stock or delivery moves."
+"  Used for lost/broken fee lines."
+msgstr ""
+"Lijnen met alleen kosten zijn factureerbaar maar creëren nooit voorraad- of "
+"leveringsverplaatsingen. Gebruikt voor verlies-/breukkosten."
+
+#. module: sale_flow
+#: model_terms:ir.ui.view,arch_db:sale_flow.sale_flow_line_view_form
+msgid "Classification"
+msgstr "Classificatie"
+
+#. module: sale_flow
+#: model_terms:ir.ui.view,arch_db:sale_flow.sale_flow_line_view_form
+msgid "Commercial Baseline"
+msgstr "Commerciële basis"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__commercial_policy
+#: model_terms:ir.ui.view,arch_db:sale_flow.sale_flow_line_view_search
+msgid "Commercial Policy"
+msgstr "Commercieel beleid"
+
+#. module: sale_flow
+#: model:ir.model,name:sale_flow.model_res_company
+msgid "Companies"
+msgstr "Bedrijven"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__company_id
+msgid "Company"
+msgstr "Bedrijf"
+
+#. module: sale_flow
+#: model:ir.model,name:sale_flow.model_res_config_settings
+msgid "Config Settings"
+msgstr "Configuratie-instellingen"
+
+#. module: sale_flow
+#: model_terms:ir.ui.view,arch_db:sale_flow.sale_flow_lost_broken_wizard_view_form
+msgid "Confirm"
+msgstr "Bevestigen"
+
+#. module: sale_flow
+#: model:ir.model.fields.selection,name:sale_flow.selection__sale_flow_line__state__confirmed
+msgid "Confirmed"
+msgstr "Bevestigd"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__confirmed_at
+msgid "Confirmed At"
+msgstr "Bevestigd op"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__confirmed_by_id
+msgid "Confirmed By"
+msgstr "Bevestigd door"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__confirmed_description
+msgid "Confirmed Description"
+msgstr "Bevestigde omschrijving"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__confirmed_discount
+msgid "Confirmed Discount (%)"
+msgstr "Bevestigde korting (%)"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__confirmed_qty
+msgid "Confirmed Qty"
+msgstr "Bevestigde hvh"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__confirmed_subtotal
+msgid "Confirmed Subtotal"
+msgstr "Bevestigd subtotaal"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__confirmed_unit_price
+msgid "Confirmed Unit Price"
+msgstr "Bevestigde eenheidsprijs"
+
+#. module: sale_flow
+#. odoo-python
+#: code:addons/sale_flow/services/sale_flow_invoice_service.py:0
+msgid "Confirmed: %(conf)s, Delivered: %(dlv)s"
+msgstr "Bevestigd: %(conf)s, Geleverd: %(dlv)s"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__create_uid
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_lost_broken_wizard__create_uid
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_lost_broken_wizard_line__create_uid
+msgid "Created by"
+msgstr "Aangemaakt door"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__create_date
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_lost_broken_wizard__create_date
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_lost_broken_wizard_line__create_date
+msgid "Created on"
+msgstr "Aangemaakt op"
+
+#. module: sale_flow
+#: model:ir.model.fields.selection,name:sale_flow.selection__sale_flow_line__commercial_policy__credit
+msgid "Credit"
+msgstr "Krediet"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__credited_qty
+msgid "Credited Qty"
+msgstr "Gecrediteerde hvh"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__currency_id
+msgid "Currency"
+msgstr "Valuta"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__current_qty
+msgid "Current Qty"
+msgstr "Huidige hvh"
+
+#. module: sale_flow
+#: model:ir.model.fields,help:sale_flow.field_sale_flow_line__current_qty
+msgid "Current ordered quantity (may differ from confirmed after changes)."
+msgstr ""
+"Huidige bestelde hoeveelheid (kan afwijken van bevestigd na wijzigingen)."
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_res_company__lost_broken_fee_product_id
+#: model:ir.model.fields,field_description:sale_flow.field_res_config_settings__lost_broken_fee_product_id
+#: model_terms:ir.ui.view,arch_db:sale_flow.res_config_settings_view_form_sale_flow
+msgid "Default Lost/Broken Fee Product"
+msgstr "Standaard product voor verlies-/breukkosten"
+
+#. module: sale_flow
+#: model:ir.model.fields,help:sale_flow.field_product_product__sales_price_broken_lost
+#: model:ir.model.fields,help:sale_flow.field_product_template__sales_price_broken_lost
+msgid ""
+"Default price charged when a rental product is lost or broken. If empty or "
+"zero, lost/broken invoice lines are still created with price 0."
+msgstr ""
+"Standaardprijs die wordt aangerekend wanneer een verhuurproduct verloren of "
+"gebroken is. Indien leeg of nul, worden factuurlijnen voor verlies/breuk "
+"toch aangemaakt met prijs 0."
+
+#. module: sale_flow
+#: model:ir.model.fields.selection,name:sale_flow.selection__sale_flow_line__state__delivered
+msgid "Delivered"
+msgstr "Geleverd"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__delivered_qty
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_lost_broken_wizard_line__delivered_qty
+msgid "Delivered Qty"
+msgstr "Geleverde hvh"
+
+#. module: sale_flow
+#: model:ir.model.fields.selection,name:sale_flow.selection__sale_flow_line__change_origin__delivery
+msgid "Delivery"
+msgstr "Levering"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__name
+msgid "Description"
+msgstr "Omschrijving"
+
+#. module: sale_flow
+#. odoo-python
+#: code:addons/sale_flow/services/sale_flow_service.py:0
+msgid "Discount changed from %(old)s%% to %(new)s%%"
+msgstr "Korting gewijzigd van %(old)s%% naar %(new)s%%"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_product_template__display_name
+#: model:ir.model.fields,field_description:sale_flow.field_res_company__display_name
+#: model:ir.model.fields,field_description:sale_flow.field_res_config_settings__display_name
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_invoice_service__display_name
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__display_name
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_lost_broken_service__display_name
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_lost_broken_wizard__display_name
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_lost_broken_wizard_line__display_name
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_return_service__display_name
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_service__display_name
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_sync_service__display_name
+#: model:ir.model.fields,field_description:sale_flow.field_sale_order__display_name
+#: model:ir.model.fields,field_description:sale_flow.field_sale_order_line__display_name
+#: model:ir.model.fields,field_description:sale_flow.field_stock_move__display_name
+#: model:ir.model.fields,field_description:sale_flow.field_stock_picking__display_name
+msgid "Display Name"
+msgstr "Weergavenaam"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_res_company__sale_flow_skip_invoice_logistics
+#: model:ir.model.fields,field_description:sale_flow.field_res_config_settings__sale_flow_skip_invoice_logistics
+#: model_terms:ir.ui.view,arch_db:sale_flow.res_config_settings_view_form_sale_flow_general
+msgid "Do not add on Invoice if added by Logistics"
+msgstr "Niet toevoegen op factuur als toegevoegd door logistiek"
+
+#. module: sale_flow
+#: model:ir.model.fields.selection,name:sale_flow.selection__sale_flow_line__state__draft
+msgid "Draft"
+msgstr "Concept"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__subtotal_effective
+msgid "Effective Subtotal"
+msgstr "Effectief subtotaal"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__unit_price_effective
+msgid "Effective Unit Price"
+msgstr "Effectieve eenheidsprijs"
+
+#. module: sale_flow
+#: model_terms:ir.ui.view,arch_db:sale_flow.res_config_settings_view_form_sale_flow
+msgid "Fee Product"
+msgstr "Kostenproduct"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_lost_broken_wizard_line__flow_line_id
+msgid "Flow Line"
+msgstr "Flowlijn"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_order__flow_line_count
+msgid "Flow Line Count"
+msgstr "Aantal flowlijnen"
+
+#. module: sale_flow
+#. odoo-python
+#: code:addons/sale_flow/models/sale_order.py:0
+#: model:ir.model.fields,field_description:sale_flow.field_sale_order__flow_line_ids
+#: model:ir.model.fields,field_description:sale_flow.field_sale_order_line__flow_line_ids
+#: model_terms:ir.ui.view,arch_db:sale_flow.sale_order_view_form_flow
+msgid "Flow Lines"
+msgstr "Flowlijnen"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__message_follower_ids
+msgid "Followers"
+msgstr "Volgers"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__message_partner_ids
+msgid "Followers (Partners)"
+msgstr "Volgers (Partners)"
+
+#. module: sale_flow
+#: model:ir.model.fields,help:sale_flow.field_sale_flow_line__activity_type_icon
+msgid "Font awesome icon e.g. fa-tasks"
+msgstr "Font Awesome icoon bijv. fa-tasks"
+
+#. module: sale_flow
+#: model:ir.model.fields.selection,name:sale_flow.selection__sale_flow_line__commercial_policy__free
+msgid "Free"
+msgstr "Gratis"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__has_message
+msgid "Has Message"
+msgstr "Heeft bericht"
+
+#. module: sale_flow
+#: model:ir.model.fields,help:sale_flow.field_sale_flow_line__set_path
+msgid "Hierarchical path for ordering/grouping within sets."
+msgstr "Hiërarchisch pad voor ordening/groepering binnen sets."
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_product_template__id
+#: model:ir.model.fields,field_description:sale_flow.field_res_company__id
+#: model:ir.model.fields,field_description:sale_flow.field_res_config_settings__id
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_invoice_service__id
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__id
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_lost_broken_service__id
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_lost_broken_wizard__id
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_lost_broken_wizard_line__id
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_return_service__id
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_service__id
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_sync_service__id
+#: model:ir.model.fields,field_description:sale_flow.field_sale_order__id
+#: model:ir.model.fields,field_description:sale_flow.field_sale_order_line__id
+#: model:ir.model.fields,field_description:sale_flow.field_stock_move__id
+#: model:ir.model.fields,field_description:sale_flow.field_stock_picking__id
+msgid "ID"
+msgstr "ID"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__activity_exception_icon
+msgid "Icon"
+msgstr "Icoon"
+
+#. module: sale_flow
+#: model:ir.model.fields,help:sale_flow.field_sale_flow_line__activity_exception_icon
+msgid "Icon to indicate an exception activity."
+msgstr "Icoon om een uitzonderingsactiviteit aan te geven."
+
+#. module: sale_flow
+#: model_terms:ir.ui.view,arch_db:sale_flow.sale_flow_line_view_form
+msgid "Identity"
+msgstr "Identiteit"
+
+#. module: sale_flow
+#: model:ir.model.fields,help:sale_flow.field_sale_flow_line__skip_delivery
+msgid "If True, this line must never create delivery moves."
+msgstr "Indien waar, mag deze lijn nooit leveringsverplaatsingen aanmaken."
+
+#. module: sale_flow
+#: model:ir.model.fields,help:sale_flow.field_sale_flow_line__message_needaction
+msgid "If checked, new messages require your attention."
+msgstr "Indien aangevinkt, vereisen nieuwe berichten uw aandacht."
+
+#. module: sale_flow
+#: model:ir.model.fields,help:sale_flow.field_sale_flow_line__message_has_error
+#: model:ir.model.fields,help:sale_flow.field_sale_flow_line__message_has_sms_error
+msgid "If checked, some messages have a delivery error."
+msgstr "Indien aangevinkt, hebben sommige berichten een leveringsfout."
+
+#. module: sale_flow
+#: model:ir.model.fields.selection,name:sale_flow.selection__sale_flow_line__commercial_policy__included
+msgid "Included"
+msgstr "Inbegrepen"
+
+#. module: sale_flow
+#: model:ir.actions.server,name:sale_flow.action_initialize_flow_lines
+msgid "Initialize Sale Flow Lines"
+msgstr "Verkoopflowlijnen initialiseren"
+
+#. module: sale_flow
+#: model:ir.model.fields.selection,name:sale_flow.selection__sale_flow_line__change_origin__invoice
+msgid "Invoice"
+msgstr "Factuur"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__invoice_candidate_qty
+msgid "Invoice Candidate Qty"
+msgstr "Factuurkandidaat hvh"
+
+#. module: sale_flow
+#: model:ir.model.fields.selection,name:sale_flow.selection__sale_flow_line__commercial_policy__invoice_extra
+msgid "Invoice Extra"
+msgstr "Extra facturatie"
+
+#. module: sale_flow
+#. odoo-python
+#: code:addons/sale_flow/models/sale_flow_line.py:0
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__invoice_line_ids
+msgid "Invoice Lines"
+msgstr "Factuurlijnen"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__invoice_warning_level
+msgid "Invoice Warning"
+msgstr "Factuurwaarschuwing"
+
+#. module: sale_flow
+#: model:ir.model.fields.selection,name:sale_flow.selection__sale_flow_line__state__invoiced
+msgid "Invoiced"
+msgstr "Gefactureerd"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__invoiced_qty
+msgid "Invoiced Qty"
+msgstr "Gefactureerde hvh"
+
+#. module: sale_flow
+#: model_terms:ir.ui.view,arch_db:sale_flow.sale_flow_line_view_form
+msgid "Invoicing"
+msgstr "Facturatie"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__message_is_follower
+msgid "Is Follower"
+msgstr "Is volger"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__is_rental
+msgid "Is Rental"
+msgstr "Is verhuur"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__is_sale
+msgid "Is Sale"
+msgstr "Is verkoop"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__is_set_component
+msgid "Is Set Component"
+msgstr "Is setcomponent"
+
+#. module: sale_flow
+#: model:ir.model.fields,help:sale_flow.field_sale_flow_lost_broken_wizard_line__lost_qty
+msgid "Items not returned at all."
+msgstr "Artikelen helemaal niet geretourneerd."
+
+#. module: sale_flow
+#: model:ir.model.fields,help:sale_flow.field_sale_flow_lost_broken_wizard_line__broken_qty
+msgid "Items returned damaged."
+msgstr "Artikelen beschadigd geretourneerd."
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__last_flow_update_at
+msgid "Last Flow Update"
+msgstr "Laatste flowupdate"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__last_flow_update_by_id
+msgid "Last Flow Update By"
+msgstr "Laatste flowupdate door"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__write_uid
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_lost_broken_wizard__write_uid
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_lost_broken_wizard_line__write_uid
+msgid "Last Updated by"
+msgstr "Laatst bijgewerkt door"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__write_date
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_lost_broken_wizard__write_date
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_lost_broken_wizard_line__write_date
+msgid "Last Updated on"
+msgstr "Laatst bijgewerkt op"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_lost_broken_wizard__line_ids
+msgid "Lines"
+msgstr "Lijnen"
+
+#. module: sale_flow
+#: model:ir.model.fields,help:sale_flow.field_sale_flow_line__visible_to_customer
+msgid ""
+"Lines with confirmed_qty=0 (added after confirmation or during delivery) are"
+" internal by default unless explicitly made visible."
+msgstr ""
+"Lijnen met bevestigde_hvh=0 (toegevoegd na bevestiging of tijdens levering) "
+"zijn standaard intern tenzij expliciet zichtbaar gemaakt."
+
+#. module: sale_flow
+#: model:ir.model.fields,help:sale_flow.field_stock_move__sale_flow_line_id
+msgid "Link to the sale.flow.line this move contributes to."
+msgstr "Link naar de verkoopflowlijn waaraan deze verplaatsing bijdraagt."
+
+#. module: sale_flow
+#. odoo-python
+#: code:addons/sale_flow/services/sale_flow_lost_broken_service.py:0
+#: model:ir.model.fields.selection,name:sale_flow.selection__sale_flow_line__state__lost
+msgid "Lost"
+msgstr "Verloren"
+
+#. module: sale_flow
+#. odoo-python
+#: code:addons/sale_flow/wizard/sale_flow_lost_broken_wizard.py:0
+msgid ""
+"Lost + Broken (%(total)s) cannot exceed missing quantity (%(missing)s) for "
+"product %(product)s."
+msgstr ""
+"Verloren + Gebroken (%(total)s) kan de ontbrekende hoeveelheid (%(missing)s)"
+" niet overschrijden voor product %(product)s."
+
+#. module: sale_flow
+#. odoo-python
+#: code:addons/sale_flow/wizard/sale_flow_lost_broken_wizard.py:0
+msgid ""
+"Lost + Broken (%(total)s) cannot exceed missing quantity (%(missing)s)."
+msgstr ""
+"Verloren + Gebroken (%(total)s) kan de ontbrekende hoeveelheid (%(missing)s)"
+" niet overschrijden."
+
+#. module: sale_flow
+#: model:ir.model.fields.selection,name:sale_flow.selection__sale_flow_line__commercial_policy__lost_charge
+msgid "Lost Charge"
+msgstr "Verlieskosten"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__lost_qty
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_lost_broken_wizard_line__lost_qty
+msgid "Lost Qty"
+msgstr "Verloren hvh"
+
+#. module: sale_flow
+#: model:ir.model,name:sale_flow.model_sale_flow_lost_broken_wizard
+msgid "Lost/Broken Items Wizard"
+msgstr "Wizard verloren/gebroken artikelen"
+
+#. module: sale_flow
+#: model:ir.model,name:sale_flow.model_sale_flow_lost_broken_wizard_line
+msgid "Lost/Broken Wizard Line"
+msgstr "Wizardlijn verloren/gebroken"
+
+#. module: sale_flow
+#: model:ir.model.fields.selection,name:sale_flow.selection__sale_flow_line__change_origin__manual
+msgid "Manual"
+msgstr "Handmatig"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__message_has_error
+msgid "Message Delivery error"
+msgstr "Berichtleveringsfout"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__message_ids
+msgid "Messages"
+msgstr "Berichten"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_lost_broken_wizard_line__missing_qty
+msgid "Missing Qty"
+msgstr "Ontbrekende hvh"
+
+#. module: sale_flow
+#. odoo-python
+#: code:addons/sale_flow/services/sale_flow_return_service.py:0
+#: model_terms:ir.ui.view,arch_db:sale_flow.sale_flow_lost_broken_wizard_view_form
+msgid "Missing Rental Items"
+msgstr "Ontbrekende verhuurartikelen"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__my_activity_date_deadline
+msgid "My Activity Deadline"
+msgstr "Mijn activiteitsdeadline"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__activity_calendar_event_id
+msgid "Next Activity Calendar Event"
+msgstr "Volgende activiteitsagenda-evenement"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__activity_date_deadline
+msgid "Next Activity Deadline"
+msgstr "Volgende activiteitsdeadline"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__activity_summary
+msgid "Next Activity Summary"
+msgstr "Samenvatting volgende activiteit"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__activity_type_id
+msgid "Next Activity Type"
+msgstr "Type volgende activiteit"
+
+#. module: sale_flow
+#: model_terms:ir.actions.act_window,help:sale_flow.sale_flow_line_action
+msgid "No flow lines yet"
+msgstr "Nog geen flowlijnen"
+
+#. module: sale_flow
+#: model:ir.model.fields.selection,name:sale_flow.selection__sale_flow_line__invoice_warning_level__none
+msgid "None"
+msgstr "Geen"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__message_needaction_counter
+msgid "Number of Actions"
+msgstr "Aantal acties"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__message_has_error_counter
+msgid "Number of errors"
+msgstr "Aantal fouten"
+
+#. module: sale_flow
+#: model:ir.model.fields,help:sale_flow.field_sale_flow_line__message_needaction_counter
+msgid "Number of messages requiring action"
+msgstr "Aantal berichten die actie vereisen"
+
+#. module: sale_flow
+#: model:ir.model.fields,help:sale_flow.field_sale_flow_line__message_has_error_counter
+msgid "Number of messages with delivery error"
+msgstr "Aantal berichten met leveringsfout"
+
+#. module: sale_flow
+#: model_terms:ir.ui.view,arch_db:sale_flow.sale_flow_line_view_form
+msgid "Operational"
+msgstr "Operationeel"
+
+#. module: sale_flow
+#: model:ir.model.fields.selection,name:sale_flow.selection__sale_flow_line__invoice_warning_level__orange
+msgid "Orange"
+msgstr "Oranje"
+
+#. module: sale_flow
+#: model:ir.model.fields.selection,name:sale_flow.selection__sale_flow_line__change_origin__order
+msgid "Order"
+msgstr "Bestelling"
+
+#. module: sale_flow
+#. odoo-python
+#: code:addons/sale_flow/services/sale_flow_service.py:0
+msgid "Order line deleted — treated as cancellation"
+msgstr "Bestelregel verwijderd — behandeld als annulering"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__origin_flow_line_id
+msgid "Origin Flow Line"
+msgstr "Oorspronkelijke flowlijn"
+
+#. module: sale_flow
+#. odoo-python
+#: code:addons/sale_flow/models/sale_flow_line.py:0
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__outgoing_move_ids
+msgid "Outgoing Moves"
+msgstr "Uitgaande verplaatsingen"
+
+#. module: sale_flow
+#: model:ir.model.fields.selection,name:sale_flow.selection__sale_flow_line__state__partially_returned
+msgid "Partially Returned"
+msgstr "Gedeeltelijk geretourneerd"
+
+#. module: sale_flow
+#: model:ir.model.fields.selection,name:sale_flow.selection__sale_flow_line__state__prepared
+msgid "Prepared"
+msgstr "Voorbereid"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__prepared_qty
+msgid "Prepared Qty"
+msgstr "Voorbereide hvh"
+
+#. module: sale_flow
+#. odoo-python
+#: code:addons/sale_flow/services/sale_flow_service.py:0
+msgid "Price changed from %(old)s to %(new)s"
+msgstr "Prijs gewijzigd van %(old)s naar %(new)s"
+
+#. module: sale_flow
+#: model:ir.model.fields,help:sale_flow.field_sale_flow_lost_broken_wizard_line__broken_lost_unit_price
+msgid "Price charged per unit for lost or broken items."
+msgstr "Prijs per eenheid voor verloren of gebroken artikelen."
+
+#. module: sale_flow
+#: model:ir.model,name:sale_flow.model_product_template
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__product_id
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_lost_broken_wizard_line__product_id
+msgid "Product"
+msgstr "Product"
+
+#. module: sale_flow
+#: model_terms:ir.ui.view,arch_db:sale_flow.res_config_settings_view_form_sale_flow
+msgid ""
+"Product used for lost/broken charge invoice lines. Determines tax and "
+"accounting behavior."
+msgstr ""
+"Product gebruikt voor factuurlijnen van verlies-/breukkosten. Bepaalt het "
+"fiscale en boekhoudkundige gedrag."
+
+#. module: sale_flow
+#: model:ir.model.fields,help:sale_flow.field_res_config_settings__lost_broken_fee_product_id
+msgid ""
+"Product used for lost/broken charge invoice lines. Determines the tax and "
+"accounting behavior."
+msgstr ""
+"Product gebruikt voor factuurlijnen van verlies-/breukkosten. Bepaalt het "
+"fiscale en boekhoudkundige gedrag."
+
+#. module: sale_flow
+#: model:ir.model.fields,help:sale_flow.field_res_company__lost_broken_fee_product_id
+msgid ""
+"Product used for lost/broken charge invoice lines. Determines the tax and "
+"accounting behavior. The invoice line description will mention the actual "
+"lost/broken product (e.g. \"Lost/Broken Fee -- Speaker A\")."
+msgstr ""
+"Product gebruikt voor factuurlijnen van verlies-/breukkosten. Bepaalt het "
+"fiscale en boekhoudkundige gedrag. De factuurlijnomschrijving vermeldt het "
+"werkelijke verloren/gebroken product (bijv. \"Verlies-/breukkosten -- "
+"Speaker A\")."
+
+#. module: sale_flow
+#. odoo-python
+#: code:addons/sale_flow/wizard/sale_flow_lost_broken_wizard.py:0
+msgid "Quantity Warning"
+msgstr "Hoeveelheidswaarschuwing"
+
+#. module: sale_flow
+#. odoo-python
+#: code:addons/sale_flow/services/sale_flow_service.py:0
+msgid "Quantity capped at delivered qty %(qty)s"
+msgstr "Hoeveelheid beperkt tot geleverde hvh %(qty)s"
+
+#. module: sale_flow
+#. odoo-python
+#: code:addons/sale_flow/services/sale_flow_service.py:0
+msgid "Quantity decreased from %(old)s to %(new)s"
+msgstr "Hoeveelheid verlaagd van %(old)s naar %(new)s"
+
+#. module: sale_flow
+#. odoo-python
+#: code:addons/sale_flow/services/sale_flow_service.py:0
+msgid "Quantity increased from %(old)s to %(new)s"
+msgstr "Hoeveelheid verhoogd van %(old)s naar %(new)s"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__rating_ids
+msgid "Ratings"
+msgstr "Beoordelingen"
+
+#. module: sale_flow
+#: model:ir.model.fields.selection,name:sale_flow.selection__sale_flow_line__invoice_warning_level__red
+msgid "Red"
+msgstr "Rood"
+
+#. module: sale_flow
+#: model:ir.model.fields,help:sale_flow.field_sale_flow_line__origin_flow_line_id
+msgid "Reference to the original flow line (e.g. for lost/broken charges)."
+msgstr ""
+"Verwijzing naar de oorspronkelijke flowlijn (bijv. voor "
+"verlies-/breukkosten)."
+
+#. module: sale_flow
+#: model_terms:ir.ui.view,arch_db:sale_flow.sale_flow_line_view_search
+msgid "Rental"
+msgstr "Verhuur"
+
+#. module: sale_flow
+#: model:ir.model.fields.selection,name:sale_flow.selection__sale_flow_line__commercial_policy__replacement
+msgid "Replacement"
+msgstr "Vervanging"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__activity_user_id
+msgid "Responsible User"
+msgstr "Verantwoordelijke gebruiker"
+
+#. module: sale_flow
+#: model:ir.model.fields.selection,name:sale_flow.selection__sale_flow_line__change_origin__return
+msgid "Return"
+msgstr "Retour"
+
+#. module: sale_flow
+#. odoo-python
+#: code:addons/sale_flow/models/sale_flow_line.py:0
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__return_move_ids
+msgid "Return Moves"
+msgstr "Retourverplaatsingen"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_lost_broken_wizard__picking_id
+msgid "Return Picking"
+msgstr "Retourbon"
+
+#. module: sale_flow
+#: model:ir.model.fields.selection,name:sale_flow.selection__sale_flow_line__state__returned
+msgid "Returned"
+msgstr "Geretourneerd"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__returned_qty
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_lost_broken_wizard_line__returned_qty
+msgid "Returned Qty"
+msgstr "Geretourneerde hvh"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__message_has_sms_error
+msgid "SMS Delivery error"
+msgstr "SMS-leveringsfout"
+
+#. module: sale_flow
+#: model_terms:ir.ui.view,arch_db:sale_flow.sale_flow_line_view_search
+msgid "Sale"
+msgstr "Verkoop"
+
+#. module: sale_flow
+#: model_terms:ir.ui.view,arch_db:sale_flow.product_template_view_form_flow
+msgid "Sale Flow"
+msgstr "Verkoopflow"
+
+#. module: sale_flow
+#: model:ir.model,name:sale_flow.model_sale_flow_invoice_service
+msgid "Sale Flow Invoice Service"
+msgstr "Verkoopflow facturatieservice"
+
+#. module: sale_flow
+#: model:ir.model,name:sale_flow.model_sale_flow_line
+#: model:ir.model.fields,field_description:sale_flow.field_stock_move__sale_flow_line_id
+#: model_terms:ir.ui.view,arch_db:sale_flow.sale_flow_line_view_form
+msgid "Sale Flow Line"
+msgstr "Verkoopflowlijn"
+
+#. module: sale_flow
+#: model:ir.actions.act_window,name:sale_flow.sale_flow_line_action
+#: model:ir.ui.menu,name:sale_flow.sale_flow_line_menu
+#: model_terms:ir.ui.view,arch_db:sale_flow.sale_flow_line_view_list
+#: model_terms:ir.ui.view,arch_db:sale_flow.sale_flow_line_view_search
+msgid "Sale Flow Lines"
+msgstr "Verkoopflowlijnen"
+
+#. module: sale_flow
+#: model:ir.model,name:sale_flow.model_sale_flow_lost_broken_service
+msgid "Sale Flow Lost/Broken Service"
+msgstr "Verkoopflow verloren/gebroken service"
+
+#. module: sale_flow
+#: model:ir.model,name:sale_flow.model_sale_flow_return_service
+msgid "Sale Flow Return Service"
+msgstr "Verkoopflow retourservice"
+
+#. module: sale_flow
+#: model:ir.model,name:sale_flow.model_sale_flow_service
+msgid "Sale Flow Service"
+msgstr "Verkoopflow service"
+
+#. module: sale_flow
+#: model:ir.model,name:sale_flow.model_sale_flow_sync_service
+msgid "Sale Flow Sync Service"
+msgstr "Verkoopflow synchronisatieservice"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__sale_order_id
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_lost_broken_wizard__sale_order_id
+#: model_terms:ir.ui.view,arch_db:sale_flow.sale_flow_line_view_search
+msgid "Sale Order"
+msgstr "Verkooporder"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__sale_line_id
+msgid "Sale Order Line"
+msgstr "Verkooporderregel"
+
+#. module: sale_flow
+#: model_terms:ir.actions.act_window,help:sale_flow.sale_flow_line_action
+msgid ""
+"Sale flow lines are created automatically when sale orders\n"
+"                are confirmed.  They track the relationship between what\n"
+"                was agreed, delivered, returned, and invoiced."
+msgstr ""
+"Verkoopflowlijnen worden automatisch aangemaakt wanneer verkooporders\n"
+"                worden bevestigd. Ze volgen de relatie tussen wat\n"
+"                is overeengekomen, geleverd, geretourneerd en gefactureerd."
+
+#. module: sale_flow
+#. odoo-python
+#: code:addons/sale_flow/services/sale_flow_return_service.py:0
+msgid "Sale return: %(qty)s units returned"
+msgstr "Verkoopretour: %(qty)s eenheden geretourneerd"
+
+#. module: sale_flow
+#: model:ir.model,name:sale_flow.model_sale_order
+msgid "Sales Order"
+msgstr "Verkooporder"
+
+#. module: sale_flow
+#: model:ir.model,name:sale_flow.model_sale_order_line
+msgid "Sales Order Line"
+msgstr "Verkooporderregel"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_product_product__sales_price_broken_lost
+#: model:ir.model.fields,field_description:sale_flow.field_product_template__sales_price_broken_lost
+msgid "Sales Price Broken / Lost"
+msgstr "Verkoopprijs gebroken / verloren"
+
+#. module: sale_flow
+#: model_terms:ir.ui.view,arch_db:sale_flow.res_config_settings_view_form_sale_flow
+msgid "Select a service product"
+msgstr "Selecteer een dienstproduct"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__sequence
+msgid "Sequence"
+msgstr "Volgorde"
+
+#. module: sale_flow
+#: model_terms:ir.ui.view,arch_db:sale_flow.sale_flow_line_view_form
+msgid "Set Hierarchy"
+msgstr "Sethiërarchie"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__set_parent_flow_line_id
+msgid "Set Parent Flow Line"
+msgstr "Bovenliggende setflowlijn"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__set_parent_sale_line_id
+msgid "Set Parent Sale Line"
+msgstr "Bovenliggende setverkooplijn"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__set_path
+msgid "Set Path"
+msgstr "Setpad"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__set_root_flow_line_id
+msgid "Set Root Flow Line"
+msgstr "Hoofd-setflowlijn"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__skip_delivery
+msgid "Skip Delivery"
+msgstr "Levering overslaan"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__state
+#: model_terms:ir.ui.view,arch_db:sale_flow.sale_flow_line_view_search
+msgid "State"
+msgstr "Status"
+
+#. module: sale_flow
+#: model:ir.model.fields,help:sale_flow.field_sale_flow_line__activity_state
+msgid ""
+"Status based on activities\n"
+"Overdue: Due date is already passed\n"
+"Today: Activity date is today\n"
+"Planned: Future activities."
+msgstr ""
+"Status op basis van activiteiten\n"
+"Vervallen: Vervaldatum is verstreken\n"
+"Vandaag: Activiteitsdatum is vandaag\n"
+"Gepland: Toekomstige activiteiten."
+
+#. module: sale_flow
+#: model:ir.model,name:sale_flow.model_stock_move
+msgid "Stock Move"
+msgstr "Voorraadverplaatsing"
+
+#. module: sale_flow
+#: model:ir.model.fields.selection,name:sale_flow.selection__sale_flow_line__change_origin__system
+msgid "System"
+msgstr "Systeem"
+
+#. module: sale_flow
+#: model:ir.model,name:sale_flow.model_stock_picking
+msgid "Transfer"
+msgstr "Overdracht"
+
+#. module: sale_flow
+#: model:ir.model.fields,help:sale_flow.field_sale_flow_line__activity_exception_decoration
+msgid "Type of the exception activity on record."
+msgstr "Type uitzonderingsactiviteit op het record."
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__product_uom_id
+msgid "Unit of Measure"
+msgstr "Maateenheid"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__visible_to_customer
+msgid "Visible to Customer"
+msgstr "Zichtbaar voor klant"
+
+#. module: sale_flow
+#: model_terms:ir.ui.view,arch_db:sale_flow.sale_flow_line_view_search
+msgid "Warning Level"
+msgstr "Waarschuwingsniveau"
+
+#. module: sale_flow
+#: model_terms:ir.ui.view,arch_db:sale_flow.sale_flow_line_view_search
+msgid "Warning: Orange"
+msgstr "Waarschuwing: Oranje"
+
+#. module: sale_flow
+#: model_terms:ir.ui.view,arch_db:sale_flow.sale_flow_line_view_search
+msgid "Warning: Red"
+msgstr "Waarschuwing: Rood"
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_line__website_message_ids
+msgid "Website Messages"
+msgstr "Websiteberichten"
+
+#. module: sale_flow
+#: model:ir.model.fields,help:sale_flow.field_sale_flow_line__website_message_ids
+msgid "Website communication history"
+msgstr "Website communicatiegeschiedenis"
+
+#. module: sale_flow
+#: model:ir.model.fields,help:sale_flow.field_res_config_settings__sale_flow_skip_invoice_logistics
+#: model_terms:ir.ui.view,arch_db:sale_flow.res_config_settings_view_form_sale_flow_general
+msgid ""
+"When enabled, products added by logistics during delivery will NOT be "
+"automatically added to the invoice."
+msgstr ""
+"Indien ingeschakeld, worden producten die door logistiek zijn toegevoegd "
+"tijdens levering NIET automatisch aan de factuur toegevoegd."
+
+#. module: sale_flow
+#: model:ir.model.fields,help:sale_flow.field_res_company__sale_flow_skip_invoice_logistics
+msgid ""
+"When enabled, products added by logistics during delivery will NOT be "
+"automatically added to the invoice. When disabled (default), all delivered "
+"sale articles are added to the invoice regardless of who added them."
+msgstr ""
+"Indien ingeschakeld, worden producten die door logistiek zijn toegevoegd "
+"tijdens levering NIET automatisch aan de factuur toegevoegd. Indien "
+"uitgeschakeld (standaard), worden alle geleverde verkoopartikelen aan de "
+"factuur toegevoegd ongeacht wie ze heeft toegevoegd."
+
+#. module: sale_flow
+#: model:ir.model.fields,help:sale_flow.field_product_product__auto_reconcile_delivered_qty
+#: model:ir.model.fields,help:sale_flow.field_product_template__auto_reconcile_delivered_qty
+msgid ""
+"When enabled, the ordered quantity on the sale order line is automatically "
+"adjusted to match the actually delivered quantity once all logistics are "
+"complete (all pickings done/cancelled). This prevents the \"upselling\" "
+"status and ensures the invoice reflects reality. When disabled (default), "
+"standard Odoo behavior applies and the user must reconcile manually."
+msgstr ""
+"Indien ingeschakeld, wordt de bestelde hoeveelheid op de verkooporderregel "
+"automatisch aangepast om overeen te komen met de werkelijk geleverde "
+"hoeveelheid zodra alle logistiek is voltooid (alle pickings "
+"gedaan/geannuleerd). Dit voorkomt de \"upselling\"-status en zorgt ervoor "
+"dat de factuur de werkelijkheid weerspiegelt. Indien uitgeschakeld "
+"(standaard), is het standaard Odoo-gedrag van toepassing en moet de "
+"gebruiker handmatig afstemmen."
+
+#. module: sale_flow
+#: model:ir.model.fields,field_description:sale_flow.field_sale_flow_lost_broken_wizard_line__wizard_id
+msgid "Wizard"
+msgstr "Wizard"
+
+#. module: sale_flow
+#. odoo-python
+#: code:addons/sale_flow/models/sale_flow_line.py:0
+msgid "id"
+msgstr "id"
+
+#. module: sale_flow
+#: model:ir.model.fields,help:sale_flow.field_sale_flow_line__invoice_warning_level
+msgid ""
+"orange = operational/logistic change but invoice value does not exceed agreed order value.\n"
+"red = invoice value increases because of lost/broken charges or explicit invoice increase."
+msgstr ""
+"oranje = operationele/logistieke wijziging maar factuurwaarde overschrijdt de overeengekomen orderwaarde niet.\n"
+"rood = factuurwaarde stijgt door verlies-/breukkosten of expliciete factuurverhoging."
+
+#. module: sale_flow
+#. odoo-python
+#: code:addons/sale_flow/models/sale_order.py:0
+msgid "sale_order_id"
+msgstr "sale_order_id"

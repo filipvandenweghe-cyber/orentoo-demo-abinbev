@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="rental_set_add_component_wizard_form" model="ir.ui.view">
+        <field name="name">rental.set.add.component.wizard.form</field>
+        <field name="model">rental.set.add.component.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Add Component to Set">
+                <group>
+                    <field name="set_name" readonly="1"/>
+                </group>
+                <group>
+                    <field name="product_id" autofocus="1"/>
+                    <field name="quantity_per_set"/>
+                    <field name="visible_to_customer" widget="boolean_toggle"/>
+                </group>
+                <footer>
+                    <button name="action_confirm"
+                            type="object"
+                            string="Add Component"
+                            class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

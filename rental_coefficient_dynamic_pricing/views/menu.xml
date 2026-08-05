@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================ -->
+    <!-- Rental app → Configuration → Coefficients                    -->
+    <!-- ============================================================ -->
+    <menuitem
+        id="menu_rental_coefficients"
+        name="Coefficients"
+        parent="sale_renting.menu_rental_config"
+        sequence="20"
+    />
+    <menuitem
+        id="menu_rental_coefficient_types"
+        name="Coefficient Types"
+        parent="menu_rental_coefficients"
+        action="rental_coefficient_type_action"
+        sequence="10"
+    />
+    <menuitem
+        id="menu_rental_coefficient_tables"
+        name="Coefficient Tables"
+        parent="menu_rental_coefficients"
+        action="rental_coefficient_table_action"
+        sequence="20"
+    />
+
+    <!-- ============================================================ -->
+    <!-- Rental app → Configuration → Dynamic Pricing                 -->
+    <!-- ============================================================ -->
+    <menuitem
+        id="menu_rental_dynamic_pricing"
+        name="Dynamic Pricing"
+        parent="sale_renting.menu_rental_config"
+        sequence="30"
+    />
+    <menuitem
+        id="menu_rental_dynamic_pricing_tables"
+        name="Dynamic Pricing Tables"
+        parent="menu_rental_dynamic_pricing"
+        action="rental_dynamic_pricing_table_action"
+        sequence="10"
+    />
+
+    <!-- ============================================================ -->
+    <!-- Sales app → Configuration → Coefficients                     -->
+    <!-- ============================================================ -->
+    <menuitem
+        id="menu_sale_coefficients"
+        name="Coefficients"
+        parent="sale.menu_sale_config"
+        sequence="60"
+    />
+    <menuitem
+        id="menu_sale_coefficient_types"
+        name="Coefficient Types"
+        parent="menu_sale_coefficients"
+        action="rental_coefficient_type_action"
+        sequence="10"
+    />
+    <menuitem
+        id="menu_sale_coefficient_tables"
+        name="Coefficient Tables"
+        parent="menu_sale_coefficients"
+        action="rental_coefficient_table_action"
+        sequence="20"
+    />
+
+    <!-- ============================================================ -->
+    <!-- Sales app → Configuration → Dynamic Pricing                  -->
+    <!-- ============================================================ -->
+    <menuitem
+        id="menu_sale_dynamic_pricing"
+        name="Dynamic Pricing"
+        parent="sale.menu_sale_config"
+        sequence="70"
+    />
+    <menuitem
+        id="menu_sale_dynamic_pricing_tables"
+        name="Dynamic Pricing Tables"
+        parent="menu_sale_dynamic_pricing"
+        action="rental_dynamic_pricing_table_action"
+        sequence="10"
+    />
+
+</odoo>

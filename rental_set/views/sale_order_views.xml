@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Extend the internal Sale Order form view for Rental Set hierarchy.
+
+        Visual scheme (internal list)
+        ──────────────────────────────────────────────────────────────────────
+        Row type                       │ Fold column          │ Decoration
+        ───────────────────────────────┼──────────────────────┼────────────────────
+        Normal line                    │ (empty)              │ (standard)
+        Top-level set parent           │ ▼ / ▶ (chevron btn) │ bold
+        Nested set (set + component)   │ └─▼ / └─▶           │ blue
+        Visible leaf component         │ └─  (indent label)   │ muted
+        Hidden leaf component          │ └─  (indent label)   │ amber
+        ──────────────────────────────────────────────────────────────────────
+
+        Collapse / expand
+        ──────────────────────────────────────────────────────────────────────
+        Clicking the chevron on a set parent calls record.update() to toggle
+        set_components_folded.  The JS renderer (rental_set_list_renderer.js)
+        reacts by adding / removing the CSS class `o_rental_set_hidden`
+        (display:none) on every descendant component row.
+
+        Add order-specific component
+        ──────────────────────────────────────────────────────────────────────
+        Opening the inline dialog of any set parent line shows an
+        "Add Component" button that opens rental.set.add.component.wizard.
+        The wizard creates a new sale.order.line without touching the template.
+    -->
+    <record id="sale_order_form_view_rental_set" model="ir.ui.view">
+        <field name="name">sale.order.form.rental_set</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+
+            <!-- ── 1. Invisible carrier fields ────────────────────────────── -->
+            <xpath expr="//field[@name='order_line']//list//field[@name='display_type']"
+                   position="after">
+                <field name="is_set"            column_invisible="True"/>
+                <field name="is_set_component"  column_invisible="True"/>
+                <field name="set_level"         column_invisible="True"/>
+                <field name="set_sequence_path" column_invisible="True"/>
+                <field name="set_parent_line_id" column_invisible="True"/>
+                <field name="set_indent_label"  column_invisible="True"/>
+                <field name="set_pricing_mode"  column_invisible="True"/>
+                <field name="set_allocated_price" column_invisible="True"/>
+                <field name="set_availability"   column_invisible="True"/>
+            </xpath>
+
+            <!-- ── 2. Row-level decorations ───────────────────────────────── -->
+            <!--
+                decoration-warning merges the standard archived-product condition
+                so we do not accidentally drop that existing highlight.
+            -->
+            <xpath expr="//field[@name='order_line']//list"
+                   position="attributes">
+                <attribute name="decoration-bf">is_set and not is_set_component</attribute>
+                <attribute name="decoration-primary">is_set and is_set_component</attribute>
+                <attribute name="decoration-muted">is_set_component and not is_set and visible_to_customer</attribute>
+                <attribute name="decoration-warning">(state in ['draft', 'sent'] and is_product_archived) or sale_line_warn_msg or (is_set_component and not is_set and not visible_to_customer)</attribute>
+            </xpath>
+
+            <!-- ── 3. Interactive fold column (replaces static indent label) ─ -->
+            <!--
+                set_components_folded is the field the widget is bound to.
+                The widget (rental_set_fold) reads is_set, is_set_component
+                and set_indent_label from the same record to decide what to render:
+                  • Set parent     → chevron button (toggle collapse)
+                  • Component      → indent label (static)
+                  • Normal line    → empty cell
+            -->
+            <xpath expr="//field[@name='order_line']//list//field[@name='sequence'][@widget='handle']"
+                   position="after">
+                <field name="set_components_folded"
+                       string=" "
+                       width="72px"
+                       widget="list.rental_set_fold"
+                       nolabel="1"/>
+            </xpath>
+
+            <!-- ── 4. Visible-to-customer toggle ──────────────────────────── -->
+            <xpath expr="//field[@name='order_line']//list//field[@name='product_template_id']"
+                   position="after">
+                <field name="visible_to_customer"
+                       string="Visible"
+                       widget="boolean_toggle"
+                       invisible="not is_set_component"
+                       optional="hide"/>
+            </xpath>
+
+            <!-- ── 4b. "Add Component" button directly in the list row ──────── -->
+            <!--
+                Shown only on set parent rows (is_set = True).
+                Clicking it calls action_add_set_component() which opens the
+                rental.set.add.component.wizard as a dialog.
+                Placed here so users can discover it without opening the
+                optional inline-form popup.
+            -->
+            <xpath expr="//field[@name='order_line']//list//field[@name='visible_to_customer']"
+                   position="after">
+                <field name="set_allocated_price"
+                       string="Allocated"
+                       optional="show"/>
+                <field name="set_availability"
+                       string="Avail. Sets"
+                       invisible="not is_set or is_set_component or not id"
+                       optional="show"/>
+                <button name="action_add_set_component"
+                        type="object"
+                        icon="fa-plus-circle"
+                        title="Add an order-specific component to this Rental Set"
+                        invisible="not is_set"/>
+            </xpath>
+
+            <!-- ── 4c. Set availability widget (replaces stock chart for sets) ── -->
+            <xpath expr="//field[@name='order_line']//list//widget[@name='qty_at_date_widget']"
+                   position="after">
+                <widget name="rental_set_qty_widget" width="20px"/>
+            </xpath>
+
+            <!-- ── 5. Inline form dialog ─────────────────────────────────── -->
+            <xpath expr="//field[@name='order_line']//form//field[@name='name']"
+                   position="after">
+                <separator string="Rental Set"
+                           invisible="not is_set and not is_set_component"/>
+                <group invisible="not is_set and not is_set_component" col="2">
+                    <group string="Identity">
+                        <field name="is_set"           widget="boolean_toggle"/>
+                        <field name="is_set_component" widget="boolean_toggle"/>
+                        <field name="visible_to_customer"
+                               widget="boolean_toggle"
+                               invisible="not is_set_component"/>
+                    </group>
+                    <group string="Hierarchy">
+                        <field name="set_level"         readonly="1" invisible="not is_set_component"/>
+                        <field name="set_sequence_path" readonly="1" invisible="not is_set_component"/>
+                        <field name="set_parent_line_id" readonly="1" invisible="not is_set_component"/>
+                        <field name="set_component_qty"  readonly="1" invisible="not is_set_component"/>
+                    </group>
+                </group>
+
+                <!-- "Add Component" button: only for set parent lines -->
+                <div invisible="not is_set">
+                    <button name="action_add_set_component"
+                            type="object"
+                            string="Add Component to this Order"
+                            class="btn-secondary mt-2"
+                            icon="fa-plus"/>
+                </div>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

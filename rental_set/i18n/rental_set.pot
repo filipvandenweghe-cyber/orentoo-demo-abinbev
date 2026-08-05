@@ -1,0 +1,734 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* rental_set
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0+e\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-27 05:29+0000\n"
+"PO-Revision-Date: 2026-06-27 05:29+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: rental_set
+#. odoo-python
+#: code:addons/rental_set/models/sale_order_line.py:0
+msgid ""
+"%(product)s: %(short).1f %(uom)s short (need %(need).1f, reserved %(res).1f)"
+msgstr ""
+
+#. module: rental_set
+#: model_terms:ir.ui.view,arch_db:rental_set.report_delivery_document_rental_set
+msgid "(x"
+msgstr ""
+
+#. module: rental_set
+#: model:product.template,description_sale:rental_set.product_controller_product_template
+msgid "24-channel DMX-512 lighting console"
+msgstr ""
+
+#. module: rental_set
+#. odoo-python
+#: code:addons/rental_set/models/sale_order_line.py:0
+msgid ""
+"<b>Rental Set availability warning</b><br/>The following components could "
+"not be fully reserved:<br/>"
+msgstr ""
+
+#. module: rental_set
+#: model_terms:ir.ui.view,arch_db:rental_set.report_delivery_document_rental_set
+msgid "<span class=\"text-muted\">└</span>"
+msgstr ""
+
+#. module: rental_set
+#. odoo-python
+#: code:addons/rental_set/models/sale_order_line.py:0
+msgid ""
+"A component price change was ignored: component lines in a Rental Set do not"
+" carry a price. The set price is defined on the parent set line only."
+msgstr ""
+
+#. module: rental_set
+#: model_terms:ir.ui.view,arch_db:rental_set.rental_set_add_component_wizard_form
+msgid "Add Component"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model,name:rental_set.model_rental_set_add_component_wizard
+msgid "Add Component to Rental Set (Order-Specific)"
+msgstr ""
+
+#. module: rental_set
+#. odoo-python
+#: code:addons/rental_set/models/sale_order_line.py:0
+#: model_terms:ir.ui.view,arch_db:rental_set.rental_set_add_component_wizard_form
+msgid "Add Component to Set"
+msgstr ""
+
+#. module: rental_set
+#: model_terms:ir.ui.view,arch_db:rental_set.sale_order_form_view_rental_set
+msgid "Add Component to this Order"
+msgstr ""
+
+#. module: rental_set
+#: model_terms:ir.ui.view,arch_db:rental_set.sale_order_form_view_rental_set
+msgid "Add an order-specific component to this Rental Set"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_rental_set_add_component_wizard__set_name
+msgid "Adding to Set"
+msgstr ""
+
+#. module: rental_set
+#: model_terms:ir.ui.view,arch_db:rental_set.sale_order_form_view_rental_set
+msgid "Allocated"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_sale_order_line__set_allocated_price
+msgid "Allocated Price"
+msgstr ""
+
+#. module: rental_set
+#: model:product.template,description_sale:rental_set.product_truss_product_template
+msgid "Aluminium box truss, 290mm"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,help:rental_set.field_product_product__set_website_description
+#: model:ir.model.fields,help:rental_set.field_product_template__set_website_description
+msgid ""
+"Auto-generated HTML description listing the set contents (component names "
+"and quantities).  Editable — manual changes are preserved until components "
+"are modified."
+msgstr ""
+
+#. module: rental_set
+#: model_terms:ir.ui.view,arch_db:rental_set.sale_order_form_view_rental_set
+msgid "Avail. Sets"
+msgstr ""
+
+#. module: rental_set
+#. odoo-javascript
+#: code:addons/rental_set/static/src/js/rental_set_qty_widget.xml:0
+msgid "Available"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_sale_order_line__all_warehouse_available
+msgid "Available All Warehouses"
+msgstr ""
+
+#. module: rental_set
+#: model_terms:ir.ui.view,arch_db:rental_set.product_template_form_view_rental_set
+msgid "Available Sets (current stock)"
+msgstr ""
+
+#. module: rental_set
+#. odoo-javascript
+#: code:addons/rental_set/static/src/js/rental_set_qty_widget.js:0
+msgid "Available all warehouses"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,help:rental_set.field_sale_order_line__set_component_qty
+msgid ""
+"Base quantity (per 1 set unit) from the Rental Set component definition.  "
+"Used to rescale the child line when the parent set quantity changes."
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,help:rental_set.field_sale_order_line__set_indent_label
+msgid "Box-drawing prefix that visualises set nesting depth in the list."
+msgstr ""
+
+#. module: rental_set
+#: model_terms:ir.ui.view,arch_db:rental_set.rental_set_add_component_wizard_form
+msgid "Cancel"
+msgstr ""
+
+#. module: rental_set
+#. odoo-python
+#: code:addons/rental_set/models/sale_order_line.py:0
+msgid ""
+"Cannot %(op)s components of Rental Set '%(set)s': picking %(pick)s has "
+"already been validated.  A manager must reopen / correct the picking before "
+"the set can be modified."
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_rental_set_component__child_component_ids
+msgid "Child Components"
+msgstr ""
+
+#. module: rental_set
+#. odoo-python
+#: code:addons/rental_set/models/sale_order_line.py:0
+msgid ""
+"Circular reference detected in Rental Set '%(set)s': product '%(product)s' "
+"is already an ancestor in this set structure.  Please remove the circular "
+"dependency from the Rental Set component definition."
+msgstr ""
+
+#. module: rental_set
+#. odoo-python
+#: code:addons/rental_set/models/rental_set_component.py:0
+msgid ""
+"Circular reference: adding '%(component)s' as a component of '%(set)s' would"
+" create an infinite loop in the Rental Set structure."
+msgstr ""
+
+#. module: rental_set
+#. odoo-python
+#: code:addons/rental_set/models/rental_set_component.py:0
+msgid ""
+"Component '%(comp)s' has optional products configured. Optional products "
+"should be set on the parent Rental Set, not on individual components."
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_sale_order_line__set_component_qty
+msgid "Component Base Qty"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_rental_set_add_component_wizard__product_id
+#: model:ir.model.fields,field_description:rental_set.field_rental_set_component__product_id
+msgid "Component Product"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,help:rental_set.field_sale_order_line__set_child_line_ids
+msgid "Component lines that expand from this set line."
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_sale_order_line__set_components_folded
+msgid "Components Folded"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_rental_set_add_component_wizard__create_uid
+#: model:ir.model.fields,field_description:rental_set.field_rental_set_component__create_uid
+msgid "Created by"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_rental_set_add_component_wizard__create_date
+#: model:ir.model.fields,field_description:rental_set.field_rental_set_component__create_date
+msgid "Created on"
+msgstr ""
+
+#. module: rental_set
+#: model:product.template,name:rental_set.product_cable_product_template
+msgid "DMX Cable 5m"
+msgstr ""
+
+#. module: rental_set
+#: model:product.template,name:rental_set.product_controller_product_template
+msgid "DMX Controller"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_account_move__display_name
+#: model:ir.model.fields,field_description:rental_set.field_product_product__display_name
+#: model:ir.model.fields,field_description:rental_set.field_product_template__display_name
+#: model:ir.model.fields,field_description:rental_set.field_rental_set_add_component_wizard__display_name
+#: model:ir.model.fields,field_description:rental_set.field_rental_set_component__display_name
+#: model:ir.model.fields,field_description:rental_set.field_sale_order__display_name
+#: model:ir.model.fields,field_description:rental_set.field_sale_order_line__display_name
+#: model:ir.model.fields,field_description:rental_set.field_stock_move__display_name
+#: model:ir.model.fields,field_description:rental_set.field_stock_picking__display_name
+#: model:ir.model.fields,field_description:rental_set.field_stock_return_picking__display_name
+msgid "Display Name"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,help:rental_set.field_sale_order_line__set_sequence_path
+msgid ""
+"Dot-separated, zero-padded sequence path for hierarchical ordering, e.g. "
+"\"001.002.001\".  Empty on the top-level set line."
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields.selection,name:rental_set.selection__product_template__set_pricing_mode__fixed
+msgid "Fixed Price"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,help:rental_set.field_product_product__set_pricing_mode
+#: model:ir.model.fields,help:rental_set.field_product_template__set_pricing_mode
+#: model:ir.model.fields,help:rental_set.field_sale_order_line__set_pricing_mode
+msgid ""
+"Fixed Price: the set price is defined directly on this product.\n"
+"Sum of Components: the set price is computed from the sum of its component prices."
+msgstr ""
+
+#. module: rental_set
+#: model:product.template,name:rental_set.product_tmpl_front_light_set
+msgid "Front Light Set"
+msgstr ""
+
+#. module: rental_set
+#: model:product.template,name:rental_set.product_clamp_product_template
+msgid "Half Coupler Clamp"
+msgstr ""
+
+#. module: rental_set
+#: model_terms:ir.ui.view,arch_db:rental_set.sale_order_form_view_rental_set
+msgid "Hierarchy"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,help:rental_set.field_sale_order_line__set_level
+msgid ""
+"Hierarchy depth: 0 = top-level set line, 1 = direct component, 2 = nested "
+"sub-component, …"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,help:rental_set.field_product_product__set_availability
+#: model:ir.model.fields,help:rental_set.field_product_template__set_availability
+msgid ""
+"How many complete Rental Sets can be assembled right now from current stock."
+"  Equals the minimum of on_hand(component) / qty_per_set across all "
+"components."
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,help:rental_set.field_sale_order_line__set_availability
+msgid ""
+"How many complete Rental Sets can be fulfilled for the rental period.  "
+"Equals the minimum of available(component) / required_qty_per_set across all"
+" components."
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,help:rental_set.field_rental_set_add_component_wizard__quantity_per_set
+msgid ""
+"How many units of this component are needed per 1 unit of the Rental Set.  "
+"The actual line quantity is automatically scaled by the set quantity on the "
+"order and will update if the set qty changes."
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_account_move__id
+#: model:ir.model.fields,field_description:rental_set.field_product_product__id
+#: model:ir.model.fields,field_description:rental_set.field_product_template__id
+#: model:ir.model.fields,field_description:rental_set.field_rental_set_add_component_wizard__id
+#: model:ir.model.fields,field_description:rental_set.field_rental_set_component__id
+#: model:ir.model.fields,field_description:rental_set.field_sale_order__id
+#: model:ir.model.fields,field_description:rental_set.field_sale_order_line__id
+#: model:ir.model.fields,field_description:rental_set.field_stock_move__id
+#: model:ir.model.fields,field_description:rental_set.field_stock_picking__id
+#: model:ir.model.fields,field_description:rental_set.field_stock_return_picking__id
+msgid "ID"
+msgstr ""
+
+#. module: rental_set
+#: model_terms:ir.ui.view,arch_db:rental_set.sale_order_form_view_rental_set
+msgid "Identity"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,help:rental_set.field_sale_order_line__set_allocated_price
+msgid ""
+"Internal allocated price per unit.  For lines that are not set components "
+"this equals the line price.  For components within a fixed-price Rental Set "
+"the parent set price is distributed proportionally based on normal product "
+"prices."
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_sale_order_line__is_set
+msgid "Is Rental Set"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_sale_order_line__is_set_component
+msgid "Is Set Component"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_stock_move__rental_set_is_component
+msgid "Is Set Component Move"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_stock_move__rental_set_is_set
+msgid "Is Set Parent Move"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_product_product__is_rental_set
+#: model:ir.model.fields,field_description:rental_set.field_product_template__is_rental_set
+msgid "Is a Rental Set"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model,name:rental_set.model_account_move
+msgid "Journal Entry"
+msgstr ""
+
+#. module: rental_set
+#: model:product.template,name:rental_set.product_led_par_product_template
+msgid "LED Par 64"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_rental_set_add_component_wizard__write_uid
+#: model:ir.model.fields,field_description:rental_set.field_rental_set_component__write_uid
+msgid "Last Updated by"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_rental_set_add_component_wizard__write_date
+#: model:ir.model.fields,field_description:rental_set.field_rental_set_component__write_date
+msgid "Last Updated on"
+msgstr ""
+
+#. module: rental_set
+#: model:product.template,name:rental_set.product_tmpl_lighting_package
+msgid "Lighting Package"
+msgstr ""
+
+#. module: rental_set
+#. odoo-javascript
+#: code:addons/rental_set/static/src/js/rental_set_qty_widget.xml:0
+msgid "Not enough stock to fulfil the requested quantity."
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_sale_order_line__order_product_demand
+msgid "Order Product Demand"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_rental_set_component__parent_component_id
+msgid "Parent Component"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_rental_set_add_component_wizard__set_line_id
+msgid "Parent Set Line"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model,name:rental_set.model_product_template
+msgid "Product"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model,name:rental_set.model_product_product
+msgid "Product Variant"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_rental_set_component__quantity
+msgid "Quantity"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_rental_set_add_component_wizard__quantity_per_set
+msgid "Quantity per Set Unit"
+msgstr ""
+
+#. module: rental_set
+#: model:product.template,description_sale:rental_set.product_led_par_product_template
+msgid "RGBW LED Par Can, 18x10W"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_rental_set_component__set_product_tmpl_id
+#: model_terms:ir.ui.view,arch_db:rental_set.sale_order_form_view_rental_set
+msgid "Rental Set"
+msgstr ""
+
+#. module: rental_set
+#. odoo-python
+#: code:addons/rental_set/models/sale_order_line.py:0
+msgid ""
+"Rental Set '%(name)s' exceeds the maximum nesting depth of %(max)d levels.  "
+"Please simplify your set structure."
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model,name:rental_set.model_rental_set_component
+msgid "Rental Set Component"
+msgstr ""
+
+#. module: rental_set
+#: model_terms:ir.ui.view,arch_db:rental_set.product_template_form_view_rental_set
+msgid "Rental Set Components"
+msgstr ""
+
+#. module: rental_set
+#. odoo-javascript
+#: code:addons/rental_set/static/src/js/rental_set_qty_widget.xml:0
+msgid "Requested"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model,name:rental_set.model_stock_return_picking
+msgid "Return Picking"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_rental_set_add_component_wizard__sale_order_id
+msgid "Sale Order"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model,name:rental_set.model_sale_order
+msgid "Sales Order"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model,name:rental_set.model_sale_order_line
+msgid "Sales Order Line"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_rental_set_component__sequence
+msgid "Sequence"
+msgstr ""
+
+#. module: rental_set
+#: model_terms:ir.ui.view,arch_db:rental_set.product_template_form_view_rental_set
+msgid "Set"
+msgstr ""
+
+#. module: rental_set
+#. odoo-javascript
+#: code:addons/rental_set/static/src/js/rental_set_qty_widget.xml:0
+#: model:ir.model.fields,field_description:rental_set.field_product_product__set_availability
+#: model:ir.model.fields,field_description:rental_set.field_product_template__set_availability
+#: model:ir.model.fields,field_description:rental_set.field_sale_order_line__set_availability
+msgid "Set Availability"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_sale_order_line__set_child_line_ids
+msgid "Set Component Lines"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_product_product__set_component_ids
+#: model:ir.model.fields,field_description:rental_set.field_product_template__set_component_ids
+msgid "Set Components"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_stock_move__rental_set_folded
+msgid "Set Components Folded"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_product_product__set_website_description
+#: model:ir.model.fields,field_description:rental_set.field_product_template__set_website_description
+msgid "Set Contents Description"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_stock_move__rental_set_indent_label
+msgid "Set Indent"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_sale_order_line__set_level
+msgid "Set Level"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_stock_move__rental_set_level
+msgid "Set Nesting Level"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_sale_order_line__set_parent_line_id
+msgid "Set Parent Line"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_stock_move__rental_set_parent_move_id
+msgid "Set Parent Move"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_product_product__set_pricing_mode
+#: model:ir.model.fields,field_description:rental_set.field_product_template__set_pricing_mode
+#: model:ir.model.fields,field_description:rental_set.field_sale_order_line__set_pricing_mode
+msgid "Set Pricing Mode"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_sale_order_line__set_sequence_path
+msgid "Set Sequence Path"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_stock_picking__rental_set_show_grouping
+msgid "Show Rental Set Grouping"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model,name:rental_set.model_stock_move
+msgid "Stock Move"
+msgstr ""
+
+#. module: rental_set
+#. odoo-javascript
+#: code:addons/rental_set/static/src/js/rental_set_qty_widget.xml:0
+msgid "Sufficient stock for this order."
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields.selection,name:rental_set.selection__product_template__set_pricing_mode__sum
+msgid "Sum of Components"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,help:rental_set.field_sale_order_line__set_parent_line_id
+msgid "The set line (or nested set line) this component belongs to."
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,help:rental_set.field_sale_order_line__is_set
+msgid ""
+"This line is a Rental Set parent.  It may also have is_set_component=True "
+"when it is a nested set inside another set."
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,help:rental_set.field_sale_order_line__is_set_component
+msgid "This line was generated as an internal component of a Rental Set."
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,help:rental_set.field_sale_order_line__all_warehouse_available
+msgid ""
+"Total available stock for this product across ALL warehouses, minus this "
+"order's own demand if confirmed.  Shown in the rental popover when the "
+"product exists in multiple warehouses."
+msgstr ""
+
+#. module: rental_set
+#. odoo-javascript
+#: code:addons/rental_set/static/src/js/rental_set_qty_widget.js:0
+msgid "Total order demand exceeds available stock."
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,help:rental_set.field_sale_order_line__order_product_demand
+msgid ""
+"Total quantity demanded for the same product across ALL lines on this order."
+"  Used to determine if aggregate demand exceeds available stock (red "
+"indicator when demand > available)."
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model,name:rental_set.model_stock_picking
+msgid "Transfer"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,help:rental_set.field_stock_picking__rental_set_show_grouping
+msgid ""
+"True for pickings in the outbound sale chain (Pick → Pack → Ship).  False "
+"for return pickings.  Controls whether the set fold/expand column is "
+"visible."
+msgstr ""
+
+#. module: rental_set
+#: model:product.template,name:rental_set.product_truss_product_template
+msgid "Truss Section 2m"
+msgstr ""
+
+#. module: rental_set
+#. odoo-javascript
+#: code:addons/rental_set/static/src/js/rental_set_qty_widget.js:0
+msgid "Used in this order"
+msgstr ""
+
+#. module: rental_set
+#. odoo-javascript
+#: code:addons/rental_set/static/src/js/rental_set_qty_widget.js:0
+msgid "View Forecast"
+msgstr ""
+
+#. module: rental_set
+#. odoo-javascript
+#: code:addons/rental_set/static/src/js/rental_set_qty_widget.js:0
+msgid "View Rentals"
+msgstr ""
+
+#. module: rental_set
+#: model_terms:ir.ui.view,arch_db:rental_set.sale_order_form_view_rental_set
+msgid "Visible"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_rental_set_add_component_wizard__visible_to_customer
+#: model:ir.model.fields,field_description:rental_set.field_sale_order_line__visible_to_customer
+msgid "Visible to Customer"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,field_description:rental_set.field_sale_order_line__all_warehouse_count
+msgid "Warehouse Count"
+msgstr ""
+
+#. module: rental_set
+#: model_terms:ir.ui.view,arch_db:rental_set.product_template_form_view_rental_set
+msgid "Website Description (auto-generated)"
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,help:rental_set.field_sale_order_line__set_components_folded
+msgid ""
+"When True the JS renderer hides all component lines that descend from this "
+"Rental Set line.  Toggle via the chevron in the list."
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,help:rental_set.field_rental_set_add_component_wizard__visible_to_customer
+msgid ""
+"When checked, this component line will appear on customer-facing documents "
+"(quotation, order confirmation, invoice)."
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,help:rental_set.field_product_product__is_rental_set
+#: model:ir.model.fields,help:rental_set.field_product_template__is_rental_set
+msgid ""
+"When enabled, this product acts as a Rental Set — a normal Odoo product that"
+" expands into hidden internal components for rental, sales, inventory and "
+"warehouse operations."
+msgstr ""
+
+#. module: rental_set
+#: model:ir.model.fields,help:rental_set.field_sale_order_line__visible_to_customer
+msgid ""
+"When unchecked, this component line is hidden on customer-facing documents "
+"(quotations, order confirmations, invoices)."
+msgstr ""
+
+#. module: rental_set
+#. odoo-python
+#: code:addons/rental_set/models/sale_order_line.py:0
+msgid ""
+"You do not have permission to %(op)s Rental Set components. Only Sales "
+"Managers and Warehouse Managers may modify set composition."
+msgstr ""
+
+#. module: rental_set
+#. odoo-javascript
+#: code:addons/rental_set/static/src/js/rental_set_qty_widget.xml:0
+msgid "sets"
+msgstr ""
