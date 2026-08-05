@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ===================================================================
+         weather.location — List view
+         =================================================================== -->
+    <record id="weather_location_view_list" model="ir.ui.view">
+        <field name="name">weather.location.view.list</field>
+        <field name="model">weather.location</field>
+        <field name="arch" type="xml">
+            <list string="Weather Locations" decoration-muted="not active">
+                <field name="name"/>
+                <field name="address"/>
+                <field name="last_weather_update" string="Last Updated" optional="show"/>
+                <field name="latitude" string="Lat" optional="show"/>
+                <field name="longitude" string="Lon" optional="show"/>
+                <field name="active" column_invisible="1"/>
+                <field name="weather_line_ids" string="Forecast Lines" widget="many2many_tags" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ===================================================================
+         weather.location — Form view
+         =================================================================== -->
+    <record id="weather_location_view_form" model="ir.ui.view">
+        <field name="name">weather.location.view.form</field>
+        <field name="model">weather.location</field>
+        <field name="arch" type="xml">
+            <form string="Weather Location">
+                <header>
+                    <!-- Manual update button for this location -->
+                    <button name="action_update_weather"
+                            string="Update Weather Now"
+                            type="object"
+                            class="btn-primary"
+                            groups="weather_forecast.group_weather_manager"
+                            confirm="Fetch the latest forecast from OpenWeather? This will count against your API quota."/>
+                </header>
+
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger"
+                            invisible="active"/>
+
+                    <group col="2">
+                        <group string="Location">
+                            <field name="name" placeholder="e.g. Brussels City Centre"/>
+                            <field name="address"
+                                   placeholder="e.g. Grand-Place, Brussels, Belgium"
+                                   help="Enter a full address and save — latitude and longitude will be filled automatically via geocoding."/>
+                            <field name="active" widget="boolean_toggle"/>
+                            <field name="last_weather_update" readonly="1"/>
+                        </group>
+                        <group string="Coordinates">
+                            <field name="latitude"  digits="[10, 6]"/>
+                            <field name="longitude" digits="[10, 6]"/>
+                        </group>
+                    </group>
+
+                    <!-- Forecast lines embedded in the form -->
+                    <notebook>
+                        <page string="Forecast Lines" name="forecast_lines">
+                            <field name="weather_line_ids"
+                                   nolabel="1"
+                                   mode="list"
+                                   readonly="1">
+                                <list string="Forecast Lines"
+                                      default_order="forecast_datetime asc">
+                                    <field name="forecast_datetime" string="Date/Time (UTC)"/>
+                                    <field name="source_type" string="Source" optional="show"/>
+                                    <field name="temperature"
+                                           string="Temp"
+                                           optional="show"/>
+                                    <field name="feels_like"
+                                           string="Feels Like"
+                                           optional="show"/>
+                                    <field name="humidity"
+                                           string="Humidity %"
+                                           optional="show"/>
+                                    <field name="clouds"
+                                           string="Clouds %"
+                                           optional="show"/>
+                                    <field name="wind_speed"
+                                           string="Wind"
+                                           optional="show"/>
+                                    <field name="rain"
+                                           string="Rain mm"
+                                           optional="show"/>
+                                    <field name="weather_description"
+                                           string="Description"
+                                           optional="show"/>
+                                    <field name="weather_main"
+                                           string="Main"
+                                           optional="hide"/>
+                                    <field name="weather_id"
+                                           string="Code"
+                                           optional="hide"/>
+                                    <field name="last_api_update_datetime"
+                                           string="Last Updated"
+                                           optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ===================================================================
+         weather.location — Search view
+         =================================================================== -->
+    <record id="weather_location_view_search" model="ir.ui.view">
+        <field name="name">weather.location.view.search</field>
+        <field name="model">weather.location</field>
+        <field name="arch" type="xml">
+            <search string="Search Locations">
+                <field name="name" string="Name"/>
+                <field name="address" string="Address"/>
+                <filter string="Active" name="active" domain="[('active', '=', True)]"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+                <separator/>
+                <filter string="Active" name="group_active" context="{'group_by': 'active'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ===================================================================
+         weather.location — Window action
+         =================================================================== -->
+    <record id="action_weather_location" model="ir.actions.act_window">
+        <field name="name">Weather Locations</field>
+        <field name="res_model">weather.location</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="weather_location_view_search"/>
+        <field name="context">{'search_default_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Add your first weather location
+            </p>
+            <p>
+                Create a location, enter its address, and the module will
+                automatically fetch the hourly weather forecast for the
+                next 8 days via OpenWeather One Call API 3.0.
+            </p>
+        </field>
+    </record>
+
+    <!-- ===================================================================
+         "Update All Locations" — server action callable from the list view
+         =================================================================== -->
+    <record id="action_update_all_weather" model="ir.actions.server">
+        <field name="name">Update All Locations Now</field>
+        <field name="model_id" ref="model_weather_location"/>
+        <field name="state">code</field>
+        <field name="code">
+action = model.action_update_all_weather()
+        </field>
+    </record>
+
+</odoo>

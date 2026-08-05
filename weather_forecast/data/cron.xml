@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Daily weather forecast update cron.
+
+        Default nextcall is set far in the future (2099) so it does NOT fire
+        immediately on module installation.  The correct nextcall is computed
+        and written when the administrator saves Settings → Weather Forecast
+        for the first time (see res_config_settings._update_weather_cron_schedule).
+    -->
+    <record id="ir_cron_weather_update" model="ir.cron">
+        <field name="name">Weather Forecast: Daily Update</field>
+        <field name="model_id" ref="model_weather_location"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_update_weather()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active">1</field>
+        <!-- Far-future default; overwritten when settings are saved. -->
+        <field name="nextcall">2099-01-01 16:00:00</field>
+    </record>
+</odoo>

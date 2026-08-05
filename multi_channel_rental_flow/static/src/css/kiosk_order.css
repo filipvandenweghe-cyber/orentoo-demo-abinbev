@@ -1,0 +1,294 @@
+/* Kiosk Order Flow — touch-friendly dark theme */
+:root {
+    --ko-bg: #1a1a2e;
+    --ko-card: #16213e;
+    --ko-border: #333;
+    --ko-accent: #0f3460;
+    --ko-text: #eee;
+    --ko-muted: #aaa;
+    --ko-success: #28a745;
+    --ko-danger: #dc3545;
+    --ko-warning: #ffc107;
+}
+body.kiosk-order {
+    background: var(--ko-bg);
+    color: var(--ko-text);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0; padding: 0;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* Top bar */
+.ko-topbar {
+    background: var(--ko-card);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--ko-border);
+    position: sticky; top: 0; z-index: 100;
+}
+.ko-topbar-title { font-size: 1.3rem; font-weight: 700; }
+.ko-basket-btn {
+    background: var(--ko-accent);
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    position: relative;
+}
+.ko-basket-badge {
+    position: absolute;
+    top: -8px; right: -8px;
+    background: var(--ko-danger);
+    color: #fff;
+    border-radius: 50%;
+    width: 26px; height: 26px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem; font-weight: 700;
+}
+
+/* Sections */
+.ko-section { padding: 20px; max-width: 1200px; margin: 0 auto; }
+.ko-hidden { display: none !important; }
+
+/* Category bar */
+.ko-categories {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 16px 20px;
+    background: var(--ko-card);
+    border-bottom: 1px solid var(--ko-border);
+}
+.ko-cat-btn {
+    background: var(--ko-bg);
+    color: var(--ko-text);
+    border: 2px solid var(--ko-border);
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 1rem;
+    white-space: nowrap;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.ko-cat-btn.active {
+    border-color: var(--ko-accent);
+    background: var(--ko-accent);
+}
+
+/* Product grid */
+.ko-products {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+    padding: 20px;
+}
+.ko-product-card {
+    background: var(--ko-card);
+    border: 1px solid var(--ko-border);
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+.ko-product-card:hover { border-color: var(--ko-accent); }
+.ko-product-img {
+    width: 100%; height: 160px;
+    object-fit: cover;
+    background: #0d1b36;
+}
+.ko-product-img-placeholder {
+    width: 100%; height: 160px;
+    background: #0d1b36;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ko-muted); font-size: 3rem;
+}
+.ko-product-info { padding: 12px; }
+.ko-product-name { font-weight: 600; font-size: 1rem; }
+.ko-product-price { color: var(--ko-success); font-weight: 600; margin-top: 4px; }
+.ko-product-role {
+    font-size: 0.8rem; color: var(--ko-muted);
+    text-transform: uppercase;
+}
+
+/* Product detail / datepicker panel */
+.ko-detail {
+    background: var(--ko-card);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 20px;
+}
+.ko-detail-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 16px; }
+
+/* Quantity selector */
+.ko-qty {
+    display: flex; align-items: center; gap: 16px;
+    margin: 16px 0;
+}
+.ko-qty-btn {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    border: 2px solid var(--ko-border);
+    background: var(--ko-bg);
+    color: var(--ko-text);
+    font-size: 1.5rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+}
+.ko-qty-val { font-size: 1.8rem; font-weight: 700; min-width: 40px; text-align: center; }
+
+/* Duration selector */
+.ko-durations {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    margin: 16px 0;
+}
+.ko-dur-btn {
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: 2px solid var(--ko-border);
+    background: var(--ko-bg);
+    color: var(--ko-text);
+    font-size: 1rem;
+    cursor: pointer;
+}
+.ko-dur-btn.active { border-color: var(--ko-accent); background: var(--ko-accent); }
+
+/* Calendar */
+.ko-calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    margin: 16px 0;
+}
+.ko-cal-day {
+    padding: 10px 4px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border: 2px solid transparent;
+}
+.ko-cal-day.available { background: var(--ko-success); color: #fff; }
+.ko-cal-day.partial { background: #ffc107; color: #333; }
+.ko-cal-day.unavailable { background: var(--ko-danger); color: #fff; opacity: 0.6; cursor: not-allowed; }
+.ko-cal-day.closed { background: #555; color: #999; cursor: not-allowed; }
+.ko-cal-day.selected { border-color: #fff; }
+.ko-cal-day-num { font-weight: 700; }
+.ko-cal-day-name { font-size: 0.7rem; color: inherit; opacity: 0.8; }
+.ko-cal-nav {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px;
+}
+.ko-cal-nav-btn {
+    background: var(--ko-accent); color: #fff; border: none;
+    padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 1rem;
+}
+.ko-cal-month { font-size: 1.2rem; font-weight: 600; }
+
+/* Slots */
+.ko-slots {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px;
+    margin: 16px 0;
+    max-height: 300px;
+    overflow-y: auto;
+}
+.ko-slot {
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+    cursor: pointer;
+    border: 2px solid transparent;
+    font-size: 0.9rem;
+}
+.ko-slot.selectable { cursor: pointer; }
+.ko-slot.selectable:hover { border-color: #fff; }
+.ko-slot.selected { border-color: #fff; }
+.ko-slot.unavailable { opacity: 0.5; cursor: not-allowed; }
+.ko-slot-time { font-weight: 700; }
+.ko-slot-price { font-size: 0.85rem; margin-top: 2px; }
+.ko-slot-avail { font-size: 0.75rem; margin-top: 2px; }
+
+/* Basket */
+.ko-basket { padding: 20px; }
+.ko-basket-item {
+    background: var(--ko-card);
+    border: 1px solid var(--ko-border);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.ko-basket-item-info { flex: 1; }
+.ko-basket-item-name { font-weight: 600; }
+.ko-basket-item-detail { font-size: 0.85rem; color: var(--ko-muted); }
+.ko-basket-item-price { font-weight: 600; color: var(--ko-success); margin-left: 16px; }
+.ko-basket-remove {
+    background: var(--ko-danger);
+    color: #fff;
+    border: none;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    font-size: 1.2rem;
+    cursor: pointer;
+    margin-left: 12px;
+    display: flex; align-items: center; justify-content: center;
+}
+.ko-basket-total {
+    font-size: 1.3rem; font-weight: 700;
+    text-align: right;
+    padding: 16px 0;
+    border-top: 2px solid var(--ko-border);
+    margin-top: 12px;
+}
+
+/* Buttons */
+.ko-btn {
+    padding: 16px 24px;
+    border-radius: 12px;
+    font-size: 1.2rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 12px;
+}
+.ko-btn-primary { background: var(--ko-accent); color: #fff; }
+.ko-btn-success { background: var(--ko-success); color: #fff; }
+.ko-btn-secondary { background: #444; color: #ccc; }
+.ko-btn-danger { background: var(--ko-danger); color: #fff; }
+.ko-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Messages */
+.ko-msg { text-align: center; padding: 20px; font-size: 1.1rem; }
+.ko-msg-error { color: var(--ko-danger); }
+.ko-msg-success { color: var(--ko-success); }
+
+/* Spinner */
+.ko-spinner {
+    display: inline-block;
+    width: 24px; height: 24px;
+    border: 3px solid #666;
+    border-top: 3px solid #fff;
+    border-radius: 50%;
+    animation: kospin 0.8s linear infinite;
+}
+@keyframes kospin { to { transform: rotate(360deg); } }
+
+/* Add to basket */
+.ko-add-summary {
+    background: var(--ko-card);
+    border-radius: 12px;
+    padding: 16px;
+    margin: 16px 0;
+    text-align: center;
+}
+.ko-add-price { font-size: 1.8rem; font-weight: 700; color: var(--ko-success); }

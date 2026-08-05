@@ -1,0 +1,464 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ==========================================================
+         rental.dossier — Form View
+         ========================================================== -->
+
+    <record id="view_rental_dossier_form" model="ir.ui.view">
+        <field name="name">rental.dossier.form</field>
+        <field name="model">rental.dossier</field>
+        <field name="arch" type="xml">
+            <form string="Rental Dossier">
+                <header>
+                    <button name="action_confirm"
+                            string="Confirm"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state != 'draft'"
+                            data-hotkey="v"/>
+                    <button name="action_prepare_for_payment"
+                            string="Prepare for Payment"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state not in ('draft', 'confirmed') or not is_multi_channel"
+                            confirm="This will check availability, generate and confirm orders. Continue?"/>
+                    <button name="action_start_payment"
+                            string="Start Payment"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state != 'payment_pending' or not is_multi_channel"/>
+                    <button name="action_simulate_demo_payment"
+                            string="Simulate Demo Payment"
+                            type="object"
+                            class="btn-warning"
+                            invisible="state != 'payment_pending' or not is_multi_channel"
+                            confirm="This simulates a successful payment using the demo provider. Continue?"/>
+                    <button name="action_mark_paid"
+                            string="Mark as Paid"
+                            type="object"
+                            invisible="state not in ('confirmed', 'payment_pending')"
+                            groups="sales_team.group_sale_manager"/>
+                    <button name="action_done"
+                            string="Done"
+                            type="object"
+                            invisible="state != 'paid'"/>
+                    <button name="action_generate_orders"
+                            string="Generate Orders"
+                            type="object"
+                            class="btn-secondary"
+                            invisible="state in ('done', 'cancelled') or not is_multi_channel"
+                            confirm="Generate draft sale/rental orders from dossier slots and items?"/>
+                    <button name="action_print_tickets"
+                            string="Print Tickets"
+                            type="object"
+                            class="btn-secondary"
+                            invisible="state not in ('paid', 'done')"/>
+                    <button name="action_reset_tickets_printed"
+                            string="Allow Reprint"
+                            type="object"
+                            invisible="state not in ('paid', 'done')"
+                            groups="sales_team.group_sale_manager"
+                            confirm="Reset the printed flag so tickets can be reprinted?"/>
+                    <button name="action_resend_confirmation_email"
+                            string="Resend Confirmation Email"
+                            type="object"
+                            invisible="state not in ('paid', 'done')"
+                            confirm="Resend the confirmation email to the customer?"/>
+                    <button name="action_recompute_totals"
+                            string="Recompute Totals"
+                            type="object"
+                            invisible="state in ('done', 'cancelled')"/>
+                    <button name="action_cancel"
+                            string="Cancel"
+                            type="object"
+                            invisible="state in ('done', 'cancelled')"
+                            confirm="Are you sure you want to cancel this dossier?"/>
+                    <button name="action_reset_to_draft"
+                            string="Reset to Draft"
+                            type="object"
+                            invisible="state != 'cancelled'"
+                            groups="sales_team.group_sale_manager"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,confirmed,payment_pending,paid,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_sale_orders"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-shopping-cart"
+                                invisible="sale_order_count == 0">
+                            <field name="sale_order_count"
+                                   widget="statinfo"
+                                   string="Orders"/>
+                        </button>
+                        <button name="action_view_transactions"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-credit-card"
+                                invisible="transaction_count == 0">
+                            <field name="transaction_count"
+                                   widget="statinfo"
+                                   string="Transactions"/>
+                        </button>
+                        <button name="action_view_registrations"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-ticket"
+                                invisible="registration_count == 0">
+                            <field name="registration_count"
+                                   widget="statinfo"
+                                   string="Registrations"/>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Cancelled"
+                            bg_color="text-bg-danger"
+                            invisible="state != 'cancelled'"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                        <label for="description"/>
+                        <h2>
+                            <field name="description"
+                                   placeholder="e.g. Summer kayak weekend, Team outing, Project X..."/>
+                        </h2>
+                    </div>
+
+                    <group>
+                        <group>
+                            <field name="is_multi_channel"/>
+                        </group>
+                    </group>
+
+                    <group>
+                        <group string="Customer">
+                            <field name="partner_id"
+                                   context="{'res_partner_search_mode': 'customer'}"/>
+                            <field name="partner_email"
+                                   placeholder="customer@example.com"/>
+                            <field name="user_id"
+                                   widget="many2one_avatar_user"/>
+                        </group>
+                        <group string="Commerce">
+                            <field name="warehouse_id"/>
+                            <field name="pricelist_id"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <!-- ======================================
+                             Sale / Rental Orders
+                             ====================================== -->
+                        <page string="Sale Orders" name="sale_orders">
+                            <field name="sale_order_ids"
+                                   widget="many2many"
+                                   context="{'default_partner_id': partner_id}">
+                                <list>
+                                    <field name="name" string="Order"/>
+                                    <field name="partner_id"/>
+                                    <field name="is_rental_order"
+                                           string="Rental"
+                                           optional="show"/>
+                                    <field name="rental_start_date"
+                                           optional="show"/>
+                                    <field name="rental_return_date"
+                                           optional="show"/>
+                                    <field name="amount_total"
+                                           sum="Total"/>
+                                    <field name="state"
+                                           widget="badge"
+                                           decoration-info="state == 'draft'"
+                                           decoration-warning="state == 'sent'"
+                                           decoration-success="state == 'sale'"
+                                           decoration-danger="state == 'cancel'"
+                                           />
+                                </list>
+                            </field>
+                            <group class="oe_subtotal_footer">
+                                <field name="linked_order_total"
+                                       string="Linked Orders Total"/>
+                            </group>
+                        </page>
+
+                        <!-- ======================================
+                             Slots
+                             ====================================== -->
+                        <page string="Slots" name="slots"
+                              invisible="not is_multi_channel">
+                            <field name="slot_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="start_datetime"/>
+                                    <field name="end_datetime"/>
+                                    <field name="warehouse_id"
+                                           optional="show"/>
+                                    <field name="sale_order_id"
+                                           optional="show"
+                                           readonly="1"/>
+                                    <field name="state"
+                                           widget="badge"
+                                           decoration-info="state == 'draft'"
+                                           decoration-success="state == 'confirmed'"
+                                           decoration-warning="state == 'order_created'"
+                                           decoration-danger="state == 'cancelled'"
+                                           />
+                                    <field name="item_count"
+                                           string="Items"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- ======================================
+                             Items
+                             ====================================== -->
+                        <page string="Items" name="items"
+                              invisible="not is_multi_channel">
+                            <field name="item_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="slot_id"
+                                           domain="[('dossier_id', '=', parent.id)]"
+                                           optional="show"/>
+                                    <field name="item_role"/>
+                                    <field name="product_id"/>
+                                    <field name="event_id"
+                                           optional="show"
+                                           invisible="item_role != 'event_ticket'"/>
+                                    <field name="event_ticket_id"
+                                           optional="show"
+                                           invisible="item_role != 'event_ticket'"
+                                           domain="[('event_id', '=', event_id)]"/>
+                                    <field name="event_slot_id"
+                                           optional="show"
+                                           invisible="item_role != 'event_ticket'"
+                                           domain="[('event_id', '=', event_id)]"/>
+                                    <field name="quantity"/>
+                                    <field name="product_uom_id"
+                                           groups="uom.group_uom"/>
+                                    <field name="coefficient"
+                                           optional="show"/>
+                                    <field name="dynamic_factor_percentage"
+                                           optional="show"
+                                           string="Dyn. Factor %"/>
+                                    <field name="price_unit"/>
+                                    <field name="price_subtotal" sum="Total"/>
+                                    <field name="availability_state"
+                                           optional="hide"
+                                           widget="badge"
+                                           decoration-success="availability_state == 'available'"
+                                           decoration-danger="availability_state == 'unavailable'"
+                                           decoration-muted="availability_state == 'outside_opening_hours'"
+                                           />
+                                    <field name="state"
+                                           widget="badge"
+                                           decoration-info="state == 'draft'"
+                                           decoration-success="state in ('priced', 'confirmed')"
+                                           decoration-warning="state == 'generated'"
+                                           decoration-danger="state in ('cancelled', 'exception')"
+                                           />
+                                    <field name="sale_order_line_id"
+                                           optional="hide"
+                                           readonly="1"/>
+                                    <field name="currency_id"
+                                           column_invisible="True"/>
+                                </list>
+                            </field>
+                            <group class="oe_subtotal_footer">
+                                <field name="amount_untaxed"/>
+                                <field name="amount_tax"/>
+                                <field name="amount_total"
+                                       class="oe_subtotal_footer_separator"/>
+                            </group>
+                        </page>
+
+                        <!-- ======================================
+                             Notes
+                             ====================================== -->
+                        <page string="Notes" name="notes">
+                            <group>
+                                <field name="note" nolabel="1"
+                                       placeholder="Customer-facing note..."/>
+                            </group>
+                            <separator string="Internal Note"/>
+                            <group>
+                                <field name="internal_note" nolabel="1"
+                                       placeholder="Internal note (not visible to customer)..."/>
+                            </group>
+                        </page>
+
+                        <!-- ======================================
+                             Payment
+                             ====================================== -->
+                        <page string="Payment" name="payment"
+                              invisible="not is_multi_channel">
+                            <group>
+                                <group string="Payment Status">
+                                    <field name="payment_reference"/>
+                                    <field name="payment_state"/>
+                                    <field name="payment_pending_until"/>
+                                    <field name="last_transaction_id"/>
+                                </group>
+                                <group string="Amounts">
+                                    <field name="linked_order_total"
+                                           string="Orders Total"/>
+                                    <field name="amount_total"
+                                           string="Dossier Items Total"/>
+                                </group>
+                            </group>
+                            <group>
+                                <group string="Confirmation Email">
+                                    <field name="confirmation_sent"/>
+                                    <field name="confirmation_sent_at"
+                                           invisible="not confirmation_sent"/>
+                                </group>
+                            </group>
+                            <separator string="Transactions"/>
+                            <field name="transaction_ids" readonly="1">
+                                <list>
+                                    <field name="reference"/>
+                                    <field name="provider_id"/>
+                                    <field name="amount"/>
+                                    <field name="state"
+                                           widget="badge"
+                                           decoration-info="state == 'draft'"
+                                           decoration-warning="state == 'pending'"
+                                           decoration-success="state in ('done', 'authorized')"
+                                           decoration-danger="state in ('cancel', 'error')"/>
+                                    <field name="create_date"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- ======================================
+                             Multi-Channel Source Configuration
+                             ====================================== -->
+                        <page string="Multi-Channel Source Configuration"
+                              name="mcrf_config"
+                              invisible="not is_multi_channel">
+                            <group>
+                                <group string="Channel">
+                                    <field name="profile_id"/>
+                                    <field name="source"/>
+                                </group>
+                                <group string="Company">
+                                    <field name="company_id"
+                                           groups="base.group_multi_company"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ==========================================================
+         rental.dossier — List View
+         ========================================================== -->
+
+    <record id="view_rental_dossier_list" model="ir.ui.view">
+        <field name="name">rental.dossier.list</field>
+        <field name="model">rental.dossier</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="state == 'cancelled'"
+                  decoration-bf="state == 'paid'">
+                <field name="name"/>
+                <field name="description"/>
+                <field name="partner_id"/>
+                <field name="source" optional="show"/>
+                <field name="profile_id" optional="hide"/>
+                <field name="warehouse_id" optional="show"/>
+                <field name="slot_count" string="Slots" optional="show"/>
+                <field name="item_count" string="Items" optional="show"/>
+                <field name="sale_order_count" string="Orders" optional="show"/>
+                <field name="amount_total" sum="Total"/>
+                <field name="linked_order_total"
+                       string="Orders Total"
+                       sum="Total" optional="show"/>
+                <field name="state"
+                       widget="badge"
+                       decoration-info="state == 'draft'"
+                       decoration-warning="state in ('confirmed', 'payment_pending')"
+                       decoration-success="state in ('paid', 'done')"
+                       decoration-danger="state in ('payment_failed', 'payment_expired', 'payment_exception', 'cancelled')"
+                       />
+                <field name="create_date" optional="show"/>
+                <field name="currency_id" column_invisible="True"/>
+                <field name="company_id" groups="base.group_multi_company"
+                       optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ==========================================================
+         rental.dossier — Search View
+         ========================================================== -->
+
+    <record id="view_rental_dossier_search" model="ir.ui.view">
+        <field name="name">rental.dossier.search</field>
+        <field name="model">rental.dossier</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="description"/>
+                <field name="partner_id"/>
+                <field name="partner_email"/>
+                <filter name="draft" string="Draft"
+                        domain="[('state', '=', 'draft')]"/>
+                <filter name="confirmed" string="Confirmed"
+                        domain="[('state', '=', 'confirmed')]"/>
+                <filter name="paid" string="Paid"
+                        domain="[('state', '=', 'paid')]"/>
+                <filter name="done" string="Done"
+                        domain="[('state', '=', 'done')]"/>
+                <separator/>
+                <filter name="payment_issues" string="Payment Issues"
+                        domain="[('state', 'in', ('payment_failed', 'payment_expired', 'payment_exception'))]"/>
+                <filter name="cancelled" string="Cancelled"
+                        domain="[('state', '=', 'cancelled')]"/>
+                <separator/>
+                <filter name="backend" string="Backend"
+                        domain="[('source', '=', 'backend')]"/>
+                <filter name="website" string="Website"
+                        domain="[('source', '=', 'website')]"/>
+                <filter name="kiosk" string="Kiosk"
+                        domain="[('source', '=', 'kiosk')]"/>
+                <separator/>
+                <filter name="group_state" string="Status"
+                        context="{'group_by': 'state'}"/>
+                <filter name="group_source" string="Source"
+                        context="{'group_by': 'source'}"/>
+                <filter name="group_profile" string="Profile"
+                        context="{'group_by': 'profile_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ==========================================================
+         Actions
+         ========================================================== -->
+
+    <record id="action_rental_dossier" model="ir.actions.act_window">
+        <field name="name">Rental Dossiers</field>
+        <field name="res_model">rental.dossier</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'default_source': 'backend'}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first Rental Dossier
+            </p>
+            <p>
+                A dossier bundles rental items, event tickets, add-ons
+                and services into a single checkout with one payment.
+                You can also use it to group existing sale and rental
+                orders for internal project tracking.
+            </p>
+        </field>
+    </record>
+
+</odoo>

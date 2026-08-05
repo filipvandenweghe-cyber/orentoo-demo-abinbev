@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_weather" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.weather_forecast</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base_setup.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="Weather Forecast"
+                     string="Weather Forecast"
+                     name="weather_forecast"
+                     groups="base.group_system">
+
+                    <setting id="weather_api_config" type="header" string="API Configuration"/>
+
+                    <setting string="OpenWeather API Key"
+                             help="API key for OpenWeather One Call API 3.0.  Sign up at openweathermap.org.">
+                        <field name="weather_api_key" password="True" class="o_light_label"/>
+                    </setting>
+
+                    <setting string="Units"
+                             help="Unit system used for temperature, wind speed, etc.">
+                        <field name="weather_units" class="o_light_label"/>
+                    </setting>
+
+                    <setting string="API Language"
+                             help="ISO 639-1 code for weather descriptions (e.g. en, nl, fr).">
+                        <field name="weather_language" placeholder="en" class="o_light_label"/>
+                    </setting>
+
+                    <setting id="weather_schedule_config" type="header" string="Scheduled Update"/>
+
+                    <setting string="Daily Update Time (HH:MM)"
+                             help="Time of day for the automatic forecast update, in the company timezone.  Saving these settings will reschedule the cron job accordingly.">
+                        <field name="weather_update_time" placeholder="16:00" class="o_light_label"/>
+                    </setting>
+
+                </app>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,3739 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* multi_channel_rental_flow
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0+e\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-26 16:19+0000\n"
+"PO-Revision-Date: 2026-06-26 16:19+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid " (%(slot)s)"
+msgstr " (%(slot)s)"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid " to %(end)s"
+msgstr " à %(end)s"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid " — %(slot)s"
+msgstr " — %(slot)s"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid " — Event: %(event)s"
+msgstr " — Événement : %(event)s"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid " — Rental %(start)s"
+msgstr " — Location %(start)s"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/mcrf_service.py:0
+msgid "%(available)s available (%(requested)s requested)."
+msgstr "%(available)s disponible(s) (%(requested)s demandé(s))."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier_slot.py:0
+msgid "%(date)s %(start)s – %(end)s"
+msgstr "%(date)s %(start)s – %(end)s"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/payment_preparation_service.py:0
+msgid "%(product)s: event '%(event)s' is sold out."
+msgstr "%(product)s : l'événement '%(event)s' est complet."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/payment_preparation_service.py:0
+msgid "%(product)s: only %(available)s available, %(requested)s requested."
+msgstr "%(product)s : seulement %(available)s disponible(s), %(requested)s demandé(s)."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/payment_preparation_service.py:0
+msgid ""
+"%(product)s: only %(available)s seats available for '%(event)s' "
+"(%(requested)s requested)."
+msgstr ""
+"%(product)s : seulement %(available)s places disponibles pour '%(event)s' "
+"(%(requested)s demandé(s))."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/payment_preparation_service.py:0
+msgid ""
+"%(product)s: only %(available)s seats available for '%(slot)s' "
+"(%(requested)s requested)."
+msgstr ""
+"%(product)s : seulement %(available)s places disponibles pour '%(slot)s' "
+"(%(requested)s demandé(s))."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/payment_preparation_service.py:0
+msgid ""
+"%(product)s: only %(reserved)s of %(requested)s could be reserved (order "
+"%(order)s)."
+msgstr ""
+"%(product)s : seulement %(reserved)s sur %(requested)s ont pu être réservés "
+"(commande %(order)s)."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/payment_preparation_service.py:0
+msgid "%(product)s: time slot '%(slot)s' is sold out."
+msgstr "%(product)s : le créneau '%(slot)s' est complet."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier_slot.py:0
+msgid "%(start)s – %(end)s"
+msgstr "%(start)s – %(end)s"
+
+#. module: multi_channel_rental_flow
+#: model:ir.actions.report,print_report_name:multi_channel_rental_flow.action_report_dossier_tickets
+msgid "'Tickets - %s' % object.name"
+msgstr ""
+
+#. module: multi_channel_rental_flow
+#: model:multi.channel.rental.duration.option,name:multi_channel_rental_flow.demo_fallback_duration_1h
+msgid "1 hour"
+msgstr "1 heure"
+
+#. module: multi_channel_rental_flow
+#: model:mail.template,body_html:multi_channel_rental_flow.email_template_dossier_confirmation
+msgid ""
+"<div style=\"margin: 0px; padding: 0px; font-family: Arial, sans-serif; font-size: 14px;\">\n"
+"\n"
+"    <p>Dear <t t-out=\"object.partner_id.name or 'Customer'\">Customer</t>,</p>\n"
+"\n"
+"    <p>Your booking <strong><t t-out=\"object.display_name or ''\">RD00001</t></strong>\n"
+"       has been confirmed and paid.</p>\n"
+"\n"
+"    <!-- Order references -->\n"
+"    <t t-if=\"object.sale_order_ids\">\n"
+"        <p><strong>Order references:</strong></p>\n"
+"        <ul>\n"
+"            <t t-foreach=\"object.sale_order_ids\" t-as=\"order\">\n"
+"                <li>\n"
+"                    <t t-out=\"order.name\">S00001</t>\n"
+"                    <t t-if=\"order.is_rental_order and order.rental_start_date\">\n"
+"                        — Rental\n"
+"                        <t t-out=\"format_datetime(order.rental_start_date, dt_format='short')\">01/06/2026 09:00</t>\n"
+"                        <t t-if=\"order.rental_return_date\">\n"
+"                            to <t t-out=\"format_datetime(order.rental_return_date, dt_format='short')\">01/06/2026 11:00</t>\n"
+"                        </t>\n"
+"                    </t>\n"
+"                </li>\n"
+"            </t>\n"
+"        </ul>\n"
+"    </t>\n"
+"\n"
+"    <!-- Items summary -->\n"
+"    <t t-set=\"active_items\" t-value=\"object.item_ids.filtered(lambda i: i.state != 'cancelled')\"/>\n"
+"    <t t-if=\"active_items\">\n"
+"        <p><strong>Items:</strong></p>\n"
+"        <table style=\"width: 100%; border-collapse: collapse; margin-bottom: 16px;\">\n"
+"            <tr style=\"background-color: #f5f5f5;\">\n"
+"                <th style=\"padding: 8px; text-align: left; border-bottom: 1px solid #ddd;\">Product</th>\n"
+"                <th style=\"padding: 8px; text-align: left; border-bottom: 1px solid #ddd;\">Details</th>\n"
+"                <th style=\"padding: 8px; text-align: right; border-bottom: 1px solid #ddd;\">Qty</th>\n"
+"                <th style=\"padding: 8px; text-align: right; border-bottom: 1px solid #ddd;\">Price</th>\n"
+"            </tr>\n"
+"            <t t-foreach=\"active_items\" t-as=\"item\">\n"
+"                <tr>\n"
+"                    <td style=\"padding: 8px; border-bottom: 1px solid #eee;\">\n"
+"                        <t t-out=\"item.product_id.display_name\">Product</t>\n"
+"                    </td>\n"
+"                    <td style=\"padding: 8px; border-bottom: 1px solid #eee;\">\n"
+"                        <t t-if=\"item.item_role == 'event_ticket' and item.event_id\">\n"
+"                            Event: <t t-out=\"item.event_id.name\">Event</t>\n"
+"                            <t t-if=\"item.event_slot_id\">\n"
+"                                (<t t-out=\"item.event_slot_id.display_name\">Slot</t>)\n"
+"                            </t>\n"
+"                        </t>\n"
+"                        <t t-elif=\"item.slot_id\">\n"
+"                            <t t-out=\"item.slot_id.name\">Timeslot</t>\n"
+"                        </t>\n"
+"                        <t t-else=\"\">\n"
+"                            <t t-out=\"dict(item._fields['item_role'].selection).get(item.item_role, '')\">Rental</t>\n"
+"                        </t>\n"
+"                    </td>\n"
+"                    <td style=\"padding: 8px; text-align: right; border-bottom: 1px solid #eee;\">\n"
+"                        <t t-out=\"item.quantity\">1</t>\n"
+"                    </td>\n"
+"                    <td style=\"padding: 8px; text-align: right; border-bottom: 1px solid #eee;\">\n"
+"                        <t t-out=\"format_amount(item.price_subtotal, object.currency_id)\">$ 50.00</t>\n"
+"                    </td>\n"
+"                </tr>\n"
+"            </t>\n"
+"            <tr style=\"font-weight: bold;\">\n"
+"                <td colspan=\"3\" style=\"padding: 8px; text-align: right; border-top: 2px solid #333;\">Total paid:</td>\n"
+"                <td style=\"padding: 8px; text-align: right; border-top: 2px solid #333;\">\n"
+"                    <t t-out=\"format_amount(object.amount_total, object.currency_id)\">$ 100.00</t>\n"
+"                </td>\n"
+"            </tr>\n"
+"        </table>\n"
+"    </t>\n"
+"\n"
+"    <!-- Payment info -->\n"
+"    <t t-if=\"object.payment_reference\">\n"
+"        <p>Payment reference: <strong><t t-out=\"object.payment_reference\">TX-001</t></strong></p>\n"
+"    </t>\n"
+"\n"
+"    <hr/>\n"
+"\n"
+"    <!-- Kiosk lookup instructions -->\n"
+"    <p><strong>Retrieve your tickets at the kiosk:</strong></p>\n"
+"    <p>Enter your dossier number <strong><t t-out=\"object.name\">RD00001</t></strong>\n"
+"       and your email address\n"
+"       <strong><t t-out=\"object.partner_email or object.partner_id.email or ''\">customer@example.com</t></strong>\n"
+"       at any kiosk terminal to print your tickets.</p>\n"
+"\n"
+"    <hr/>\n"
+"\n"
+"    <p style=\"color: #666; font-size: 12px;\">\n"
+"        <em>This dossier groups all your bookings, rental orders\n"
+"        and event tickets into a single confirmation.</em>\n"
+"    </p>\n"
+"\n"
+"</div>\n"
+"            "
+msgstr ""
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid ""
+"<hr/><p><strong>Retrieve your tickets at the kiosk:</strong></p><p>Enter "
+"your dossier number <strong>%(dossier)s</strong> and your email address "
+"<strong>%(email)s</strong> at any kiosk terminal to print your tickets.</p>"
+msgstr ""
+"<hr/><p><strong>Récupérer vos tickets au kiosque :</strong></p><p>Entrez "
+"votre numéro de dossier <strong>%(dossier)s</strong> et votre adresse e-mail "
+"<strong>%(email)s</strong> à n'importe quel terminal kiosque pour imprimer vos tickets.</p>"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid ""
+"<p><em>This dossier groups all your bookings, rental orders and event "
+"tickets into a single confirmation.</em></p>"
+msgstr ""
+"<p><em>Ce dossier regroupe toutes vos réservations, commandes de location et "
+"tickets d'événements en une seule confirmation.</em></p>"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid "<p><strong>Items:</strong></p><ul>"
+msgstr "<p><strong>Articles :</strong></p><ul>"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid "<p><strong>Order references:</strong></p><ul>"
+msgstr "<p><strong>Références de commande :</strong></p><ul>"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid "<p><strong>Total paid:</strong> %(amount)s</p>"
+msgstr "<p><strong>Total payé :</strong> %(amount)s</p>"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid "<p>Dear %(name)s,</p>"
+msgstr "<p>Cher/Chère %(name)s,</p>"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid ""
+"<p>Your booking <strong>%(dossier)s</strong> has been confirmed and "
+"paid.</p>"
+msgstr ""
+"<p>Votre réservation <strong>%(dossier)s</strong> a été confirmée et "
+"payée.</p>"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.report_dossier_tickets
+msgid "<small class=\"text-muted\">Check-in code</small><br/>"
+msgstr "<small class=\"text-muted\">Code d'enregistrement</small><br/>"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.report_dossier_tickets
+msgid "<small class=\"text-muted\">Customer</small><br/>"
+msgstr "<small class=\"text-muted\">Client</small><br/>"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.report_dossier_tickets
+msgid "<small class=\"text-muted\">Dossier</small><br/>"
+msgstr "<small class=\"text-muted\">Dossier</small><br/>"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.report_dossier_tickets
+msgid "<small class=\"text-muted\">Event</small><br/>"
+msgstr "<small class=\"text-muted\">Événement</small><br/>"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.report_dossier_tickets
+msgid "<small class=\"text-muted\">Order</small><br/>"
+msgstr "<small class=\"text-muted\">Commande</small><br/>"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.report_dossier_tickets
+msgid "<small class=\"text-muted\">Product</small><br/>"
+msgstr "<small class=\"text-muted\">Produit</small><br/>"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.report_dossier_tickets
+msgid "<small class=\"text-muted\">Slot</small><br/>"
+msgstr "<small class=\"text-muted\">Créneau</small><br/>"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.report_dossier_tickets
+msgid "<small class=\"text-muted\">Timeslot</small><br/>"
+msgstr "<small class=\"text-muted\">Créneau horaire</small><br/>"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_product_detail
+msgid "<span class=\"fs-3 fw-bold\" id=\"rf-qty-val\">1</span>"
+msgstr ""
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_catalog
+msgid "<span class=\"text-muted\" style=\"font-size:3rem;\">📦</span>"
+msgstr ""
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_basket
+msgid "<span>Subtotal</span>"
+msgstr "<span>Sous-total</span>"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_basket
+msgid "<span>Tax</span>"
+msgstr "<span>TVA</span>"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_basket
+msgid "<span>Total</span>"
+msgstr "<span>Total</span>"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "<strong>Data — Global (header/footer)</strong>"
+msgstr "<strong>Données — Global (en-tête/pied de page)</strong>"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "<strong>Data — Per ticket (body)</strong>"
+msgstr "<strong>Données — Par ticket (corps)</strong>"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "<strong>Image / QR / Barcode</strong>"
+msgstr "<strong>Image / QR / Code-barres</strong>"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid ""
+"<strong>IoT Box:</strong>\n"
+"                                Make sure the IoT module is installed and the selected\n"
+"                                POS printer is linked to an IoT device."
+msgstr ""
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "<strong>Layout</strong>"
+msgstr "<strong>Mise en page</strong>"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.product_template_form_view_mcrf
+msgid ""
+"<strong>Multi-variant product:</strong>\n"
+"                            Configure the Multi-Channel Rental Flow settings on each\n"
+"                            product variant individually via the\n"
+"                            <em>Attributes &amp; Variants</em> tab."
+msgstr ""
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_order_page
+msgid ""
+"<strong>Not enough availability.</strong>\n"
+"                            <span id=\"ko-avail-warning-text\"/>"
+msgstr ""
+"<strong>Disponibilité insuffisante.</strong>\n"
+"                            <span id=\"ko-avail-warning-text\"/>"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_product_detail
+msgid ""
+"<strong>Not enough availability.</strong>\n"
+"                        <span id=\"rf-avail-warning-text\"/>"
+msgstr ""
+"<strong>Disponibilité insuffisante.</strong>\n"
+"                        <span id=\"rf-avail-warning-text\"/>"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "<strong>Receipt only</strong>"
+msgstr "<strong>Reçu uniquement</strong>"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "<strong>Text formatting</strong>"
+msgstr "<strong>Formatage de texte</strong>"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_confirmation
+msgid "A confirmation email has been sent to"
+msgstr "Un e-mail de confirmation a été envoyé à"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.actions.act_window,help:multi_channel_rental_flow.action_rental_dossier
+msgid ""
+"A dossier bundles rental items, event tickets, add-ons\n"
+"                and services into a single checkout with one payment.\n"
+"                You can also use it to group existing sale and rental\n"
+"                orders for internal project tracking."
+msgstr ""
+"Un dossier regroupe les articles de location, tickets d'événements, compléments\n"
+"                et services en un seul paiement.\n"
+"                Vous pouvez également l'utiliser pour regrouper des bons de commande\n"
+"                et de location existants pour le suivi de projets internes."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__message_needaction
+msgid "Action Needed"
+msgstr "Action requise"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__active
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__active
+msgid "Active"
+msgstr "Actif"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__activity_ids
+msgid "Activities"
+msgstr "Activités"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__activity_exception_decoration
+msgid "Activity Exception Decoration"
+msgstr "Décoration d'exception d'activité"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__activity_state
+msgid "Activity State"
+msgstr "État de l'activité"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__activity_type_icon
+msgid "Activity Type Icon"
+msgstr "Icône du type d'activité"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_order_page
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_product_detail
+msgid "Add to Basket"
+msgstr "Ajouter au panier"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__product_product__multi_channel_item_role__addon
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier_item__item_role__addon
+msgid "Add-on"
+msgstr "Complément"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/payment_preparation_service.py:0
+msgid "Additional warnings:"
+msgstr "Avertissements supplémentaires :"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__slot_advance_days
+msgid "Advance Days"
+msgstr "Jours à l'avance"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_catalog
+msgid "All"
+msgstr "Tous"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__allow_demo_payment
+msgid "Allow Demo Payment Provider"
+msgstr "Autoriser le fournisseur de paiement démo"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_product_product__allow_quantity_selection
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_product_template__allow_quantity_selection
+msgid "Allow Quantity Selection"
+msgstr "Autoriser la sélection de quantité"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Allow Reprint"
+msgstr "Autoriser la réimpression"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__enable_dossier_ordering
+msgid "Allow customers to create dossiers from this profile."
+msgstr "Permettre aux clients de créer des dossiers depuis ce profil."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__enable_ticket_lookup_printing
+msgid "Allow customers to look up and print tickets at the kiosk."
+msgstr "Permettre aux clients de rechercher et imprimer des tickets au kiosque."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_product_product__allow_quantity_selection
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_product_template__allow_quantity_selection
+msgid "Allow the customer to choose a quantity in the flow."
+msgstr "Permettre au client de choisir une quantité dans le flux."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__allowed_pos_category_ids
+msgid "Allowed POS Categories"
+msgstr "Catégories PdV autorisées"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__allowed_ecommerce_category_ids
+msgid "Allowed eCommerce Categories"
+msgstr "Catégories eCommerce autorisées"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__payment_provider_ids
+msgid "Allowed payment providers for this profile. Leave empty for all."
+msgstr "Fournisseurs de paiement autorisés pour ce profil. Laisser vide pour tous."
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_order_page
+msgid "Already have a booking? Retrieve tickets →"
+msgstr "Vous avez déjà une réservation ? Récupérer les tickets →"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Amounts"
+msgstr "Montants"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_search
+msgid "Archived"
+msgstr "Archivé"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Are you sure you want to cancel this dossier?"
+msgstr "Êtes-vous sûr de vouloir annuler ce dossier ?"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__message_attachment_count
+msgid "Attachment Count"
+msgstr "Nombre de pièces jointes"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_rental_dossier__payment_pending_until
+msgid "Auto-expire dossier if payment not received by this time."
+msgstr "Expiration automatique du dossier si le paiement n'est pas reçu avant cette date."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_item__availability_state
+msgid "Availability State"
+msgstr "État de disponibilité"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/payment_preparation_service.py:0
+msgid "Availability warnings:"
+msgstr "Avertissements de disponibilité :"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier_item__availability_state__available
+msgid "Available"
+msgstr "Disponible"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__available_product_count
+msgid "Available Products"
+msgstr "Produits disponibles"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_flow_profile.py:0
+msgid "Available Products — %s"
+msgstr "Produits disponibles — %s"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_product_product__available_in_multi_channel_kiosk
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_product_template__available_in_multi_channel_kiosk
+msgid "Available in Multi-Channel Kiosk Flow"
+msgstr "Disponible dans le flux kiosque multicanal"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_product_product__available_in_multi_channel_website
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_product_template__available_in_multi_channel_website
+msgid "Available in Multi-Channel Website Flow"
+msgstr "Disponible dans le flux site web multicanal"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_ticket_lookup
+msgid "Back"
+msgstr "Retour"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__multi_channel_rental_profile__profile_type__backend
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier__source__backend
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__sale_order__mcrf_source__backend
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_search
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_search
+msgid "Backend"
+msgstr "Back-office"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_basket
+msgid "Basket"
+msgstr "Panier"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.product_product_form_view_mcrf
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.product_template_form_view_mcrf
+msgid "Behavior"
+msgstr "Comportement"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "Body (repeated per ticket)"
+msgstr "Corps (répété par ticket)"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__epos_ticket_body
+msgid ""
+"Body printed for EACH ticket. Repeated per ticket.\n"
+"\n"
+"TICKET DATA CODES:\n"
+"  {{sequence}} — ticket number\n"
+"  {{print_title}} — main title\n"
+"  {{print_subtitle}} — subtitle (role)\n"
+"  {{product_name}} — product name\n"
+"  {{order_name}} — sale order reference\n"
+"  {{quantity}} — quantity number\n"
+"  {{quantity_line}} — 'x 2' (only if qty > 1)\n"
+"  {{timeslot_start}} / {{timeslot_end}} — datetimes\n"
+"  {{timeslot_line}} — full timeslot range\n"
+"  {{event_name}} / {{event_line}} — event info\n"
+"  {{event_slot}} — event slot name\n"
+"  {{attendee_name}} / {{attendee_email}}\n"
+"  {{registration_barcode}} / {{barcode_line}}\n"
+"\n"
+"QR CODE EXAMPLE:\n"
+"  {{QR:{{dossier_name}}}} — QR with dossier number\n"
+"  {{QR_registration_barcode}} — QR with barcode value\n"
+"\n"
+"All header formatting codes also work here."
+msgstr ""
+
+#. module: multi_channel_rental_flow
+#: model:mail.template,subject:multi_channel_rental_flow.email_template_dossier_confirmation
+msgid "Booking Confirmation — {{ object.display_name }}"
+msgstr "Confirmation de réservation — {{ object.display_name }}"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_confirmation
+msgid "Booking Confirmed"
+msgstr "Réservation confirmée"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_confirmation
+msgid "Booking Confirmed!"
+msgstr "Réservation confirmée !"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_basket
+msgid "Browse products"
+msgstr "Parcourir les produits"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__multi_channel_rental_profile__printer_mode__browser
+msgid "Browser Print"
+msgstr "Impression navigateur"
+
+#. module: multi_channel_rental_flow
+#: model:product.template,name:multi_channel_rental_flow.demo_product_tmpl_canadese_kano
+msgid "Canadese Kano"
+msgstr ""
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Cancel"
+msgstr "Annuler"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__payment_pending_timeout_minutes
+msgid "Cancel pending dossiers after this many minutes without payment."
+msgstr "Annuler les dossiers en attente après ce nombre de minutes sans paiement."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier__state__cancelled
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier_item__state__cancelled
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier_slot__state__cancelled
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_search
+msgid "Cancelled"
+msgstr "Annulé"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "Category Filters"
+msgstr "Filtres de catégories"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Channel"
+msgstr "Canal"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.product_product_form_view_mcrf
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.product_template_form_view_mcrf
+msgid "Channel Availability"
+msgstr "Disponibilité par canal"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "Channel Link"
+msgstr "Lien du canal"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_sale_order__mcrf_tickets_printed
+msgid ""
+"Checked when tickets for this order have been printed. Uncheck in backend to"
+" allow reprinting."
+msgstr ""
+"Coché lorsque les tickets de cette commande ont été imprimés. Décocher dans "
+"le back-office pour autoriser la réimpression."
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_order_page
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_basket
+msgid "Checkout &amp; Pay"
+msgstr "Payer"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_checkout_error
+msgid "Checkout Error"
+msgstr "Erreur de paiement"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__guest_checkout_mode
+msgid "Checkout Mode"
+msgstr "Mode de paiement"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_order_page
+msgid "Checkout →"
+msgstr "Paiement →"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__closed_color
+msgid "Closed / Outside Hours Color"
+msgstr "Couleur fermé / hors heures"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_item__coefficient
+msgid "Coefficient"
+msgstr "Coefficient"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_item__color_code
+msgid "Color Code"
+msgstr "Code couleur"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "Color Configuration"
+msgstr "Configuration des couleurs"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "Colors"
+msgstr "Couleurs"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__print_tickets_with_receipt
+msgid "Combine tickets and receipt into a single print job."
+msgstr "Combiner les tickets et le reçu en un seul travail d'impression."
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Commerce"
+msgstr "Commerce"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__company_id
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__company_id
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_item__company_id
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_slot__company_id
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Company"
+msgstr "Société"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Confirm"
+msgstr "Confirmer"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Confirmation Email"
+msgstr "E-mail de confirmation"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__confirmation_sent
+msgid "Confirmation Sent"
+msgstr "Confirmation envoyée"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__confirmation_sent_at
+msgid "Confirmation Sent At"
+msgstr "Confirmation envoyée le"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid "Confirmation email sent to %s."
+msgstr "E-mail de confirmation envoyé à %s."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier__state__confirmed
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier_item__state__confirmed
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier_slot__state__confirmed
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_search
+msgid "Confirmed"
+msgstr "Confirmé"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_confirmation
+msgid "Continue Browsing"
+msgstr "Continuer la navigation"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_order_page
+msgid "Continue Shopping"
+msgstr "Continuer les achats"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_order_page
+msgid "Continue to Payment"
+msgstr "Continuer vers le paiement"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/payment_preparation_service.py:0
+msgid "Could not confirm orders."
+msgstr "Impossible de confirmer les commandes."
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.actions.act_window,help:multi_channel_rental_flow.action_rental_dossier
+msgid "Create your first Rental Dossier"
+msgstr "Créez votre premier dossier de location"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.actions.act_window,help:multi_channel_rental_flow.action_rental_flow_profile
+msgid "Create your first Rental Flow Profile"
+msgstr "Créez votre premier profil de flux de location"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_duration_option__create_uid
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__create_uid
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__create_uid
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_item__create_uid
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_slot__create_uid
+msgid "Created by"
+msgstr "Créé par"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_duration_option__create_date
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__create_date
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__create_date
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_item__create_date
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_slot__create_date
+msgid "Created on"
+msgstr "Créé le"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__currency_id
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_item__currency_id
+msgid "Currency"
+msgstr "Devise"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk.py:0
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__partner_id
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Customer"
+msgstr "Client"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__note
+msgid "Customer Note"
+msgstr "Note client"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid "Customer email is required for %s dossiers."
+msgstr "L'e-mail du client est requis pour les dossiers %s."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_rental_dossier__partner_email
+msgid "Customer email — used for ticket lookup and confirmation."
+msgstr "E-mail du client — utilisé pour la recherche de tickets et la confirmation."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid "Customer is required."
+msgstr "Le client est requis."
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Customer-facing note..."
+msgstr "Note visible par le client..."
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.report_dossier_tickets
+msgid "Customer:"
+msgstr "Client :"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid ""
+"Customize the thermal printer ticket layout using\n"
+"                                    placeholder codes. See field tooltips for available codes."
+msgstr ""
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__high_color
+msgid "Dark green — indicates a peak pricing period."
+msgstr "Vert foncé — indique une période de tarification haute."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__multi_channel_rental_duration_option__duration_unit__day
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__multi_channel_rental_profile__default_duration_unit__day
+msgid "Days"
+msgstr "Jours"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__default_partner_id
+msgid "Default Customer"
+msgstr "Client par défaut"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__default_duration_unit
+msgid "Default Duration Unit"
+msgstr "Unité de durée par défaut"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__default_payment_provider_id
+msgid "Default Payment Provider"
+msgstr "Fournisseur de paiement par défaut"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__default_partner_id
+msgid ""
+"Default customer for kiosk orders (guest checkout). For website orders this "
+"is the logged-in user."
+msgstr ""
+"Client par défaut pour les commandes kiosque (paiement invité). Pour les "
+"commandes site web, c'est l'utilisateur connecté."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__description
+msgid "Description"
+msgstr "Description"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_basket
+msgid "Details"
+msgstr "Détails"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_product_product__multi_channel_item_role
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_product_template__multi_channel_item_role
+msgid ""
+"Determines how this product behaves in the flow:\n"
+"- Rental: requires timeslot and duration selection.\n"
+"- Event Ticket: requires event and ticket selection.\n"
+"- Add-on: optional extra (e.g. lunch package).\n"
+"- Service: standalone service product.\n"
+"- Flex Option: reserved for future use."
+msgstr ""
+"Détermine le comportement de ce produit dans le flux :\n"
+"- Location : nécessite la sélection d'un créneau et d'une durée.\n"
+"- Ticket d'événement : nécessite la sélection d'un événement et d'un ticket.\n"
+"- Complément : extra optionnel (p. ex. formule déjeuner).\n"
+"- Service : produit de service autonome.\n"
+"- Option flexible : réservé pour usage futur."
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.product_product_form_view_mcrf
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.product_template_form_view_mcrf
+msgid "Display"
+msgstr "Affichage"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_event_registration__display_name
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_duration_option__display_name
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_order_service__display_name
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_payment_prep__display_name
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__display_name
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_service__display_name
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_ticket_service__display_name
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_payment_transaction__display_name
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_product_product__display_name
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_product_template__display_name
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__display_name
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_item__display_name
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_slot__display_name
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_sale_order__display_name
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_sale_order_line__display_name
+msgid "Display Name"
+msgstr "Nom affiché"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_duration_option__name
+msgid "Display label shown to the customer, e.g. '1 hour', 'Half day'."
+msgstr "Libellé affiché au client, p. ex. « 1 heure », « Demi-journée »."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_product_product__use_product_image_in_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_product_template__use_product_image_in_flow
+msgid "Display the product image in the website and kiosk flows."
+msgstr "Afficher l'image du produit dans les flux site web et kiosque."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier__state__done
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_search
+msgid "Done"
+msgstr "Terminé"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_item__dossier_id
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_slot__dossier_id
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_sale_order__mcrf_dossier_display
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.rental_order_list_view_mcrf
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.sale_order_list_view_mcrf
+msgid "Dossier"
+msgstr "Dossier"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/payment_preparation_service.py:0
+msgid "Dossier %s is already paid or done."
+msgstr "Le dossier %s est déjà payé ou terminé."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/payment_preparation_service.py:0
+msgid "Dossier %s is cancelled. Reset to draft first."
+msgstr "Le dossier %s est annulé. Remettez-le en brouillon d'abord."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid "Dossier %s is not ready for payment (state: %s)."
+msgstr "Le dossier %s n'est pas prêt pour le paiement (état : %s)."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_event_registration__mcrf_dossier_item_id
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_sale_order_line__mcrf_dossier_item_id
+msgid "Dossier Item"
+msgstr "Article du dossier"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Dossier Items Total"
+msgstr "Total articles du dossier"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__name
+msgid "Dossier Number"
+msgstr "Numéro de dossier"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model,name:multi_channel_rental_flow.model_multi_channel_rental_order_service
+msgid "Dossier Order Generation Service"
+msgstr "Service de génération de commandes de dossier"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model,name:multi_channel_rental_flow.model_multi_channel_rental_payment_prep
+msgid "Dossier Payment Preparation Service"
+msgstr "Service de préparation de paiement de dossier"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_sale_order__mcrf_dossier_slot_id
+msgid "Dossier Slot"
+msgstr "Créneau du dossier"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_sale_order__mcrf_source
+msgid "Dossier Source"
+msgstr "Source du dossier"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model,name:multi_channel_rental_flow.model_multi_channel_rental_ticket_service
+msgid "Dossier Ticket Service"
+msgstr "Service de tickets de dossier"
+
+#. module: multi_channel_rental_flow
+#: model:ir.actions.report,name:multi_channel_rental_flow.action_report_dossier_tickets
+msgid "Dossier Tickets"
+msgstr "Tickets du dossier"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/ticket_service.py:0
+msgid "Dossier is not paid."
+msgstr "Le dossier n'est pas payé."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_sale_order_line__mcrf_dossier_item_id
+msgid "Dossier item that generated this order line."
+msgstr "Article du dossier qui a généré cette ligne de commande."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_payment_transaction__mcrf_dossier_id
+msgid "Dossier linked to this payment transaction."
+msgstr "Dossier lié à cette transaction de paiement."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+msgid "Dossier not found."
+msgstr "Dossier non trouvé."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_sale_order__mcrf_dossier_display
+msgid "Dossier number and description for list view display."
+msgstr "Numéro de dossier et description pour l'affichage en liste."
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_ticket_lookup
+msgid "Dossier or order number"
+msgstr "Numéro de dossier ou de commande"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_event_registration__mcrf_dossier_id
+msgid "Dossier that created this event registration."
+msgstr "Dossier ayant créé cette inscription à l'événement."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid "Dossier total must be positive for payment."
+msgstr "Le total du dossier doit être positif pour le paiement."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/ticket_service.py:0
+msgid "Dossier/order number and email are required."
+msgstr "Le numéro de dossier/commande et l'e-mail sont requis."
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_order_page
+msgid "Dossier: <strong id=\"success-dossier\"/>"
+msgstr "Dossier : <strong id=\"success-dossier\"/>"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_sale_order__mcrf_dossier_ids
+#: model:ir.ui.menu,name:multi_channel_rental_flow.menu_rental_dossier
+#: model:ir.ui.menu,name:multi_channel_rental_flow.menu_sale_dossier
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.sale_order_form_view_mcrf
+msgid "Dossiers"
+msgstr "Dossiers"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_sale_order__mcrf_dossier_ids
+msgid "Dossiers this sale order belongs to."
+msgstr "Dossiers auxquels ce bon de commande appartient."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier__state__draft
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier_item__state__draft
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier_slot__state__draft
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_search
+msgid "Draft"
+msgstr "Brouillon"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_order_page
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_product_detail
+msgid "Duration"
+msgstr "Durée"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "Duration Defaults"
+msgstr "Durées par défaut"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_duration_option__duration_unit
+msgid "Duration Unit"
+msgstr "Unité de durée"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_duration_option__duration_value
+msgid "Duration Value"
+msgstr "Valeur de durée"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__fallback_duration_ids
+msgid ""
+"Duration choices shown when no coefficient table applies. Leave empty to use"
+" 1, 2, 4, 8 hours as default."
+msgstr ""
+"Choix de durée affichés lorsqu'aucune table de coefficients ne s'applique. "
+"Laisser vide pour utiliser 1, 2, 4, 8 heures par défaut."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_rental_dossier_item__coefficient
+msgid "Duration coefficient from rental_coefficient_dynamic_pricing."
+msgstr "Coefficient de durée de rental_coefficient_dynamic_pricing."
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Dyn. Factor %"
+msgstr "Facteur dyn. %"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_item__dynamic_factor_percentage
+msgid "Dynamic Factor (%)"
+msgstr "Facteur dynamique (%)"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_item__dynamic_multiplier
+msgid "Dynamic Multiplier"
+msgstr "Multiplicateur dynamique"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "Dynamic Pricing Thresholds"
+msgstr "Seuils de tarification dynamique"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__high_dynamic_factor_threshold
+msgid "Dynamic factor above this value is shown in the high (peak) color."
+msgstr "Facteur dynamique au-dessus de cette valeur affiché en couleur haute (pic)."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__low_dynamic_factor_threshold
+msgid "Dynamic factor below this value is shown in the low (discount) color."
+msgstr "Facteur dynamique en dessous de cette valeur affiché en couleur basse (remise)."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_rental_dossier_item__dynamic_factor_percentage
+msgid "Dynamic pricing factor percentage."
+msgstr "Pourcentage du facteur de tarification dynamique."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__partner_email
+msgid "Email"
+msgstr "E-mail"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_basket
+msgid "Email *"
+msgstr "E-mail *"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_order_page
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_ticket_lookup
+msgid "Email address"
+msgstr "Adresse e-mail"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+msgid "Email address is required."
+msgstr "L'adresse e-mail est obligatoire."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__enable_addons
+msgid "Enable Add-ons"
+msgstr "Activer les compléments"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__enable_dossier_ordering
+msgid "Enable Dossier Ordering"
+msgstr "Activer la commande de dossiers"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__enable_event_tickets
+msgid "Enable Event Tickets"
+msgstr "Activer les tickets d'événements"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__enable_rental_items
+msgid "Enable Rental Items"
+msgstr "Activer les articles de location"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__enable_services
+msgid "Enable Services"
+msgstr "Activer les services"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__enable_ticket_lookup_printing
+msgid "Enable Ticket Lookup & Printing"
+msgstr "Activer la recherche et l'impression de tickets"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__allow_demo_payment
+msgid "Enable the Odoo demo payment provider for testing."
+msgstr "Activer le fournisseur de paiement démo Odoo pour les tests."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_product_product__use_in_multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_product_template__use_in_multi_channel_rental_flow
+msgid ""
+"Enable this product in the Multi-Channel Rental Flow. When enabled, "
+"configure the item role and channel availability below."
+msgstr ""
+"Activer ce produit dans le flux de location multicanal. Une fois activé, "
+"configurez le rôle de l'article et la disponibilité par canal ci-dessous."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_slot__end_datetime
+msgid "End"
+msgstr "Fin"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_confirmation
+msgid "Enter your dossier number and email:"
+msgstr "Entrez votre numéro de dossier et votre e-mail :"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_ticket_lookup
+msgid "Enter your dossier or order number and email"
+msgstr "Entrez votre numéro de dossier ou de commande et votre e-mail"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_order_page
+msgid ""
+"Enter your email to receive your booking confirmation\n"
+"                            and to retrieve your tickets at the kiosk."
+msgstr ""
+"Entrez votre e-mail pour recevoir la confirmation de réservation\n"
+"                            et pour récupérer vos tickets au kiosque."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__multi_channel_rental_profile__printer_mode__pos_epos_ip
+msgid "Epson ePOS / IP Printer"
+msgstr "Imprimante Epson ePOS / IP"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk.py:0
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+#: code:addons/multi_channel_rental_flow/controllers/website_flow.py:0
+msgid "Error: "
+msgstr "Erreur : "
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk.py:0
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_item__event_id
+msgid "Event"
+msgstr "Événement"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model,name:multi_channel_rental_flow.model_event_registration
+msgid "Event Registration"
+msgstr "Inscription à l'événement"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_item__event_slot_id
+msgid "Event Slot"
+msgstr "Créneau de l'événement"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/ticket_service.py:0
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_item__event_ticket_id
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__product_product__multi_channel_item_role__event_ticket
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier_item__item_role__event_ticket
+msgid "Event Ticket"
+msgstr "Ticket d'événement"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_rental_dossier_item__event_id
+msgid "Event for event_ticket items."
+msgstr "Événement pour les articles de type event_ticket."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid "Event is required for event ticket item '%(product)s'."
+msgstr "L'événement est requis pour l'article de ticket d'événement '%(product)s'."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/payment_preparation_service.py:0
+msgid "Event not found for '%s'."
+msgstr "Événement non trouvé pour '%s'."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid ""
+"Event slot is required for '%(product)s' because '%(event)s' has multiple "
+"time slots."
+msgstr ""
+"Le créneau de l'événement est requis pour '%(product)s' car '%(event)s' a "
+"plusieurs créneaux horaires."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_rental_dossier_item__event_slot_id
+msgid "Event time slot (for multi-slot events)."
+msgstr "Créneau horaire de l'événement (pour les événements multi-créneaux)."
+
+#. module: multi_channel_rental_flow
+#: model_terms:event.event,description:multi_channel_rental_flow.demo_event_klimparcours
+msgid ""
+"Every year we invite our community, partners and end-users to come and meet us! It's the ideal event to get together and present new features, roadmap of future versions, achievements of the software, workshops, training sessions, etc...\n"
+"            This event is also an opportunity to showcase our partners' case studies, methodology or developments. Be there and see directly from the source the features of the new version!"
+msgstr ""
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier_item__state__exception
+msgid "Exception"
+msgstr "Exception"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__excluded_product_ids
+msgid "Excluded Products"
+msgstr "Produits exclus"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "Explicit Product Assignment"
+msgstr "Affectation explicite de produits"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/payment_preparation_service.py:0
+msgid "Failed to confirm orders: %s"
+msgstr "Échec de la confirmation des commandes : %s"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model,name:multi_channel_rental_flow.model_multi_channel_rental_duration_option
+msgid "Fallback Duration Option"
+msgstr "Option de durée de repli"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__fallback_duration_ids
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "Fallback Duration Options"
+msgstr "Options de durée de repli"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "Feature Toggles"
+msgstr "Options de fonctionnalités"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__product_product__multi_channel_item_role__flex_option
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier_item__item_role__flex_option
+msgid "Flex Option"
+msgstr "Option flexible"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.product_product_form_view_mcrf
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.product_template_form_view_mcrf
+msgid "Flow Configuration"
+msgstr "Configuration du flux"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.product_template_form_view_mcrf
+msgid "Flow Status"
+msgstr "Statut du flux"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__message_follower_ids
+msgid "Followers"
+msgstr "Abonnés"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__message_partner_ids
+msgid "Followers (Partners)"
+msgstr "Abonnés (Partenaires)"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_rental_dossier__activity_type_icon
+msgid "Font awesome icon e.g. fa-tasks"
+msgstr "Icône Font Awesome, p. ex. fa-tasks"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "Footer"
+msgstr "Pied de page"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__epos_ticket_footer
+msgid "Footer printed after all tickets."
+msgstr "Pied de page imprimé après tous les tickets."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/payment_preparation_service.py:0
+msgid "Forecast warnings:"
+msgstr "Avertissements de prévision :"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+#: code:addons/multi_channel_rental_flow/controllers/website_flow.py:0
+msgid "Fri"
+msgstr "Ven"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "General"
+msgstr "Général"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Generate Orders"
+msgstr "Générer les commandes"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Generate draft sale/rental orders from dossier slots and items?"
+msgstr "Générer des brouillons de bons de commande/location à partir des créneaux et articles du dossier ?"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__rental_slot_interval_minutes
+msgid "Generate rental start times every X minutes within opening hours."
+msgstr "Générer les heures de début de location toutes les X minutes pendant les heures d'ouverture."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier_item__state__generated
+msgid "Generated"
+msgstr "Généré"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__closed_color
+msgid "Grey — outside warehouse opening hours."
+msgstr "Gris — en dehors des heures d'ouverture de l'entrepôt."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__multi_channel_rental_profile__guest_checkout_mode__guest_minimal
+msgid "Guest (Minimal)"
+msgstr "Invité (Minimal)"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__multi_channel_rental_profile__guest_checkout_mode__guest_with_email
+msgid "Guest with Email"
+msgstr "Invité avec e-mail"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__has_message
+msgid "Has Message"
+msgstr "A un message"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "Header"
+msgstr "En-tête"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__epos_ticket_header
+msgid ""
+"Header printed before tickets on the ePOS printer.\n"
+"\n"
+"DATA CODES:\n"
+"  {{dossier_name}} — dossier number + description\n"
+"  {{customer}} — customer name\n"
+"  {{email}} — customer email\n"
+"  {{total}} — total amount with currency\n"
+"  {{payment_ref}} — payment reference\n"
+"\n"
+"TEXT FORMATTING:\n"
+"  {{BOLD_ON}} / {{BOLD_OFF}} — bold text\n"
+"  {{ALIGN_LEFT}} / {{ALIGN_CENTER}} / {{ALIGN_RIGHT}}\n"
+"  {{SIZE_1}} to {{SIZE_8}} — text size (1=normal, 2=double, etc.)\n"
+"  {{WIDE_1}} to {{WIDE_8}} — width only\n"
+"  {{TALL_1}} to {{TALL_8}} — height only\n"
+"  {{DOUBLE}} / {{DOUBLE_OFF}} — shortcut for size 2/1\n"
+"\n"
+"IMAGE:\n"
+"  {{LOGO}} — company logo (or profile receipt logo if set)\n"
+"\n"
+"QR & BARCODE:\n"
+"  {{QR:literal text}} — QR code with literal content\n"
+"  {{QR_dossier_name}} — QR code with field value\n"
+"  {{BARCODE:literal text}} — Code128 barcode\n"
+"  {{BARCODE_dossier_name}} — barcode with field value\n"
+"\n"
+"LAYOUT:\n"
+"  {{FEED}} — line feed / {{FEED_3}} — 3 line feeds\n"
+"  {{CUT}} — paper cut"
+msgstr ""
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_rental_dossier_item__color_code
+msgid "Hex color for the dynamic pricing factor display."
+msgstr "Couleur hex pour l'affichage du facteur de tarification dynamique."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__high_color
+msgid "High / Peak Color"
+msgstr "Couleur haute / pic"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__high_dynamic_factor_threshold
+msgid "High Factor Threshold (%)"
+msgstr "Seuil facteur haut (%)"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__multi_channel_rental_duration_option__duration_unit__hour
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__multi_channel_rental_profile__default_duration_unit__hour
+msgid "Hours"
+msgstr "Heures"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__slot_advance_days
+msgid "How many days ahead to show available timeslots."
+msgstr "Nombre de jours à l'avance pour afficher les créneaux disponibles."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_event_registration__id
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_duration_option__id
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_order_service__id
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_payment_prep__id
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__id
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_service__id
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_ticket_service__id
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_payment_transaction__id
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_product_product__id
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_product_template__id
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__id
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_item__id
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_slot__id
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_sale_order__id
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_sale_order_line__id
+msgid "ID"
+msgstr "ID"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__printer_ip_display
+msgid "IP address read from the linked POS printer or IoT device."
+msgstr "Adresse IP lue depuis l'imprimante PdV ou le périphérique IoT lié."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__activity_exception_icon
+msgid "Icon"
+msgstr "Icône"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_rental_dossier__activity_exception_icon
+msgid "Icon to indicate an exception activity."
+msgstr "Icône pour indiquer une activité d'exception."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_rental_dossier__message_needaction
+msgid "If checked, new messages require your attention."
+msgstr "Si coché, de nouveaux messages nécessitent votre attention."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_rental_dossier__message_has_error
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_rental_dossier__message_has_sms_error
+msgid "If checked, some messages have a delivery error."
+msgstr "Si coché, certains messages ont une erreur de livraison."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk.py:0
+msgid ""
+"If using HTTPS, you may need to accept the printer certificate by visiting "
+"%s first."
+msgstr ""
+"Si vous utilisez HTTPS, vous devrez peut-être accepter le certificat de "
+"l'imprimante en visitant %s d'abord."
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.product_product_tree_view_mcrf
+msgid "In MC Flow"
+msgstr "Dans le flux MC"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_product_product__mcrf_any_variant_enabled
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_product_template__mcrf_any_variant_enabled
+msgid "In Multi-Channel Flow"
+msgstr "Dans le flux multicanal"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__included_product_ids
+msgid "Included Products"
+msgstr "Produits inclus"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/payment_preparation_service.py:0
+msgid "Insufficient stock — reservation failed:"
+msgstr "Stock insuffisant — réservation échouée :"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/payment_preparation_service.py:0
+msgid "Insufficient stock:"
+msgstr "Stock insuffisant :"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__internal_note
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Internal Note"
+msgstr "Note interne"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Internal note (not visible to customer)..."
+msgstr "Note interne (non visible par le client)..."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__multi_channel_rental_profile__printer_mode__pos_iot_box
+msgid "IoT Box Printer"
+msgstr "Imprimante IoT Box"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__message_is_follower
+msgid "Is Follower"
+msgstr "Est abonné"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__item_count
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_slot__item_count
+msgid "Item Count"
+msgstr "Nombre d'articles"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+msgid "Item not found."
+msgstr "Article non trouvé."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__item_ids
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_slot__item_ids
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_list
+msgid "Items"
+msgstr "Articles"
+
+#. module: multi_channel_rental_flow
+#: model_terms:event.event,description:multi_channel_rental_flow.demo_event_klimparcours
+msgid "Join us for this 24 hours Event"
+msgstr "Rejoignez-nous pour cet événement de 24 heures"
+
+#. module: multi_channel_rental_flow
+#: model:product.template,name:multi_channel_rental_flow.demo_product_tmpl_kayak_1p
+msgid "Kayak (1-persoons)"
+msgstr ""
+
+#. module: multi_channel_rental_flow
+#: model:product.template,name:multi_channel_rental_flow.demo_product_tmpl_kayak_2p
+msgid "Kayak (2-persoons)"
+msgstr ""
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__multi_channel_rental_profile__profile_type__kiosk
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier__source__kiosk
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__sale_order__mcrf_source__kiosk
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_search
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_search
+msgid "Kiosk"
+msgstr "Kiosque"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__kiosk_order_url
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "Kiosk Order URL"
+msgstr "URL de commande kiosque"
+
+#. module: multi_channel_rental_flow
+#: model:multi.channel.rental.profile,name:multi_channel_rental_flow.demo_kiosk_profile
+msgid "Kiosk Ticket Lookup"
+msgstr "Recherche de tickets kiosque"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__kiosk_url
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "Kiosk Ticket Lookup URL"
+msgstr "URL de recherche de tickets kiosque"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk.py:0
+msgid "Kiosk not available."
+msgstr "Kiosque non disponible."
+
+#. module: multi_channel_rental_flow
+#: model:event.event,name:multi_channel_rental_flow.demo_event_klimparcours
+#: model:product.template,name:multi_channel_rental_flow.demo_product_tmpl_klimparcours
+msgid "Klimparcours"
+msgstr ""
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__last_transaction_id
+msgid "Last Transaction"
+msgstr "Dernière transaction"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_duration_option__write_uid
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__write_uid
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__write_uid
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_item__write_uid
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_slot__write_uid
+msgid "Last Updated by"
+msgstr "Dernière mise à jour par"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_duration_option__write_date
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__write_date
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__write_date
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_item__write_date
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_slot__write_date
+msgid "Last Updated on"
+msgstr "Dernière mise à jour le"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__allowed_pos_category_ids
+msgid "Leave empty to allow all POS categories. Used for kiosk profiles."
+msgstr "Laisser vide pour autoriser toutes les catégories PdV. Utilisé pour les profils kiosque."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__allowed_ecommerce_category_ids
+msgid "Leave empty to allow all eCommerce categories."
+msgstr "Laisser vide pour autoriser toutes les catégories eCommerce."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__low_color
+msgid "Light green — indicates a discount period."
+msgstr "Vert clair — indique une période de remise."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid "Link Sale Orders to %s"
+msgstr "Lier les bons de commande à %s"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__pos_config_id
+msgid ""
+"Link to a POS configuration in kiosk mode. Reuses its printer settings, "
+"payment methods and access token."
+msgstr ""
+"Lien vers une configuration PdV en mode kiosque. Réutilise ses paramètres "
+"d'imprimante, méthodes de paiement et jeton d'accès."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__linked_order_total
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Linked Orders Total"
+msgstr "Total des commandes liées"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+#: code:addons/multi_channel_rental_flow/controllers/website_flow.py:0
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_order_page
+msgid "Loading..."
+msgstr "Chargement..."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__multi_channel_rental_profile__guest_checkout_mode__login_required
+msgid "Login Required"
+msgstr "Connexion requise"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__guest_checkout_mode
+msgid ""
+"Login Required: customer must log in before payment.\n"
+"Guest with Email: customer provides email, partner created on the fly.\n"
+"Guest (Minimal): no customer data required (typical for kiosk)."
+msgstr ""
+"Connexion requise : le client doit se connecter avant le paiement.\n"
+"Invité avec e-mail : le client fournit son e-mail, partenaire créé à la volée.\n"
+"Invité (Minimal) : aucune donnée client requise (typique pour kiosque)."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk.py:0
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_ticket_lookup
+msgid "Look Up"
+msgstr "Rechercher"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__low_color
+msgid "Low / Discount Color"
+msgstr "Couleur bas / remise"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__low_dynamic_factor_threshold
+msgid "Low Factor Threshold (%)"
+msgstr "Seuil facteur bas (%)"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_flow_profile.py:0
+msgid "Low threshold must be less than high threshold."
+msgstr "Le seuil bas doit être inférieur au seuil haut."
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.product_product_tree_view_mcrf
+msgid "MC Role"
+msgstr "Rôle MC"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_product_product__available_in_multi_channel_kiosk
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_product_template__available_in_multi_channel_kiosk
+msgid "Make this product available in kiosk terminals."
+msgstr "Rendre ce produit disponible dans les terminaux kiosque."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_product_product__available_in_multi_channel_website
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_product_template__available_in_multi_channel_website
+msgid "Make this product available in the website rental flow."
+msgstr "Rendre ce produit disponible dans le flux de location site web."
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Mark as Paid"
+msgstr "Marquer comme payé"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__message_has_error
+msgid "Message Delivery error"
+msgstr "Erreur de livraison du message"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__message_ids
+msgid "Messages"
+msgstr "Messages"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__multi_channel_rental_duration_option__duration_unit__minute
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__multi_channel_rental_profile__default_duration_unit__minute
+msgid "Minutes"
+msgstr "Minutes"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+#: code:addons/multi_channel_rental_flow/controllers/website_flow.py:0
+msgid "Mon"
+msgstr "Lun"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__multi_channel_rental_duration_option__duration_unit__month
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__multi_channel_rental_profile__default_duration_unit__month
+msgid "Months"
+msgstr "Mois"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__is_multi_channel
+msgid "Multi-Channel Flow"
+msgstr "Flux multicanal"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_product_product__multi_channel_item_role
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_product_template__multi_channel_item_role
+msgid "Multi-Channel Item Role"
+msgstr "Rôle article multicanal"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.product_product_form_view_mcrf
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.product_template_form_view_mcrf
+msgid "Multi-Channel Rental Flow"
+msgstr "Flux de location multicanal"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model,name:multi_channel_rental_flow.model_multi_channel_rental_profile
+msgid "Multi-Channel Rental Flow Profile"
+msgstr "Profil de flux de location multicanal"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model,name:multi_channel_rental_flow.model_multi_channel_rental_service
+msgid "Multi-Channel Rental Flow Service"
+msgstr "Service de flux de location multicanal"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Multi-Channel Source Configuration"
+msgstr "Configuration source multicanal"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__my_activity_date_deadline
+msgid "My Activity Deadline"
+msgstr "Date limite de mon activité"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_duration_option__name
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__name
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_basket
+msgid "Name"
+msgstr "Nom"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_order_page
+msgid "New Order"
+msgstr "Nouvelle commande"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__activity_calendar_event_id
+msgid "Next Activity Calendar Event"
+msgstr "Prochain événement de calendrier d'activité"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__activity_date_deadline
+msgid "Next Activity Deadline"
+msgstr "Prochaine date limite d'activité"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__activity_summary
+msgid "Next Activity Summary"
+msgstr "Résumé de la prochaine activité"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__activity_type_id
+msgid "Next Activity Type"
+msgstr "Type de la prochaine activité"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__multi_channel_rental_profile__printer_mode__none
+msgid "No Printer"
+msgstr "Pas d'imprimante"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+#: code:addons/multi_channel_rental_flow/controllers/website_flow.py:0
+msgid "No events available."
+msgstr "Aucun événement disponible."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/payment_preparation_service.py:0
+msgid "No orders to process. Add items or slots first."
+msgstr "Aucune commande à traiter. Ajoutez d'abord des articles ou des créneaux."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/ticket_service.py:0
+msgid "No paid dossier found for this number and email."
+msgstr "Aucun dossier payé trouvé pour ce numéro et cet e-mail."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/ticket_service.py:0
+msgid "No paid dossier found."
+msgstr "Aucun dossier payé trouvé."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/ticket_service.py:0
+msgid "No paid dossier."
+msgstr "Aucun dossier payé."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid "No payment method available for provider '%s'."
+msgstr "Aucune méthode de paiement disponible pour le fournisseur '%s'."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid "No payment provider configured."
+msgstr "Aucun fournisseur de paiement configuré."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk.py:0
+msgid "No printer configured."
+msgstr "Aucune imprimante configurée."
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_catalog
+msgid "No products available in this category."
+msgstr "Aucun produit disponible dans cette catégorie."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+msgid "No products available."
+msgstr "Aucun produit disponible."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/website_flow.py:0
+msgid "No slots available on this date."
+msgstr "Aucun créneau disponible à cette date."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+#: code:addons/multi_channel_rental_flow/controllers/website_flow.py:0
+msgid "No slots available."
+msgstr "Aucun créneau disponible."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+msgid "No slots on this date."
+msgstr "Aucun créneau à cette date."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__normal_color
+msgid "Normal Color"
+msgstr "Couleur normale"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/mcrf_service.py:0
+msgid "Not available for this period."
+msgstr "Non disponible pour cette période."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+msgid "Not enough availability."
+msgstr "Disponibilité insuffisante."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk.py:0
+msgid "Not found."
+msgstr "Non trouvé."
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Notes"
+msgstr "Notes"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__message_needaction_counter
+msgid "Number of Actions"
+msgstr "Nombre d'actions"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_duration_option__duration_value
+msgid "Number of duration units."
+msgstr "Nombre d'unités de durée."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__message_has_error_counter
+msgid "Number of errors"
+msgstr "Nombre d'erreurs"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_rental_dossier__message_needaction_counter
+msgid "Number of messages requiring action"
+msgstr "Nombre de messages nécessitant une action"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_rental_dossier__message_has_error_counter
+msgid "Number of messages with delivery error"
+msgstr "Nombre de messages avec erreur de livraison"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_product_product__mcrf_variant_count
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_product_template__mcrf_variant_count
+msgid "Number of product variants enabled in the Multi-Channel Rental Flow."
+msgstr "Nombre de variantes de produit activées dans le flux de location multicanal."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__multi_channel_rental_profile__payment_mode__both
+msgid "Online + Terminal"
+msgstr "En ligne + Terminal"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__multi_channel_rental_profile__payment_mode__online_redirect
+msgid "Online Redirect"
+msgstr "Redirection en ligne"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__payment_mode
+msgid ""
+"Online Redirect: standard Odoo payment flow (Mollie, Stripe, demo, etc.).\n"
+"Terminal / IoT: physical payment terminal via IoT Box.\n"
+"POS Payment Method: reuse POS payment method from linked POS config.\n"
+"Online + Terminal: allow both options."
+msgstr ""
+"Redirection en ligne : flux de paiement Odoo standard (Mollie, Stripe, démo, etc.).\n"
+"Terminal / IoT : terminal de paiement physique via IoT Box.\n"
+"Méthode de paiement PdV : réutiliser la méthode de paiement PdV de la config PdV liée.\n"
+"En ligne + Terminal : autoriser les deux options."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+#: code:addons/multi_channel_rental_flow/controllers/website_flow.py:0
+msgid "Only"
+msgstr "Seulement"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__receipt_logo
+msgid ""
+"Optional logo for ePOS receipt printing. If empty, the company logo is used."
+" Max 512px wide recommended for thermal printers."
+msgstr ""
+"Logo optionnel pour l'impression de reçus ePOS. Si vide, le logo de la société "
+"est utilisé. Max 512px de large recommandé pour les imprimantes thermiques."
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid ""
+"Optional logo for ePOS receipts.\n"
+"                                        If empty, the company logo is used.\n"
+"                                        Max 512px wide recommended."
+msgstr ""
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Order"
+msgstr "Commande"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier_slot__state__order_created
+msgid "Order Created"
+msgstr "Commande créée"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_list
+msgid "Orders"
+msgstr "Commandes"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_list
+msgid "Orders Total"
+msgstr "Total des commandes"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier_item__availability_state__outside_opening_hours
+msgid "Outside Opening Hours"
+msgstr "En dehors des heures d'ouverture"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__pos_config_id
+msgid "POS Configuration"
+msgstr "Configuration PdV"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__multi_channel_rental_profile__payment_mode__pos_payment
+msgid "POS Payment Method"
+msgstr "Méthode de paiement PdV"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__pos_printer_id
+msgid "POS Printer"
+msgstr "Imprimante PdV"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier__state__paid
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_search
+msgid "Paid"
+msgstr "Payé"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "Payment"
+msgstr "Paiement"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__payment_pending_until
+msgid "Payment Deadline"
+msgstr "Date limite de paiement"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier__state__payment_exception
+msgid "Payment Exception"
+msgstr "Exception de paiement"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier__state__payment_expired
+msgid "Payment Expired"
+msgstr "Paiement expiré"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier__state__payment_failed
+msgid "Payment Failed"
+msgstr "Paiement échoué"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_search
+msgid "Payment Issues"
+msgstr "Problèmes de paiement"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__payment_mode
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "Payment Mode"
+msgstr "Mode de paiement"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier__state__payment_pending
+msgid "Payment Pending"
+msgstr "Paiement en attente"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__payment_provider_ids
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "Payment Providers"
+msgstr "Fournisseurs de paiement"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__payment_reference
+msgid "Payment Reference"
+msgstr "Référence de paiement"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__payment_state
+msgid "Payment State"
+msgstr "État du paiement"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Payment Status"
+msgstr "Statut du paiement"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_order_page
+msgid "Payment Successful!"
+msgstr "Paiement réussi !"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__payment_pending_timeout_minutes
+msgid "Payment Timeout (minutes)"
+msgstr "Délai de paiement (minutes)"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model,name:multi_channel_rental_flow.model_payment_transaction
+msgid "Payment Transaction"
+msgstr "Transaction de paiement"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__transaction_ids
+msgid "Payment Transactions"
+msgstr "Transactions de paiement"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid "Payment deadline expired. Generated orders cancelled."
+msgstr "Délai de paiement expiré. Commandes générées annulées."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+msgid "Payment failed."
+msgstr "Le paiement a échoué."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid "Payment failed. Generated orders cancelled."
+msgstr "Paiement échoué. Commandes générées annulées."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid "Payment received. Dossier marked as paid."
+msgstr "Paiement reçu. Dossier marqué comme payé."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+msgid "Please enter a valid email address."
+msgstr "Veuillez entrer une adresse e-mail valide."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk.py:0
+msgid "Please enter both fields."
+msgstr "Veuillez remplir les deux champs."
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Prepare for Payment"
+msgstr "Préparer le paiement"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_basket
+msgid "Price"
+msgstr "Prix"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier_item__state__priced
+msgid "Priced"
+msgstr "Tarifé"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__pricelist_id
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__pricelist_id
+msgid "Pricelist"
+msgstr "Liste de prix"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_sale_order__mcrf_dossier_id
+msgid "Primary dossier that generated this sale order."
+msgstr "Dossier principal qui a généré ce bon de commande."
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "Print Behavior"
+msgstr "Comportement d'impression"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__print_receipt_on_payment
+msgid "Print Receipt on Payment"
+msgstr "Imprimer le reçu au paiement"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk.py:0
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_ticket_lookup
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Print Tickets"
+msgstr "Imprimer les tickets"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__print_tickets_with_receipt
+msgid "Print Tickets Together with Receipt"
+msgstr "Imprimer les tickets avec le reçu"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__print_tickets_on_payment
+msgid "Print Tickets on Payment"
+msgstr "Imprimer les tickets au paiement"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__print_receipt_on_payment
+msgid "Print a sales receipt immediately after successful payment."
+msgstr "Imprimer un reçu de vente immédiatement après un paiement réussi."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__print_tickets_on_payment
+msgid "Print all tickets/vouchers immediately after successful payment."
+msgstr "Imprimer tous les tickets/bons immédiatement après un paiement réussi."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk.py:0
+msgid "Print error: "
+msgstr "Erreur d'impression : "
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk.py:0
+msgid "Printed ✓"
+msgstr "Imprimé ✓"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "Printer"
+msgstr "Imprimante"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__printer_ip_display
+msgid "Printer IP"
+msgstr "IP imprimante"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__printer_mode
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "Printer Mode"
+msgstr "Mode imprimante"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__printer_type_display
+msgid "Printer Type"
+msgstr "Type d'imprimante"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+msgid "Printing receipt..."
+msgstr "Impression du reçu..."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+msgid "Printing tickets..."
+msgstr "Impression des tickets..."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk.py:0
+msgid "Printing..."
+msgstr "Impression..."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+msgid "Processing payment..."
+msgstr "Traitement du paiement..."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model,name:multi_channel_rental_flow.model_product_template
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_item__product_id
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_basket
+msgid "Product"
+msgstr "Produit"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "Product Assortment"
+msgstr "Assortiment de produits"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model,name:multi_channel_rental_flow.model_product_product
+msgid "Product Variant"
+msgstr "Variante de produit"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "Products"
+msgstr "Produits"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__excluded_product_ids
+msgid "Products always excluded regardless of category or inclusion."
+msgstr "Produits toujours exclus quelle que soit la catégorie ou l'inclusion."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__included_product_ids
+msgid "Products always included regardless of category filters."
+msgstr "Produits toujours inclus quels que soient les filtres de catégorie."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_duration_option__profile_id
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__profile_id
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_search
+msgid "Profile"
+msgstr "Profil"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "Profile Name"
+msgstr "Nom du profil"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__profile_type
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_search
+msgid "Profile Type"
+msgstr "Type de profil"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid "Profile is required for %s dossiers."
+msgstr "Le profil est requis pour les dossiers %s."
+
+#. module: multi_channel_rental_flow
+#: model:ir.ui.menu,name:multi_channel_rental_flow.menu_rental_flow_profiles
+msgid "Profiles"
+msgstr "Profils"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.actions.act_window,help:multi_channel_rental_flow.action_rental_flow_profile
+msgid ""
+"Profiles define how a kiosk, website or backend channel\n"
+"                offers products, categories, payment and printing."
+msgstr ""
+"Les profils définissent comment un canal kiosque, site web ou back-office\n"
+"                propose des produits, catégories, paiements et impressions."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__kiosk_order_url
+msgid "Public URL for the kiosk ordering flow."
+msgstr "URL publique du flux de commande kiosque."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__kiosk_url
+msgid "Public URL for the kiosk ticket lookup page."
+msgstr "URL publique de la page de recherche de tickets kiosque."
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_basket
+msgid "Qty"
+msgstr "Qté"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_item__quantity
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_order_page
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_product_detail
+msgid "Quantity"
+msgstr "Quantité"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier_item.py:0
+msgid "Quantity must be positive for '%(product)s'."
+msgstr "La quantité doit être positive pour '%(product)s'."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid "Quantity must be positive for item '%(product)s'."
+msgstr "La quantité doit être positive pour l'article '%(product)s'."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__rating_ids
+msgid "Ratings"
+msgstr "Évaluations"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__receipt_logo
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "Receipt Logo"
+msgstr "Logo du reçu"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "Receipt Template"
+msgstr "Modèle de reçu"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+msgid "Receipt and tickets printed!"
+msgstr "Reçu et tickets imprimés !"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+msgid "Receipt print error: "
+msgstr "Erreur d'impression du reçu : "
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Recompute Totals"
+msgstr "Recalculer les totaux"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__unavailable_color
+msgid "Red — no stock or event availability."
+msgstr "Rouge — pas de stock ou d'événement disponible."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_rental_dossier__payment_reference
+msgid "Reference of the last payment transaction."
+msgstr "Référence de la dernière transaction de paiement."
+
+#. module: multi_channel_rental_flow
+#: model:event.event.ticket,name:multi_channel_rental_flow.demo_ticket_klimparcours_under13
+msgid "Registratie voor Klimparcours (jonger dan 13j)"
+msgstr ""
+
+#. module: multi_channel_rental_flow
+#: model:event.event.ticket,name:multi_channel_rental_flow.demo_ticket_klimparcours_over13
+msgid "Registratie voor Klimparcours (ouder dan 13j)"
+msgstr ""
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__registration_count
+msgid "Registration Count"
+msgstr "Nombre d'inscriptions"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_item__registration_ids
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Registrations"
+msgstr "Inscriptions"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid "Registrations — %s"
+msgstr "Inscriptions — %s"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_order_page
+msgid "Rent equipment, buy event tickets and more"
+msgstr "Louez du matériel, achetez des tickets d'événements et plus encore"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__product_product__multi_channel_item_role__rental
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier_item__item_role__rental
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Rental"
+msgstr "Location"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_catalog
+msgid "Rental &amp; Activities"
+msgstr "Location &amp; Activités"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model,name:multi_channel_rental_flow.model_rental_dossier
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_event_registration__mcrf_dossier_id
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_payment_transaction__mcrf_dossier_id
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_sale_order__mcrf_dossier_id
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Rental Dossier"
+msgstr "Dossier de location"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model,name:multi_channel_rental_flow.model_rental_dossier_item
+msgid "Rental Dossier Item"
+msgstr "Article de dossier de location"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model,name:multi_channel_rental_flow.model_rental_dossier_slot
+msgid "Rental Dossier Slot"
+msgstr "Créneau de dossier de location"
+
+#. module: multi_channel_rental_flow
+#: model:ir.actions.act_window,name:multi_channel_rental_flow.action_rental_dossier
+msgid "Rental Dossiers"
+msgstr "Dossiers de location"
+
+#. module: multi_channel_rental_flow
+#: model:ir.ui.menu,name:multi_channel_rental_flow.menu_rental_flow_config_root
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_catalog
+msgid "Rental Flow"
+msgstr "Flux de location"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_sale_order__mcrf_profile_id
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "Rental Flow Profile"
+msgstr "Profil du flux de location"
+
+#. module: multi_channel_rental_flow
+#: model:ir.actions.act_window,name:multi_channel_rental_flow.action_rental_flow_profile
+msgid "Rental Flow Profiles"
+msgstr "Profils du flux de location"
+
+#. module: multi_channel_rental_flow
+#: model:mail.template,name:multi_channel_rental_flow.email_template_dossier_confirmation
+msgid "Rental Flow: Dossier Confirmation"
+msgstr "Flux de location : Confirmation de dossier"
+
+#. module: multi_channel_rental_flow
+#: model:ir.actions.server,name:multi_channel_rental_flow.ir_cron_expire_pending_dossiers_ir_actions_server
+msgid "Rental Flow: Expire Pending Dossiers"
+msgstr "Flux de location : Expiration des dossiers en attente"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_product_product__requires_duration
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_product_template__requires_duration
+msgid "Requires Duration"
+msgstr "Durée requise"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_product_product__requires_timeslot
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_product_template__requires_timeslot
+msgid "Requires Timeslot"
+msgstr "Créneau requis"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__enable_event_tickets
+msgid "Requires the event and event_sale modules to be installed."
+msgstr "Nécessite l'installation des modules event et event_sale."
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Resend Confirmation Email"
+msgstr "Renvoyer l'e-mail de confirmation"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Resend the confirmation email to the customer?"
+msgstr "Renvoyer l'e-mail de confirmation au client ?"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Reset the printed flag so tickets can be reprinted?"
+msgstr "Réinitialiser l'indicateur d'impression pour permettre la réimpression ?"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Reset to Draft"
+msgstr "Remettre en brouillon"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__activity_user_id
+msgid "Responsible User"
+msgstr "Utilisateur responsable"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_ticket_lookup
+msgid "Retrieve Your Tickets"
+msgstr "Récupérer vos tickets"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.report_dossier_tickets
+msgid "Retrieve tickets at the kiosk using dossier number"
+msgstr "Récupérer les tickets au kiosque avec le numéro de dossier"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_confirmation
+msgid "Retrieve your tickets at the kiosk"
+msgstr "Récupérer vos tickets au kiosque"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk.py:0
+msgid "Retry Print"
+msgstr "Réessayer l'impression"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_item__item_role
+msgid "Role"
+msgstr "Rôle"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__message_has_sms_error
+msgid "SMS Delivery error"
+msgstr "Erreur de livraison SMS"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_slot__sale_order_id
+msgid "Sale Order"
+msgstr "Bon de commande"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__sale_order_count
+msgid "Sale Order Count"
+msgstr "Nombre de bons de commande"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_item__sale_order_line_id
+msgid "Sale Order Line"
+msgstr "Ligne de bon de commande"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__sale_order_ids
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Sale Orders"
+msgstr "Bons de commande"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid "Sale Orders — %s"
+msgstr "Bons de commande — %s"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model,name:multi_channel_rental_flow.model_sale_order
+msgid "Sales Order"
+msgstr "Bon de commande"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model,name:multi_channel_rental_flow.model_sale_order_line
+msgid "Sales Order Line"
+msgstr "Ligne de bon de commande"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__epos_receipt_template
+msgid ""
+"Sales receipt printed at the kiosk after payment.\n"
+"Printed BEFORE the individual tickets.\n"
+"\n"
+"Same codes as ticket templates, plus:\n"
+"  {{ITEMS}} — all items with qty × price\n"
+"  {{TAXES}} — per-tax breakdown (name, rate, base, amount)\n"
+"  {{subtotal}} — total excl. tax\n"
+"  {{tax}} — total tax amount\n"
+"  {{LINE}} — horizontal separator line"
+msgstr ""
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__user_id
+msgid "Salesperson"
+msgstr "Commercial"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+#: code:addons/multi_channel_rental_flow/controllers/website_flow.py:0
+msgid "Sat"
+msgstr "Sam"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_order_page
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_product_detail
+msgid "Select Date"
+msgstr "Choisir la date"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_order_page
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_product_detail
+msgid "Select Event"
+msgstr "Choisir l'événement"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_order_page
+msgid ""
+"Select Pick-Up Moment —\n"
+"                                <span id=\"slot-date-display\" style=\"color:var(--ko-success);\"/>"
+msgstr ""
+"Choisir le moment de retrait —\n"
+"                                <span id=\"slot-date-display\" style=\"color:var(--ko-success);\"/>"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_product_detail
+msgid "Select Pick-Up Moment — <span class=\"text-success\" id=\"rf-slot-date\"/>"
+msgstr "Choisir le moment de retrait — <span class=\"text-success\" id=\"rf-slot-date\"/>"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__pos_printer_id
+msgid ""
+"Select a POS printer record. For ePOS mode, the printer IP is read from this"
+" record. For IoT mode, the linked IoT device is used."
+msgstr ""
+"Sélectionner un enregistrement d'imprimante PdV. En mode ePOS, l'adresse IP "
+"est lue depuis cet enregistrement. En mode IoT, le périphérique IoT lié est utilisé."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+#: code:addons/multi_channel_rental_flow/controllers/website_flow.py:0
+msgid "Selected: "
+msgstr "Sélectionné : "
+
+#. module: multi_channel_rental_flow
+#: model:mail.template,description:multi_channel_rental_flow.email_template_dossier_confirmation
+msgid "Sent to customers after successful dossier payment"
+msgstr "Envoyé aux clients après le paiement réussi du dossier"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_duration_option__sequence
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__sequence
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_item__sequence
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_slot__sequence
+msgid "Sequence"
+msgstr "Séquence"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__product_product__multi_channel_item_role__service
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier_item__item_role__service
+msgid "Service"
+msgstr "Service"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_rental_dossier__description
+msgid "Short description to easily identify this dossier."
+msgstr "Courte description pour identifier facilement ce dossier."
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Simulate Demo Payment"
+msgstr "Simuler un paiement démo"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_item__slot_id
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_slot__name
+msgid "Slot"
+msgstr "Créneau"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier_slot.py:0
+msgid "Slot %s"
+msgstr "Créneau %s"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid "Slot '%(slot)s' must have start and end times."
+msgstr "Le créneau '%(slot)s' doit avoir des heures de début et de fin."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__slot_count
+msgid "Slot Count"
+msgstr "Nombre de créneaux"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__rental_slot_interval_minutes
+msgid "Slot Interval (minutes)"
+msgstr "Intervalle de créneaux (minutes)"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier_slot.py:0
+msgid "Slot start must be before end (%(slot)s)."
+msgstr "Le début du créneau doit être avant la fin (%(slot)s)."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__slot_ids
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_list
+msgid "Slots"
+msgstr "Créneaux"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_order_page
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_checkout_error
+msgid "Something went wrong"
+msgstr "Une erreur s'est produite"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__source
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_search
+msgid "Source"
+msgstr "Source"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_sale_order__mcrf_dossier_slot_id
+msgid "Specific timeslot in the dossier that generated this order."
+msgstr "Créneau spécifique dans le dossier qui a généré cette commande."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__normal_color
+msgid "Standard green — indicates normal pricing."
+msgstr "Vert standard — indique une tarification normale."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_slot__start_datetime
+msgid "Start"
+msgstr "Début"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_order_page
+msgid "Start New Order"
+msgstr "Nouvelle commande"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Start Payment"
+msgstr "Démarrer le paiement"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_item__state
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_slot__state
+msgid "State"
+msgstr "État"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__state
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_search
+msgid "Status"
+msgstr "Statut"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_rental_dossier__activity_state
+msgid ""
+"Status based on activities\n"
+"Overdue: Due date is already passed\n"
+"Today: Activity date is today\n"
+"Planned: Future activities."
+msgstr ""
+"Statut basé sur les activités\n"
+"En retard : La date d'échéance est dépassée\n"
+"Aujourd'hui : La date d'activité est aujourd'hui\n"
+"Planifié : Activités futures."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_item__price_subtotal
+msgid "Subtotal"
+msgstr "Sous-total"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_rental_dossier__linked_order_total
+msgid "Sum of totals from all linked sale/rental orders."
+msgstr "Somme des totaux de tous les bons de commande/location liés."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+#: code:addons/multi_channel_rental_flow/controllers/website_flow.py:0
+msgid "Sun"
+msgstr "Dim"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+msgid "Tax"
+msgstr "TVA"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__amount_tax
+msgid "Taxes"
+msgstr "Taxes"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/payment_preparation_service.py:0
+msgid "Technical detail: %s"
+msgstr "Détail technique : %s"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "Template Code Reference (click to expand)"
+msgstr "Référence des codes de modèle (cliquer pour déplier)"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__multi_channel_rental_profile__payment_mode__terminal_iot
+msgid "Terminal / IoT"
+msgstr "Terminal / IoT"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "This simulates a successful payment using the demo provider. Continue?"
+msgstr "Ceci simule un paiement réussi avec le fournisseur démo. Continuer ?"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "This will check availability, generate and confirm orders. Continue?"
+msgstr "Ceci vérifiera la disponibilité, générera et confirmera les commandes. Continuer ?"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+#: code:addons/multi_channel_rental_flow/controllers/website_flow.py:0
+msgid "Thu"
+msgstr "Jeu"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+msgid "Ticket print error: "
+msgstr "Erreur d'impression du ticket : "
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid "Ticket print flag reset — reprinting allowed."
+msgstr "Indicateur d'impression réinitialisé — réimpression autorisée."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_rental_dossier_item__event_ticket_id
+msgid "Ticket type for event_ticket items."
+msgstr "Type de ticket pour les articles de type event_ticket."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid "Ticket type is required for event ticket item '%(product)s'."
+msgstr "Le type de ticket est requis pour l'article de ticket d'événement '%(product)s'."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk.py:0
+msgid "Tickets"
+msgstr "Tickets"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_sale_order__mcrf_tickets_printed
+msgid "Tickets Printed"
+msgstr "Tickets imprimés"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid "Tickets can only be printed for paid dossiers."
+msgstr "Les tickets ne peuvent être imprimés que pour les dossiers payés."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk.py:0
+msgid "Tickets have already been printed."
+msgstr "Les tickets ont déjà été imprimés."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk.py:0
+msgid "Tickets marked as printed."
+msgstr "Tickets marqués comme imprimés."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk.py:0
+msgid "Tickets printed successfully!"
+msgstr "Tickets imprimés avec succès !"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.report_dossier_tickets
+msgid "Tickets —"
+msgstr "Tickets —"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "Time & Duration"
+msgstr "Horaire & Durée"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "Timeslot Generation"
+msgstr "Génération de créneaux"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_rental_dossier_item__slot_id
+msgid "Timeslot this item belongs to. Empty for non-slot items."
+msgstr "Créneau auquel cet article appartient. Vide pour les articles sans créneau."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk.py:0
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__amount_total
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_list
+msgid "Total"
+msgstr "Total"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_order_page
+msgid "Total: <strong id=\"success-total\"/>"
+msgstr "Total : <strong id=\"success-total\"/>"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__transaction_count
+msgid "Transaction Count"
+msgstr "Nombre de transactions"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "Transactions"
+msgstr "Transactions"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid "Transactions — %s"
+msgstr "Transactions — %s"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_product_product__mcrf_any_variant_enabled
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_product_template__mcrf_any_variant_enabled
+msgid ""
+"True when at least one variant is enabled in the Multi-Channel Rental Flow."
+msgstr ""
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_rental_dossier__confirmation_sent
+msgid "True when the confirmation email has been sent."
+msgstr "Vrai lorsque l'e-mail de confirmation a été envoyé."
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_order_page
+msgid "Try Again"
+msgstr "Réessayer"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+#: code:addons/multi_channel_rental_flow/controllers/website_flow.py:0
+msgid "Tue"
+msgstr "Mar"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_rental_dossier__activity_exception_decoration
+msgid "Type of the exception activity on record."
+msgstr "Type d'activité d'exception sur l'enregistrement."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier_item__availability_state__unavailable
+msgid "Unavailable"
+msgstr "Indisponible"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__unavailable_color
+msgid "Unavailable Color"
+msgstr "Couleur indisponible"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_item__price_unit
+msgid "Unit Price"
+msgstr "Prix unitaire"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_item__product_uom_id
+msgid "Unit of Measure"
+msgstr "Unité de mesure"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier_item__availability_state__unknown
+msgid "Unknown"
+msgstr "Inconnu"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__amount_untaxed
+msgid "Untaxed Amount"
+msgstr "Montant HT"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_product_product__use_product_image_in_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_product_template__use_product_image_in_flow
+msgid "Use Product Image in Flow"
+msgstr "Utiliser l'image du produit dans le flux"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_product_product__use_in_multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_product_template__use_in_multi_channel_rental_flow
+msgid "Use in Multi-Channel Rental Flow"
+msgstr "Utiliser dans le flux de location multicanal"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid ""
+"Used when no coefficient table applies to the product.\n"
+"                                Leave empty to use system defaults (1, 2, 4, 8 hours)."
+msgstr ""
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_product_product__mcrf_variant_count
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_product_template__mcrf_variant_count
+msgid "Variants in Flow"
+msgstr "Variantes dans le flux"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__warehouse_id
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__warehouse_id
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier_slot__warehouse_id
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_search
+msgid "Warehouse"
+msgstr "Entrepôt"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_dossier.py:0
+msgid ""
+"Warehouse is required on the dossier or on each slot that contains rental "
+"items."
+msgstr ""
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__warehouse_id
+msgid "Warehouse used for stock availability and opening hours."
+msgstr "Entrepôt utilisé pour la disponibilité du stock et les heures d'ouverture."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__website_id
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__multi_channel_rental_profile__profile_type__website
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__rental_dossier__source__website
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__sale_order__mcrf_source__website
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_search
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_search
+msgid "Website"
+msgstr "Site web"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_rental_dossier__website_message_ids
+msgid "Website Messages"
+msgstr "Messages du site web"
+
+#. module: multi_channel_rental_flow
+#: model:multi.channel.rental.profile,name:multi_channel_rental_flow.demo_website_rental_profile
+msgid "Website Rental Flow"
+msgstr "Flux de location site web"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_rental_dossier__website_message_ids
+msgid "Website communication history"
+msgstr "Historique de communication du site web"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/models/rental_flow_profile.py:0
+msgid "Website profiles require a linked website."
+msgstr "Les profils site web nécessitent un site web lié."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_multi_channel_rental_profile__website_id
+msgid "Website this profile applies to. Required for website profiles."
+msgstr "Site web auquel ce profil s'applique. Requis pour les profils site web."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+#: code:addons/multi_channel_rental_flow/controllers/website_flow.py:0
+msgid "Wed"
+msgstr "Mer"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__multi_channel_rental_duration_option__duration_unit__week
+#: model:ir.model.fields.selection,name:multi_channel_rental_flow.selection__multi_channel_rental_profile__default_duration_unit__week
+msgid "Weeks"
+msgstr "Semaines"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_order_page
+msgid "Welcome"
+msgstr "Bienvenue"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_rental_dossier__is_multi_channel
+msgid ""
+"When enabled, shows slots, items, payment and multi-channel source "
+"configuration tabs. Automatically enabled for website and kiosk dossiers."
+msgstr ""
+"Lorsqu'activé, affiche les onglets créneaux, articles, paiement et "
+"configuration source multicanal. Activé automatiquement pour les dossiers site web et kiosque."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_product_product__requires_duration
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_product_template__requires_duration
+msgid ""
+"When enabled, the customer must select a rental duration. Duration options "
+"come from the applicable coefficient table or from the flow configuration "
+"fallback list."
+msgstr ""
+"Lorsqu'activé, le client doit sélectionner une durée de location. Les options "
+"de durée proviennent de la table de coefficients applicable ou de la liste "
+"de repli de la configuration du flux."
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_product_product__requires_timeslot
+#: model:ir.model.fields,help:multi_channel_rental_flow.field_product_template__requires_timeslot
+msgid ""
+"When enabled, the customer must select a start time for this product in the "
+"flow."
+msgstr ""
+"Lorsqu'activé, le client doit sélectionner une heure de début pour ce produit "
+"dans le flux."
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_order_page
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_basket
+msgid "Your Basket"
+msgstr "Votre panier"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_order_page
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_basket
+msgid "Your Details"
+msgstr "Vos coordonnées"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_basket
+msgid "Your basket is empty."
+msgstr "Votre panier est vide."
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_confirmation
+msgid "Your booking"
+msgstr "Votre réservation"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_order_page
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_basket
+msgid "Your name (optional)"
+msgstr "Votre nom (facultatif)"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.report_dossier_tickets
+msgid "and email"
+msgstr "et l'e-mail"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+#: code:addons/multi_channel_rental_flow/controllers/website_flow.py:0
+msgid "available"
+msgstr "disponible(s)"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+#: code:addons/multi_channel_rental_flow/controllers/website_flow.py:0
+msgid "available for the selected timeslot, but"
+msgstr "disponible(s) pour le créneau sélectionné, mais"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "customer@example.com"
+msgstr ""
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/mcrf_service.py:0
+msgid "day"
+msgstr "jour"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/mcrf_service.py:0
+msgid "days"
+msgstr "jours"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_dossier_form
+msgid "e.g. Summer kayak weekend, Team outing, Project X..."
+msgstr ""
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__epos_receipt_template
+msgid "ePOS Receipt Template"
+msgstr "Modèle de reçu ePOS"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "ePOS Receipt Template (sales summary)"
+msgstr "Modèle de reçu ePOS (résumé des ventes)"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__epos_ticket_body
+msgid "ePOS Ticket Body"
+msgstr "Corps du ticket ePOS"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__epos_ticket_footer
+msgid "ePOS Ticket Footer"
+msgstr "Pied de page du ticket ePOS"
+
+#. module: multi_channel_rental_flow
+#: model:ir.model.fields,field_description:multi_channel_rental_flow.field_multi_channel_rental_profile__epos_ticket_header
+msgid "ePOS Ticket Header"
+msgstr "En-tête du ticket ePOS"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid "ePOS Ticket Template"
+msgstr "Modèle de ticket ePOS"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_catalog
+msgid "from"
+msgstr "à partir de"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_confirmation
+msgid "has been confirmed and paid."
+msgstr "a été confirmée et payée."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/mcrf_service.py:0
+msgid "hour"
+msgstr "heure"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/mcrf_service.py:0
+msgid "hours"
+msgstr "heures"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/mcrf_service.py:0
+msgid "minute"
+msgstr "minute"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/mcrf_service.py:0
+msgid "minutes"
+msgstr "minutes"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/mcrf_service.py:0
+msgid "month"
+msgstr "mois"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/mcrf_service.py:0
+msgid "months"
+msgstr "mois"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+#: code:addons/multi_channel_rental_flow/controllers/website_flow.py:0
+msgid "requested."
+msgstr "demandé(s)."
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+#: code:addons/multi_channel_rental_flow/controllers/website_flow.py:0
+msgid "seats"
+msgstr "places"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/controllers/kiosk_order.py:0
+msgid "ticket(s)"
+msgstr "ticket(s)"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/mcrf_service.py:0
+msgid "unit"
+msgstr "unité"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/mcrf_service.py:0
+msgid "units"
+msgstr "unités"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/mcrf_service.py:0
+msgid "week"
+msgstr "semaine"
+
+#. module: multi_channel_rental_flow
+#. odoo-python
+#: code:addons/multi_channel_rental_flow/services/mcrf_service.py:0
+msgid "weeks"
+msgstr "semaines"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_basket
+msgid "your@email.com"
+msgstr ""
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid ""
+"{{BOLD_ON}} / {{BOLD_OFF}}\n"
+"{{ALIGN_LEFT}} / {{ALIGN_CENTER}} / {{ALIGN_RIGHT}}\n"
+"{{SIZE_1}} to {{SIZE_8}} — text size\n"
+"{{WIDE_1}} to {{WIDE_8}} — width only\n"
+"{{TALL_1}} to {{TALL_8}} — height only\n"
+"{{DOUBLE}} / {{DOUBLE_OFF}} — shortcut"
+msgstr ""
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid ""
+"{{FEED}} — 1 line feed\n"
+"{{FEED_3}} — 3 line feeds\n"
+"{{LINE}} — horizontal separator\n"
+"{{CUT}} — paper cut"
+msgstr ""
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid ""
+"{{ITEMS}} — all items with qty × price\n"
+"{{TAXES}} — per-tax breakdown\n"
+"{{subtotal}} — total excl. tax\n"
+"{{tax}} — total tax amount"
+msgstr ""
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid ""
+"{{LOGO}} — company/profile logo\n"
+"{{QR:literal text}} — QR code\n"
+"{{QR:{{dossier_name}}}} — QR with field\n"
+"{{QR_dossier_name}} — QR shorthand\n"
+"{{BARCODE:literal}} — Code128 barcode\n"
+"{{BARCODE_dossier_name}} — barcode shorthand"
+msgstr ""
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid ""
+"{{dossier_name}} — dossier number\n"
+"{{customer}} — customer name\n"
+"{{email}} — customer email\n"
+"{{total}} — total + currency\n"
+"{{payment_ref}} — payment reference"
+msgstr ""
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.view_rental_flow_profile_form
+msgid ""
+"{{sequence}} — ticket number\n"
+"{{print_title}} — main title\n"
+"{{print_subtitle}} — subtitle / role\n"
+"{{product_name}} — product name\n"
+"{{order_name}} — order reference\n"
+"{{quantity}} — quantity\n"
+"{{quantity_line}} — \"x 2\" (empty if 1)\n"
+"{{timeslot_start}} — start datetime\n"
+"{{timeslot_end}} — end datetime\n"
+"{{timeslot_line}} — full range\n"
+"{{event_name}} — event name\n"
+"{{event_line}} — \"Event: ...\"\n"
+"{{event_slot}} — event slot\n"
+"{{attendee_name}} — attendee\n"
+"{{registration_barcode}} — barcode\n"
+"{{barcode_line}} — \"Code: ...\""
+msgstr ""
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_order_page
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_ticket_lookup
+msgid "← Back"
+msgstr "← Retour"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_order_page
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_checkout_error
+msgid "← Back to Basket"
+msgstr "← Retour au panier"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_product_detail
+msgid "← Back to catalog"
+msgstr "← Retour au catalogue"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_basket
+msgid "← Continue shopping"
+msgstr "← Continuer les achats"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_catalog
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.website_product_detail
+msgid "🛒 Basket"
+msgstr "🛒 Panier"
+
+#. module: multi_channel_rental_flow
+#: model_terms:ir.ui.view,arch_db:multi_channel_rental_flow.kiosk_order_page
+msgid ""
+"🛒 Basket\n"
+"                            <span class=\"ko-basket-badge\" id=\"basket-badge\" style=\"display:none;\">0</span>"
+msgstr ""
+"🛒 Panier\n"
+"                            <span class=\"ko-basket-badge\" id=\"basket-badge\" style=\"display:none;\">0</span>"

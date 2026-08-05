@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="kiosk_ticket_lookup" name="Kiosk Ticket Lookup">
+        <html>
+            <head>
+                <meta charset="utf-8"/>
+                <meta name="viewport"
+                      content="width=device-width, initial-scale=1, user-scalable=no"/>
+                <title><t t-esc="profile.name"/> — Retrieve Tickets</title>
+                <link rel="stylesheet"
+                      href="/web/static/lib/bootstrap/css/bootstrap.css"/>
+                <style>
+                    body {
+                        background: #1a1a2e;
+                        color: #eee;
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        min-height: 100vh;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    }
+                    .kiosk-container {
+                        max-width: 600px;
+                        width: 100%;
+                        padding: 40px 30px;
+                    }
+                    .kiosk-title {
+                        font-size: 2rem;
+                        font-weight: 700;
+                        text-align: center;
+                        margin-bottom: 12px;
+                    }
+                    .kiosk-subtitle {
+                        text-align: center;
+                        color: #aaa;
+                        margin-bottom: 40px;
+                        font-size: 1.1rem;
+                    }
+                    .kiosk-input {
+                        font-size: 1.3rem;
+                        padding: 16px 20px;
+                        border-radius: 12px;
+                        border: 2px solid #333;
+                        background: #16213e;
+                        color: #eee;
+                        width: 100%;
+                        margin-bottom: 16px;
+                    }
+                    .kiosk-input:focus {
+                        border-color: #0f3460;
+                        outline: none;
+                        box-shadow: 0 0 0 3px rgba(15,52,96,0.5);
+                    }
+                    .kiosk-input::placeholder { color: #666; }
+                    .kiosk-btn {
+                        font-size: 1.4rem;
+                        padding: 16px;
+                        border-radius: 12px;
+                        width: 100%;
+                        font-weight: 600;
+                        cursor: pointer;
+                    }
+                    .kiosk-btn-primary {
+                        background: #0f3460;
+                        border: none;
+                        color: #fff;
+                    }
+                    .kiosk-btn-primary:hover { background: #1a4a7a; }
+                    .kiosk-btn-success {
+                        background: #28a745;
+                        border: none;
+                        color: #fff;
+                    }
+                    .kiosk-btn-secondary {
+                        background: #333;
+                        border: none;
+                        color: #ccc;
+                    }
+                    .kiosk-message {
+                        text-align: center;
+                        font-size: 1.1rem;
+                        margin: 20px 0;
+                        min-height: 30px;
+                    }
+                    .kiosk-error { color: #dc3545; }
+                    .kiosk-success { color: #28a745; }
+                    .kiosk-ticket-card {
+                        background: #16213e;
+                        border: 1px solid #333;
+                        border-radius: 12px;
+                        padding: 16px 20px;
+                        margin-bottom: 12px;
+                    }
+                    .kiosk-ticket-title {
+                        font-size: 1.2rem;
+                        font-weight: 600;
+                    }
+                    .kiosk-ticket-detail {
+                        color: #aaa;
+                        font-size: 0.95rem;
+                    }
+                    .kiosk-ticket-badge {
+                        background: #0f3460;
+                        color: #fff;
+                        padding: 4px 12px;
+                        border-radius: 20px;
+                        font-size: 0.85rem;
+                        float: right;
+                    }
+                    .kiosk-summary {
+                        background: #16213e;
+                        border-radius: 12px;
+                        padding: 20px;
+                        margin-bottom: 20px;
+                    }
+                    .kiosk-hidden { display: none; }
+                    .kiosk-spinner {
+                        display: inline-block;
+                        width: 24px; height: 24px;
+                        border: 3px solid #666;
+                        border-top: 3px solid #fff;
+                        border-radius: 50%;
+                        animation: spin 0.8s linear infinite;
+                    }
+                    @keyframes spin { to { transform: rotate(360deg); } }
+                </style>
+            </head>
+            <body>
+                <div class="kiosk-container">
+
+                    <div style="display:flex; justify-content:center; gap:10px; margin-bottom:20px;">
+                        <button onclick="setKioskLang('en_US')"
+                                style="padding:8px 16px; border-radius:8px; font-size:1rem; font-weight:600;
+                                       cursor:pointer; border:2px solid #333; background:#16213e; color:#eee;
+                                       display:flex; align-items:center; gap:6px;"
+                                t-attf-style="#{current_lang == 'en_US' and 'border-color:#0f3460; background:#0f3460; color:#fff;' or ''}">
+                            <svg width="24" height="16" viewBox="0 0 60 30" style="border-radius:2px;border:1px solid rgba(255,255,255,0.3);flex-shrink:0;">
+                                <rect width="60" height="30" fill="#012169"/>
+                                <path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/>
+                                <path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" stroke-width="2"/>
+                                <path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/>
+                                <path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/>
+                            </svg>
+                            EN
+                        </button>
+                        <button onclick="setKioskLang('fr_FR')"
+                                style="padding:8px 16px; border-radius:8px; font-size:1rem; font-weight:600;
+                                       cursor:pointer; border:2px solid #333; background:#16213e; color:#eee;
+                                       display:flex; align-items:center; gap:6px;"
+                                t-attf-style="#{current_lang == 'fr_FR' and 'border-color:#0f3460; background:#0f3460; color:#fff;' or ''}">
+                            <svg width="24" height="16" viewBox="0 0 3 2" style="border-radius:2px;border:1px solid rgba(255,255,255,0.3);flex-shrink:0;">
+                                <rect width="1" height="2" fill="#002395"/>
+                                <rect x="1" width="1" height="2" fill="#fff"/>
+                                <rect x="2" width="1" height="2" fill="#ED2939"/>
+                            </svg>
+                            FR
+                        </button>
+                        <button onclick="setKioskLang('nl_NL')"
+                                style="padding:8px 16px; border-radius:8px; font-size:1rem; font-weight:600;
+                                       cursor:pointer; border:2px solid #333; background:#16213e; color:#eee;
+                                       display:flex; align-items:center; gap:6px;"
+                                t-attf-style="#{current_lang == 'nl_NL' and 'border-color:#0f3460; background:#0f3460; color:#fff;' or ''}">
+                            <svg width="24" height="16" viewBox="0 0 9 6" style="border-radius:2px;border:1px solid rgba(255,255,255,0.3);flex-shrink:0;">
+                                <rect width="9" height="2" fill="#AE1C28"/>
+                                <rect y="2" width="9" height="2" fill="#FFF"/>
+                                <rect y="4" width="9" height="2" fill="#21468B"/>
+                            </svg>
+                            NL
+                        </button>
+                    </div>
+
+                    <!-- Lookup form -->
+                    <div id="lookup-section">
+                        <div class="kiosk-title">Retrieve Your Tickets</div>
+                        <div class="kiosk-subtitle">
+                            Enter your dossier or order number and email
+                        </div>
+                        <input type="text" class="kiosk-input"
+                               id="input-identifier"
+                               placeholder="Dossier or order number"
+                               autocomplete="off"
+                               autofocus="autofocus"/>
+                        <input type="email" class="kiosk-input"
+                               id="input-email"
+                               placeholder="Email address"
+                               autocomplete="off"/>
+                        <button class="kiosk-btn kiosk-btn-primary"
+                                id="btn-lookup"
+                                onclick="doLookup()">
+                            Look Up
+                        </button>
+                        <a t-attf-href="/rental-kiosk/#{profile.id}/order?lang=#{current_lang}"
+                           class="kiosk-btn kiosk-btn-primary"
+                           style="display:block; text-align:center; margin-top:12px;
+                                  background:#333; color:#ccc; text-decoration:none;
+                                  font-family:inherit; font-size:1.4rem; font-weight:600;
+                                  box-sizing:border-box;">
+                            ← Back
+                        </a>
+                        <div class="kiosk-message" id="lookup-message"></div>
+                    </div>
+
+                    <!-- Results section -->
+                    <div id="results-section" class="kiosk-hidden">
+                        <div class="kiosk-summary" id="dossier-summary"></div>
+                        <div id="ticket-list"></div>
+                        <button class="kiosk-btn kiosk-btn-success mb-3"
+                                id="btn-print"
+                                onclick="doPrint()">
+                            Print Tickets
+                        </button>
+                        <button class="kiosk-btn kiosk-btn-secondary"
+                                id="btn-back"
+                                onclick="goBack()">
+                            Back
+                        </button>
+                        <div class="kiosk-message" id="print-message"></div>
+                    </div>
+
+                </div>
+
+                <!-- Config injected by controller -->
+                <script type="text/javascript">
+                    var PROFILE_ID = <t t-esc="profile.id"/>;
+                    var PRINTER_CONFIG = <t t-raw="printer_config"/>;
+                    var CSRF_TOKEN = '<t t-esc="csrf_token"/>';
+                    var CURRENT_LANG = '<t t-esc="current_lang"/>';
+                    var TRANSLATIONS = <t t-raw="translations_json"/>;
+
+                    function setKioskLang(lang) {
+                        var url = new URL(window.location);
+                        url.searchParams.set('lang', lang);
+                        window.location = url;
+                    }
+                </script>
+                <!-- Kiosk JS (separate file — no XML escaping issues) -->
+                <script type="text/javascript"
+                        src="/multi_channel_rental_flow/static/src/js/kiosk_ticket_lookup.js"/>
+            </body>
+        </html>
+    </template>
+
+</odoo>

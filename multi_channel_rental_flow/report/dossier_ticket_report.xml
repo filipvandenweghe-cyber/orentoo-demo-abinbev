@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Report action -->
+    <record id="action_report_dossier_tickets" model="ir.actions.report">
+        <field name="name">Dossier Tickets</field>
+        <field name="model">rental.dossier</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">multi_channel_rental_flow.report_dossier_tickets</field>
+        <field name="report_file">multi_channel_rental_flow.report_dossier_tickets</field>
+        <field name="print_report_name">'Tickets - %s' % object.name</field>
+        <field name="binding_model_id" ref="multi_channel_rental_flow.model_rental_dossier"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- QWeb template -->
+    <template id="report_dossier_tickets">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="dossier">
+                <t t-call="web.external_layout">
+                    <div class="page">
+
+                        <!-- Header -->
+                        <div class="row mb-4">
+                            <div class="col-12 text-center">
+                                <h2>Tickets — <t t-out="dossier.display_name"/></h2>
+                                <p class="text-muted">
+                                    Customer: <t t-out="dossier.partner_id.name or ''"/>
+                                    <t t-if="dossier.partner_email">
+                                        | <t t-out="dossier.partner_email"/>
+                                    </t>
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Ticket cards -->
+                        <t t-set="ticket_svc" t-value="dossier.env['multi.channel.rental.ticket.service']"/>
+                        <t t-set="tickets" t-value="ticket_svc._get_ticket_lines_for_dossier(dossier)"/>
+
+                        <t t-foreach="tickets" t-as="ticket">
+                            <div class="row mb-3" style="border: 2px solid #333; border-radius: 8px; padding: 16px; page-break-inside: avoid;">
+                                <div class="col-12">
+
+                                    <!-- Ticket header -->
+                                    <div class="row">
+                                        <div class="col-8">
+                                            <h4 style="margin: 0;">
+                                                <t t-out="ticket['print_title']"/>
+                                            </h4>
+                                            <p class="text-muted" style="margin: 4px 0;">
+                                                <t t-out="ticket['print_subtitle']"/>
+                                            </p>
+                                        </div>
+                                        <div class="col-4 text-end">
+                                            <span class="badge bg-primary" style="font-size: 14px;">
+                                                #<t t-out="ticket['sequence']"/>
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <hr style="margin: 8px 0;"/>
+
+                                    <!-- Ticket details -->
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <small class="text-muted">Dossier</small><br/>
+                                            <strong><t t-out="ticket['dossier_name']"/></strong>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted">Order</small><br/>
+                                            <strong><t t-out="ticket['order_name']"/></strong>
+                                        </div>
+                                    </div>
+
+                                    <div class="row mt-2">
+                                        <div class="col-6">
+                                            <small class="text-muted">Product</small><br/>
+                                            <t t-out="ticket['product_name']"/>
+                                            <t t-if="ticket['quantity'] and ticket['quantity'] != 1">
+                                                × <t t-out="ticket['quantity']"/>
+                                            </t>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted">Customer</small><br/>
+                                            <t t-out="ticket['attendee_name']"/>
+                                        </div>
+                                    </div>
+
+                                    <!-- Timeslot (rental) -->
+                                    <t t-if="ticket['timeslot_start']">
+                                        <div class="row mt-2">
+                                            <div class="col-12">
+                                                <small class="text-muted">Timeslot</small><br/>
+                                                <t t-out="ticket['timeslot_start']"/>
+                                                <t t-if="ticket['timeslot_end']">
+                                                    — <t t-out="ticket['timeslot_end']"/>
+                                                </t>
+                                            </div>
+                                        </div>
+                                    </t>
+
+                                    <!-- Event details -->
+                                    <t t-if="ticket['ticket_type'] == 'event'">
+                                        <div class="row mt-2">
+                                            <div class="col-6">
+                                                <small class="text-muted">Event</small><br/>
+                                                <t t-out="ticket['event_name']"/>
+                                            </div>
+                                            <div class="col-6" t-if="ticket['event_slot']">
+                                                <small class="text-muted">Slot</small><br/>
+                                                <t t-out="ticket['event_slot']"/>
+                                            </div>
+                                        </div>
+                                        <t t-if="ticket['registration_barcode']">
+                                            <div class="row mt-2">
+                                                <div class="col-12">
+                                                    <small class="text-muted">Check-in code</small><br/>
+                                                    <strong><t t-out="ticket['registration_barcode']"/></strong>
+                                                </div>
+                                            </div>
+                                        </t>
+                                    </t>
+
+                                </div>
+                            </div>
+                        </t>
+
+                        <!-- Footer -->
+                        <div class="row mt-4" style="border-top: 1px solid #ccc; padding-top: 12px;">
+                            <div class="col-12 text-center text-muted">
+                                <small>
+                                    Retrieve tickets at the kiosk using dossier number
+                                    <strong><t t-out="dossier.name"/></strong>
+                                    and email
+                                    <strong><t t-out="dossier.partner_email or dossier.partner_id.email or ''"/></strong>
+                                </small>
+                            </div>
+                        </div>
+
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>

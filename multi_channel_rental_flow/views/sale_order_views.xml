@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ==========================================================
+         sale.order — base list: show dossier column
+         Inherits the base list so it appears in all sale order lists.
+         ========================================================== -->
+
+    <record id="sale_order_list_view_mcrf" model="ir.ui.view">
+        <field name="name">sale.order.list.mcrf</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.sale_order_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="mcrf_dossier_display"
+                       string="Dossier"
+                       optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ==========================================================
+         Rental order list — dossier column
+         Standalone view, needs its own inherit.
+         ========================================================== -->
+
+    <record id="rental_order_list_view_mcrf" model="ir.ui.view">
+        <field name="name">sale.order.rental.list.mcrf</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale_renting.rental_order_view_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="mcrf_dossier_display"
+                       string="Dossier"
+                       optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ==========================================================
+         sale.order — form: dossier in Other Info tab (Sales column)
+         Since rental form inherits sale form, this covers both.
+         ========================================================== -->
+
+    <record id="sale_order_form_view_mcrf" model="ir.ui.view">
+        <field name="name">sale.order.form.mcrf</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='other_information']//group[@name='sales_person']" position="inside">
+                <field name="mcrf_dossier_ids" widget="many2many_tags"
+                       string="Dossiers"/>
+                <field name="mcrf_tickets_printed"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

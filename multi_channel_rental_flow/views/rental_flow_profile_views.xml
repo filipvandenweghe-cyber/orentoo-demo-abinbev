@@ -1,0 +1,411 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ==========================================================
+         Profile — Form View
+         ========================================================== -->
+
+    <record id="view_rental_flow_profile_form" model="ir.ui.view">
+        <field name="name">multi.channel.rental.profile.form</field>
+        <field name="model">multi.channel.rental.profile</field>
+        <field name="arch" type="xml">
+            <form string="Rental Flow Profile">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_available_products"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-cubes">
+                            <field name="available_product_count"
+                                   widget="statinfo"
+                                   string="Products"/>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Archived"
+                            bg_color="text-bg-danger"
+                            invisible="active"/>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Profile Name"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group string="General">
+                            <field name="profile_type"/>
+                            <field name="active" invisible="1"/>
+                            <field name="company_id"
+                                   groups="base.group_multi_company"/>
+                            <field name="warehouse_id"/>
+                            <field name="pricelist_id"/>
+                        </group>
+                        <group string="Channel Link">
+                            <field name="website_id"
+                                   invisible="profile_type != 'website'"
+                                   required="profile_type == 'website'"/>
+                            <field name="pos_config_id"
+                                   invisible="profile_type != 'kiosk'"/>
+                            <field name="default_partner_id"/>
+                            <field name="guest_checkout_mode"/>
+                            <field name="kiosk_order_url" widget="url"
+                                   invisible="profile_type != 'kiosk'"
+                                   readonly="1"
+                                   string="Kiosk Order URL"/>
+                            <field name="kiosk_url" widget="url"
+                                   invisible="profile_type != 'kiosk'"
+                                   readonly="1"
+                                   string="Kiosk Ticket Lookup URL"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <!-- ======================================
+                             Product Assortment
+                             ====================================== -->
+                        <page string="Product Assortment" name="assortment">
+                            <group string="Feature Toggles">
+                                <group>
+                                    <field name="enable_rental_items"/>
+                                    <field name="enable_event_tickets"/>
+                                    <field name="enable_addons"/>
+                                </group>
+                                <group>
+                                    <field name="enable_services"/>
+                                    <field name="enable_dossier_ordering"/>
+                                    <field name="enable_ticket_lookup_printing"/>
+                                </group>
+                            </group>
+                            <group string="Category Filters">
+                                <group>
+                                    <field name="allowed_ecommerce_category_ids"
+                                           widget="many2many_tags"/>
+                                </group>
+                                <group>
+                                    <field name="allowed_pos_category_ids"
+                                           widget="many2many_tags"
+                                           invisible="profile_type == 'website'"/>
+                                </group>
+                            </group>
+                            <group string="Explicit Product Assignment">
+                                <group>
+                                    <field name="included_product_ids"
+                                           widget="many2many_tags"/>
+                                </group>
+                                <group>
+                                    <field name="excluded_product_ids"
+                                           widget="many2many_tags"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <!-- ======================================
+                             Date / Time / Duration
+                             ====================================== -->
+                        <page string="Time &amp; Duration" name="time_duration">
+                            <group>
+                                <group string="Timeslot Generation">
+                                    <field name="rental_slot_interval_minutes"/>
+                                    <field name="slot_advance_days"/>
+                                </group>
+                                <group string="Duration Defaults">
+                                    <field name="default_duration_unit"/>
+                                </group>
+                            </group>
+                            <separator string="Fallback Duration Options"/>
+                            <div class="alert alert-info" role="alert">
+                                Used when no coefficient table applies to the product.
+                                Leave empty to use system defaults (1, 2, 4, 8 hours).
+                            </div>
+                            <field name="fallback_duration_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name"/>
+                                    <field name="duration_value"/>
+                                    <field name="duration_unit"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- ======================================
+                             Dynamic Pricing Colors
+                             ====================================== -->
+                        <page string="Colors" name="colors">
+                            <group string="Dynamic Pricing Thresholds">
+                                <group>
+                                    <field name="low_dynamic_factor_threshold"/>
+                                    <field name="high_dynamic_factor_threshold"/>
+                                </group>
+                            </group>
+                            <group string="Color Configuration">
+                                <group>
+                                    <field name="low_color" widget="color"/>
+                                    <field name="normal_color" widget="color"/>
+                                    <field name="high_color" widget="color"/>
+                                </group>
+                                <group>
+                                    <field name="unavailable_color" widget="color"/>
+                                    <field name="closed_color" widget="color"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <!-- ======================================
+                             Payment
+                             ====================================== -->
+                        <page string="Payment" name="payment">
+                            <group>
+                                <group string="Payment Mode">
+                                    <field name="payment_mode"/>
+                                    <field name="allow_demo_payment"/>
+                                    <field name="payment_pending_timeout_minutes"/>
+                                </group>
+                                <group string="Payment Providers">
+                                    <field name="payment_provider_ids"
+                                           widget="many2many_tags"/>
+                                    <field name="default_payment_provider_id"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <!-- ======================================
+                             Printer
+                             ====================================== -->
+                        <page string="Printer" name="printer"
+                              invisible="profile_type == 'website'">
+                            <group>
+                                <group string="Printer Mode">
+                                    <field name="printer_mode"/>
+                                    <field name="pos_printer_id"
+                                           invisible="printer_mode in ('browser', 'none')"/>
+                                    <field name="printer_type_display"
+                                           invisible="not pos_printer_id"/>
+                                    <field name="printer_ip_display"
+                                           invisible="not pos_printer_id"/>
+                                </group>
+                                <group string="Print Behavior">
+                                    <field name="print_receipt_on_payment"/>
+                                    <field name="print_tickets_on_payment"/>
+                                    <field name="print_tickets_with_receipt"
+                                           invisible="not print_tickets_on_payment or not print_receipt_on_payment"/>
+                                </group>
+                            </group>
+                            <div class="alert alert-warning" role="alert"
+                                 invisible="printer_mode != 'pos_iot_box'">
+                                <strong>IoT Box:</strong>
+                                Make sure the IoT module is installed and the selected
+                                POS printer is linked to an IoT device.
+                            </div>
+                            <group invisible="printer_mode not in ('pos_epos_ip', 'pos_iot_box')">
+                                <group string="Receipt Logo">
+                                    <field name="receipt_logo" widget="image"
+                                           class="oe_avatar"/>
+                                </group>
+                                <group>
+                                    <div class="text-muted" style="padding-top: 24px;">
+                                        Optional logo for ePOS receipts.
+                                        If empty, the company logo is used.
+                                        Max 512px wide recommended.
+                                    </div>
+                                </group>
+                            </group>
+                            <separator string="ePOS Ticket Template"
+                                       invisible="printer_mode not in ('pos_epos_ip', 'pos_iot_box')"/>
+                            <div invisible="printer_mode not in ('pos_epos_ip', 'pos_iot_box')">
+                                <div class="alert alert-info" role="alert">
+                                    Customize the thermal printer ticket layout using
+                                    placeholder codes. See field tooltips for available codes.
+                                </div>
+                                <group>
+                                    <field name="epos_ticket_header"
+                                           string="Header"/>
+                                </group>
+                                <group>
+                                    <field name="epos_ticket_body"
+                                           string="Body (repeated per ticket)"/>
+                                </group>
+                                <group>
+                                    <field name="epos_ticket_footer"
+                                           string="Footer"/>
+                                </group>
+                                <separator string="ePOS Receipt Template (sales summary)"
+                                           invisible="printer_mode not in ('pos_epos_ip', 'pos_iot_box')"/>
+                                <group invisible="printer_mode not in ('pos_epos_ip', 'pos_iot_box')">
+                                    <field name="epos_receipt_template"
+                                           string="Receipt Template"/>
+                                </group>
+                                <details class="mt-3">
+                                    <summary style="cursor:pointer; font-weight:600;">
+                                        Template Code Reference (click to expand)
+                                    </summary>
+                                    <div class="row mt-2" style="font-size:0.9em;">
+                                        <div class="col-6">
+                                            <strong>Data — Global (header/footer)</strong>
+                                            <pre style="background:#f8f9fa; padding:8px; border-radius:4px; font-size:0.85em; white-space:pre-wrap;">{{dossier_name}} — dossier number
+{{customer}} — customer name
+{{email}} — customer email
+{{total}} — total + currency
+{{payment_ref}} — payment reference</pre>
+                                            <strong>Data — Per ticket (body)</strong>
+                                            <pre style="background:#f8f9fa; padding:8px; border-radius:4px; font-size:0.85em; white-space:pre-wrap;">{{sequence}} — ticket number
+{{print_title}} — main title
+{{print_subtitle}} — subtitle / role
+{{product_name}} — product name
+{{order_name}} — order reference
+{{quantity}} — quantity
+{{quantity_line}} — "x 2" (empty if 1)
+{{timeslot_start}} — start datetime
+{{timeslot_end}} — end datetime
+{{timeslot_line}} — full range
+{{event_name}} — event name
+{{event_line}} — "Event: ..."
+{{event_slot}} — event slot
+{{attendee_name}} — attendee
+{{registration_barcode}} — barcode
+{{barcode_line}} — "Code: ..."</pre>
+                                        </div>
+                                        <div class="col-6">
+                                            <strong>Text formatting</strong>
+                                            <pre style="background:#f8f9fa; padding:8px; border-radius:4px; font-size:0.85em; white-space:pre-wrap;">{{BOLD_ON}} / {{BOLD_OFF}}
+{{ALIGN_LEFT}} / {{ALIGN_CENTER}} / {{ALIGN_RIGHT}}
+{{SIZE_1}} to {{SIZE_8}} — text size
+{{WIDE_1}} to {{WIDE_8}} — width only
+{{TALL_1}} to {{TALL_8}} — height only
+{{DOUBLE}} / {{DOUBLE_OFF}} — shortcut</pre>
+                                            <strong>Image / QR / Barcode</strong>
+                                            <pre style="background:#f8f9fa; padding:8px; border-radius:4px; font-size:0.85em; white-space:pre-wrap;">{{LOGO}} — company/profile logo
+{{QR:literal text}} — QR code
+{{QR:{{dossier_name}}}} — QR with field
+{{QR_dossier_name}} — QR shorthand
+{{BARCODE:literal}} — Code128 barcode
+{{BARCODE_dossier_name}} — barcode shorthand</pre>
+                                            <strong>Layout</strong>
+                                            <pre style="background:#f8f9fa; padding:8px; border-radius:4px; font-size:0.85em; white-space:pre-wrap;">{{FEED}} — 1 line feed
+{{FEED_3}} — 3 line feeds
+{{LINE}} — horizontal separator
+{{CUT}} — paper cut</pre>
+                                            <strong>Receipt only</strong>
+                                            <pre style="background:#f8f9fa; padding:8px; border-radius:4px; font-size:0.85em; white-space:pre-wrap;">{{ITEMS}} — all items with qty × price
+{{TAXES}} — per-tax breakdown
+{{subtotal}} — total excl. tax
+{{tax}} — total tax amount</pre>
+                                        </div>
+                                    </div>
+                                </details>
+                            </div>
+                        </page>
+                        <!-- ======================================
+                             Kiosk Branding
+                             ====================================== -->
+                        <page string="Kiosk Branding" name="kiosk_branding"
+                              invisible="profile_type != 'kiosk'">
+                            <group string="Logo &amp; Welcome Text">
+                                <group>
+                                    <field name="kiosk_logo" widget="image"/>
+                                    <field name="kiosk_home_icon" widget="image"/>
+                                    <field name="kiosk_welcome_title"
+                                           placeholder="Welcome"/>
+                                    <field name="kiosk_welcome_subtitle"
+                                           placeholder="Rent equipment, buy event tickets and more"/>
+                                </group>
+                            </group>
+                            <group string="Colors">
+                                <group>
+                                    <field name="kiosk_primary_color" widget="color"/>
+                                    <field name="kiosk_success_color" widget="color"/>
+                                </group>
+                                <group>
+                                    <field name="kiosk_bg_color" widget="color"/>
+                                    <field name="kiosk_card_color" widget="color"/>
+                                </group>
+                            </group>
+                            <group string="Hero Image Carousel">
+                                <field name="kiosk_hero_interval"/>
+                            </group>
+                            <field name="kiosk_hero_image_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name"/>
+                                    <field name="image" widget="image" options="{'size': [100, 60]}"/>
+                                    <field name="active"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ==========================================================
+         Profile — List View
+         ========================================================== -->
+
+    <record id="view_rental_flow_profile_list" model="ir.ui.view">
+        <field name="name">multi.channel.rental.profile.list</field>
+        <field name="model">multi.channel.rental.profile</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="profile_type"/>
+                <field name="warehouse_id"/>
+                <field name="website_id" optional="show"/>
+                <field name="pos_config_id" optional="show"/>
+                <field name="printer_mode" optional="show"/>
+                <field name="payment_mode" optional="show"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="active" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ==========================================================
+         Profile — Search View
+         ========================================================== -->
+
+    <record id="view_rental_flow_profile_search" model="ir.ui.view">
+        <field name="name">multi.channel.rental.profile.search</field>
+        <field name="model">multi.channel.rental.profile</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="warehouse_id"/>
+                <field name="website_id"/>
+                <filter name="kiosk" string="Kiosk"
+                        domain="[('profile_type', '=', 'kiosk')]"/>
+                <filter name="website" string="Website"
+                        domain="[('profile_type', '=', 'website')]"/>
+                <filter name="backend" string="Backend"
+                        domain="[('profile_type', '=', 'backend')]"/>
+                <separator/>
+                <filter name="inactive" string="Archived"
+                        domain="[('active', '=', False)]"/>
+                <separator/>
+                <filter name="group_type" string="Profile Type"
+                        context="{'group_by': 'profile_type'}"/>
+                <filter name="group_warehouse" string="Warehouse"
+                        context="{'group_by': 'warehouse_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ==========================================================
+         Actions
+         ========================================================== -->
+
+    <record id="action_rental_flow_profile" model="ir.actions.act_window">
+        <field name="name">Rental Flow Profiles</field>
+        <field name="res_model">multi.channel.rental.profile</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first Rental Flow Profile
+            </p>
+            <p>
+                Profiles define how a kiosk, website or backend channel
+                offers products, categories, payment and printing.
+            </p>
+        </field>
+    </record>
+
+</odoo>

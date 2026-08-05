@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         Menu structure — under Rental app
+         ============================================================ -->
+
+    <!-- Dossiers — under Rental -->
+    <menuitem
+        id="menu_rental_dossier"
+        name="Dossiers"
+        parent="sale_renting.rental_menu_root"
+        action="action_rental_dossier"
+        sequence="5"
+    />
+
+    <!-- Dossiers — under Sales -->
+    <menuitem
+        id="menu_sale_dossier"
+        name="Dossiers"
+        parent="sale.sale_menu_root"
+        action="action_rental_dossier"
+        sequence="45"
+    />
+
+    <!-- Rental Flow sub-menu under Rental > Configuration -->
+    <menuitem
+        id="menu_rental_flow_config_root"
+        name="Rental Flow"
+        parent="sale_renting.menu_rental_config"
+        sequence="50"
+    />
+
+    <!-- Profiles under Configuration > Rental Flow -->
+    <menuitem
+        id="menu_rental_flow_profiles"
+        name="Profiles"
+        parent="menu_rental_flow_config_root"
+        action="action_rental_flow_profile"
+        sequence="10"
+    />
+
+</odoo>

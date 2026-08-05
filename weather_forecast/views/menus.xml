@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Top-level app menu -->
+    <menuitem id="menu_weather_forecast_root"
+              name="Weather Forecast"
+              sequence="80"
+              groups="weather_forecast.group_weather_user"/>
+
+    <!-- Locations -->
+    <menuitem id="menu_weather_location"
+              name="Locations"
+              parent="menu_weather_forecast_root"
+              action="action_weather_location"
+              sequence="10"
+              groups="weather_forecast.group_weather_user"/>
+
+    <!-- Configuration sub-menu -->
+    <menuitem id="menu_weather_configuration"
+              name="Configuration"
+              parent="menu_weather_forecast_root"
+              sequence="90"
+              groups="base.group_system"/>
+
+    <!-- Settings link under Configuration -->
+    <menuitem id="menu_weather_settings"
+              name="Settings"
+              parent="menu_weather_configuration"
+              action="base_setup.action_general_configuration"
+              sequence="10"
+              groups="base.group_system"/>
+
+    <!-- Update All — available under Configuration for managers -->
+    <menuitem id="menu_weather_update_all"
+              name="Update All Locations Now"
+              parent="menu_weather_configuration"
+              action="action_update_all_weather"
+              sequence="20"
+              groups="weather_forecast.group_weather_manager"/>
+
+</odoo>

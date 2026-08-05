@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- ==========================================================
+             Demo POS Printer — Epson ePOS at 192.168.2.234
+             ========================================================== -->
+
+        <record id="demo_pos_printer" model="pos.printer">
+            <field name="name">Kiosk Epson Printer</field>
+            <field name="printer_type">epson_epos</field>
+            <field name="epson_printer_ip">192.168.2.234</field>
+        </record>
+
+        <!-- ==========================================================
+             Demo Kiosk Profile
+             ========================================================== -->
+
+        <record id="demo_kiosk_profile" model="multi.channel.rental.profile">
+            <field name="name">Kiosk Ticket Lookup</field>
+            <field name="profile_type">kiosk</field>
+            <field name="warehouse_id" ref="stock.warehouse0"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="guest_checkout_mode">login_required</field>
+            <field name="enable_rental_items">True</field>
+            <field name="enable_event_tickets">True</field>
+            <field name="enable_addons">True</field>
+            <field name="enable_services">False</field>
+            <field name="enable_dossier_ordering">True</field>
+            <field name="enable_ticket_lookup_printing">True</field>
+            <field name="rental_slot_interval_minutes">30</field>
+            <field name="slot_advance_days">30</field>
+            <field name="default_duration_unit">hour</field>
+            <field name="low_dynamic_factor_threshold">90.0</field>
+            <field name="high_dynamic_factor_threshold">110.0</field>
+            <field name="low_color">#90EE90</field>
+            <field name="normal_color">#28a745</field>
+            <field name="high_color">#006400</field>
+            <field name="unavailable_color">#dc3545</field>
+            <field name="closed_color">#6c757d</field>
+            <field name="payment_mode">online_redirect</field>
+            <field name="allow_demo_payment">True</field>
+            <field name="payment_pending_timeout_minutes">15</field>
+            <field name="printer_mode">pos_epos_ip</field>
+            <field name="pos_printer_id" ref="demo_pos_printer"/>
+            <field name="print_receipt_on_payment">True</field>
+            <field name="print_tickets_on_payment">True</field>
+            <field name="print_tickets_with_receipt">False</field>
+            <!-- Header and footer empty — all content in body -->
+            <field name="epos_ticket_header"></field>
+            <field name="epos_ticket_footer"></field>
+            <field name="epos_ticket_body">{{BOLD_ON}}{{ALIGN_CENTER}}{{DOUBLE}}{{LOGO}}{{DOUBLE_OFF}}{{BOLD_OFF}}
+{{BOLD_ON}}{{ALIGN_CENTER}}{{DOUBLE}}TICKETS{{DOUBLE_OFF}}{{BOLD_OFF}}
+{{FEED}}
+{{dossier_name}}
+{{customer}}
+{{FEED}}{{FEED}}
+{{SIZE_1}}
+{{ALIGN_LEFT}}
+{{BOLD_ON}}{{DOUBLE}}#{{sequence}}     -     {{print_title}}{{DOUBLE_OFF}}{{BOLD_OFF}}
+{{FEED}}
+{{print_subtitle}}
+{{quantity_line}}
+{{order_name}}
+{{FEED}}
+{{timeslot_line}}
+{{event_line}}
+{{barcode_line}}
+{{FEED}}
+{{SIZE_2}}
+{{ALIGN_CENTER}}
+{{FEED}}
+{{QR:literal text}}
+{{FEED}}{{FEED}}{{FEED}}
+{{CUT}}</field>
+        </record>
+
+        <!-- Demo fallback duration option -->
+        <record id="demo_fallback_duration_1h" model="multi.channel.rental.duration.option">
+            <field name="profile_id" ref="demo_kiosk_profile"/>
+            <field name="name">1 hour</field>
+            <field name="duration_value">1</field>
+            <field name="duration_unit">hour</field>
+            <field name="sequence">10</field>
+        </record>
+
+        <!-- ==========================================================
+             Water Sports Products (product.template)
+             ========================================================== -->
+
+        <record id="demo_product_tmpl_kayak_1p" model="product.template">
+            <field name="name">Kayak (1-persoons)</field>
+            <field name="type">consu</field>
+            <field name="list_price">10.0</field>
+            <field name="rent_ok" eval="True"/>
+            <field name="sale_ok" eval="False"/>
+            <field name="categ_id" ref="sale_renting.product_category_renting"/>
+            <field name="use_in_multi_channel_rental_flow" eval="True"/>
+            <field name="multi_channel_item_role">rental</field>
+            <field name="available_in_multi_channel_website" eval="True"/>
+            <field name="available_in_multi_channel_kiosk" eval="True"/>
+        </record>
+
+        <record id="demo_product_tmpl_kayak_2p" model="product.template">
+            <field name="name">Kayak (2-persoons)</field>
+            <field name="type">consu</field>
+            <field name="list_price">15.22</field>
+            <field name="rent_ok" eval="True"/>
+            <field name="sale_ok" eval="False"/>
+            <field name="categ_id" ref="sale_renting.product_category_renting"/>
+            <field name="use_in_multi_channel_rental_flow" eval="True"/>
+            <field name="multi_channel_item_role">rental</field>
+            <field name="available_in_multi_channel_website" eval="True"/>
+            <field name="available_in_multi_channel_kiosk" eval="True"/>
+        </record>
+
+        <record id="demo_product_tmpl_canadese_kano" model="product.template">
+            <field name="name">Canadese Kano</field>
+            <field name="type">consu</field>
+            <field name="list_price">17.83</field>
+            <field name="rent_ok" eval="True"/>
+            <field name="sale_ok" eval="False"/>
+            <field name="categ_id" ref="sale_renting.product_category_renting"/>
+            <field name="use_in_multi_channel_rental_flow" eval="True"/>
+            <field name="multi_channel_item_role">rental</field>
+            <field name="available_in_multi_channel_website" eval="True"/>
+            <field name="available_in_multi_channel_kiosk" eval="True"/>
+        </record>
+
+        <record id="demo_product_tmpl_klimparcours" model="product.template">
+            <field name="name">Klimparcours</field>
+            <field name="type">service</field>
+            <field name="list_price">1.0</field>
+            <field name="rent_ok" eval="False"/>
+            <field name="sale_ok" eval="True"/>
+            <field name="categ_id" ref="event_product.product_category_events"/>
+            <field name="service_tracking">event</field>
+            <field name="use_in_multi_channel_rental_flow" eval="True"/>
+            <field name="multi_channel_item_role">event_ticket</field>
+            <field name="available_in_multi_channel_website" eval="True"/>
+            <field name="available_in_multi_channel_kiosk" eval="True"/>
+        </record>
+
+        <!-- ==========================================================
+             Demo Website Rental Profile
+             ========================================================== -->
+
+        <record id="demo_website_rental_profile" model="multi.channel.rental.profile">
+            <field name="name">Website Rental Flow</field>
+            <field name="profile_type">website</field>
+            <field name="website_id" ref="website.default_website"/>
+            <field name="warehouse_id" ref="stock.warehouse0"/>
+            <field name="enable_rental_items" eval="True"/>
+            <field name="enable_event_tickets" eval="True"/>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- ==========================================================
+             Demo Event: Klimparcours
+             ========================================================== -->
+
+        <record id="demo_event_klimparcours" model="event.event">
+            <field name="name">Klimparcours</field>
+            <field name="date_begin" eval="(DateTime.now() + timedelta(days=5)).strftime('%Y-%m-%d 07:00:00')"/>
+            <field name="date_end" eval="(DateTime.now() + timedelta(days=9)).strftime('%Y-%m-%d 16:00:00')"/>
+            <field name="website_published" eval="True"/>
+        </record>
+
+        <!-- Event tickets for Klimparcours -->
+        <record id="demo_ticket_klimparcours_under13" model="event.event.ticket">
+            <field name="name">Registratie voor Klimparcours (jonger dan 13j)</field>
+            <field name="event_id" ref="demo_event_klimparcours"/>
+            <field name="product_id" ref="event_product.product_product_event"/>
+            <field name="price">17.83</field>
+            <field name="seats_max">16</field>
+        </record>
+
+        <record id="demo_ticket_klimparcours_over13" model="event.event.ticket">
+            <field name="name">Registratie voor Klimparcours (ouder dan 13j)</field>
+            <field name="event_id" ref="demo_event_klimparcours"/>
+            <field name="product_id" ref="event_product.product_product_event"/>
+            <field name="price">21.30</field>
+            <field name="seats_max">16</field>
+        </record>
+
+    </data>
+</odoo>

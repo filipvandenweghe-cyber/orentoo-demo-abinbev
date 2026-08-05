@@ -1,0 +1,644 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* weather_forecast
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0+e\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-04 11:52+0000\n"
+"PO-Revision-Date: 2026-05-04 11:52+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: weather_forecast
+#: model:res.groups,comment:weather_forecast.group_weather_manager
+msgid ""
+"\n"
+"            Can create, edit, and delete weather locations and trigger manual updates.\n"
+"        "
+msgstr ""
+
+#. module: weather_forecast
+#: model:res.groups,comment:weather_forecast.group_weather_user
+msgid ""
+"\n"
+"            Can view weather locations and forecast data (read-only).\n"
+"        "
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,help:weather_forecast.field_weather_forecast_line__source_type
+msgid ""
+"\"Hourly\" = data came directly from the API hourly array.  \"Daily "
+"(expanded)\" = data was derived by expanding a daily forecast record into "
+"hourly slots using time-block temperature mapping."
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.constraint,message:weather_forecast.constraint_weather_forecast_line_unique_location_forecast_datetime
+msgid "A forecast line for this location and datetime already exists."
+msgstr ""
+
+#. module: weather_forecast
+#: model_terms:ir.ui.view,arch_db:weather_forecast.res_config_settings_view_form_weather
+msgid "API Configuration"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_res_config_settings__weather_language
+#: model_terms:ir.ui.view,arch_db:weather_forecast.res_config_settings_view_form_weather
+msgid "API Language"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_forecast_line__raw_api_datetime
+msgid "API Record Datetime (UTC)"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,help:weather_forecast.field_res_config_settings__weather_api_key
+msgid "API key for OpenWeather One Call API 3.0."
+msgstr ""
+
+#. module: weather_forecast
+#: model_terms:ir.ui.view,arch_db:weather_forecast.res_config_settings_view_form_weather
+msgid ""
+"API key for OpenWeather One Call API 3.0.  Sign up at openweathermap.org."
+msgstr ""
+
+#. module: weather_forecast
+#. odoo-python
+#: code:addons/weather_forecast/models/weather_location.py:0
+msgid "API request failed for \"%(name)s\": %(error)s"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_location__active
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_search
+msgid "Active"
+msgstr ""
+
+#. module: weather_forecast
+#: model_terms:ir.actions.act_window,help:weather_forecast.action_weather_location
+msgid "Add your first weather location"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_location__address
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_search
+msgid "Address"
+msgstr ""
+
+#. module: weather_forecast
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_form
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_search
+msgid "Archived"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_forecast_line__clouds
+msgid "Cloud Cover (%)"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,help:weather_forecast.field_weather_forecast_line__clouds
+msgid "Cloudiness, percentage."
+msgstr ""
+
+#. module: weather_forecast
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_form
+msgid "Clouds %"
+msgstr ""
+
+#. module: weather_forecast
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_form
+msgid "Code"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model,name:weather_forecast.model_res_config_settings
+msgid "Config Settings"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.ui.menu,name:weather_forecast.menu_weather_configuration
+msgid "Configuration"
+msgstr ""
+
+#. module: weather_forecast
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_form
+msgid "Coordinates"
+msgstr ""
+
+#. module: weather_forecast
+#: model_terms:ir.actions.act_window,help:weather_forecast.action_weather_location
+msgid ""
+"Create a location, enter its address, and the module will\n"
+"                automatically fetch the hourly weather forecast for the\n"
+"                next 8 days via OpenWeather One Call API 3.0."
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_forecast_line__create_uid
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_location__create_uid
+msgid "Created by"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_forecast_line__create_date
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_location__create_date
+msgid "Created on"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields.selection,name:weather_forecast.selection__weather_forecast_line__source_type__daily
+msgid "Daily (expanded)"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_res_config_settings__weather_update_time
+#: model_terms:ir.ui.view,arch_db:weather_forecast.res_config_settings_view_form_weather
+msgid "Daily Update Time (HH:MM)"
+msgstr ""
+
+#. module: weather_forecast
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_form
+msgid "Date/Time (UTC)"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,help:weather_forecast.field_weather_location__longitude
+msgid "Decimal degrees, east positive.  Auto-filled by geocoding."
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,help:weather_forecast.field_weather_location__latitude
+msgid "Decimal degrees, north positive.  Auto-filled by geocoding."
+msgstr ""
+
+#. module: weather_forecast
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_form
+msgid "Description"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_res_config_settings__display_name
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_forecast_line__display_name
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_location__display_name
+msgid "Display Name"
+msgstr ""
+
+#. module: weather_forecast
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_form
+msgid ""
+"Enter a full address and save — latitude and longitude will be filled "
+"automatically via geocoding."
+msgstr ""
+
+#. module: weather_forecast
+#. odoo-python
+#: code:addons/weather_forecast/models/weather_location.py:0
+msgid "Errors:\n"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_forecast_line__feels_like
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_form
+msgid "Feels Like"
+msgstr ""
+
+#. module: weather_forecast
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_form
+msgid ""
+"Fetch the latest forecast from OpenWeather? This will count against your API"
+" quota."
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_forecast_line__forecast_datetime
+msgid "Forecast Date/Time (UTC)"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_location__weather_line_ids
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_form
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_list
+msgid "Forecast Lines"
+msgstr ""
+
+#. module: weather_forecast
+#. odoo-python
+#: code:addons/weather_forecast/models/weather_location.py:0
+msgid "Forecast for %(name)s updated: %(count)d lines created/updated."
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,help:weather_forecast.field_weather_location__address
+msgid "Free-text address.  Saved → geocoded automatically via OpenStreetMap."
+msgstr ""
+
+#. module: weather_forecast
+#. odoo-python
+#: code:addons/weather_forecast/models/weather_location.py:0
+msgid ""
+"Geocoding failed for \"%(address)s\": %(error)s\n"
+"\n"
+"You can enter the coordinates manually."
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,help:weather_forecast.field_weather_forecast_line__weather_main
+msgid "Group of weather parameters: Rain, Snow, Clouds, etc."
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields.selection,name:weather_forecast.selection__weather_forecast_line__source_type__hourly
+msgid "Hourly"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,help:weather_forecast.field_weather_forecast_line__feels_like
+msgid "Human-perceived temperature (wind chill / heat index)."
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,help:weather_forecast.field_weather_forecast_line__weather_description
+msgid "Human-readable weather condition description."
+msgstr ""
+
+#. module: weather_forecast
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_form
+msgid "Humidity %"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_forecast_line__humidity
+msgid "Humidity (%)"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_res_config_settings__id
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_forecast_line__id
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_location__id
+msgid "ID"
+msgstr ""
+
+#. module: weather_forecast
+#: model_terms:ir.ui.view,arch_db:weather_forecast.res_config_settings_view_form_weather
+msgid "ISO 639-1 code for weather descriptions (e.g. en, nl, fr)."
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,help:weather_forecast.field_res_config_settings__weather_language
+msgid ""
+"ISO 639-1 language code for weather descriptions returned by the API (e.g. "
+"\"en\", \"nl\", \"fr\").  Leave blank to use English."
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields.selection,name:weather_forecast.selection__res_config_settings__weather_units__imperial
+msgid "Imperial (°F, mph)"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,help:weather_forecast.field_weather_location__active
+msgid "Inactive locations are excluded from the scheduled cron update."
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_forecast_line__last_api_update_datetime
+msgid "Last API Update (UTC)"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_location__last_weather_update
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_form
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_list
+msgid "Last Updated"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_forecast_line__write_uid
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_location__write_uid
+msgid "Last Updated by"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_forecast_line__write_date
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_location__write_date
+msgid "Last Updated on"
+msgstr ""
+
+#. module: weather_forecast
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_list
+msgid "Lat"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_location__latitude
+msgid "Latitude"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_forecast_line__location_id
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_form
+msgid "Location"
+msgstr ""
+
+#. module: weather_forecast
+#. odoo-python
+#: code:addons/weather_forecast/models/weather_location.py:0
+msgid ""
+"Location \"%(name)s\" has no coordinates.  Please set the address so it can "
+"be geocoded, or enter latitude/longitude manually."
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.ui.menu,name:weather_forecast.menu_weather_location
+msgid "Locations"
+msgstr ""
+
+#. module: weather_forecast
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_list
+msgid "Lon"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_location__longitude
+msgid "Longitude"
+msgstr ""
+
+#. module: weather_forecast
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_form
+msgid "Main"
+msgstr ""
+
+#. module: weather_forecast
+#: model:res.groups,name:weather_forecast.group_weather_manager
+msgid "Manager"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields.selection,name:weather_forecast.selection__res_config_settings__weather_units__metric
+msgid "Metric (°C, m/s)"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_location__name
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_search
+msgid "Name"
+msgstr ""
+
+#. module: weather_forecast
+#. odoo-python
+#: code:addons/weather_forecast/models/weather_location.py:0
+msgid "No active weather locations found."
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_res_config_settings__weather_api_key
+#: model_terms:ir.ui.view,arch_db:weather_forecast.res_config_settings_view_form_weather
+msgid "OpenWeather API Key"
+msgstr ""
+
+#. module: weather_forecast
+#. odoo-python
+#: code:addons/weather_forecast/models/weather_location.py:0
+msgid ""
+"OpenWeather API key is not configured.  Please go to Settings → Weather "
+"Forecast and enter your API key."
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,help:weather_forecast.field_weather_forecast_line__weather_id
+msgid ""
+"OpenWeather weather condition code (see openweathermap.org/weather-"
+"conditions)."
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,help:weather_forecast.field_weather_forecast_line__rain
+msgid ""
+"Precipitation volume.  For hourly lines: mm in the preceding hour.  For "
+"daily-expanded lines: total daily accumulation in mm."
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_forecast_line__rain
+msgid "Rain (mm)"
+msgstr ""
+
+#. module: weather_forecast
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_form
+msgid "Rain mm"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,help:weather_forecast.field_weather_forecast_line__humidity
+msgid "Relative humidity, percentage."
+msgstr ""
+
+#. module: weather_forecast
+#: model_terms:ir.ui.view,arch_db:weather_forecast.res_config_settings_view_form_weather
+msgid "Scheduled Update"
+msgstr ""
+
+#. module: weather_forecast
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_search
+msgid "Search Locations"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.ui.menu,name:weather_forecast.menu_weather_settings
+msgid "Settings"
+msgstr ""
+
+#. module: weather_forecast
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_form
+msgid "Source"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_forecast_line__source_type
+msgid "Source Type"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields.selection,name:weather_forecast.selection__res_config_settings__weather_units__standard
+msgid "Standard (Kelvin, m/s)"
+msgstr ""
+
+#. module: weather_forecast
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_form
+msgid "Temp"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_forecast_line__temperature
+msgid "Temperature"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,help:weather_forecast.field_weather_forecast_line__temperature
+msgid "Temperature in the configured units (°C / °F / K)."
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,help:weather_forecast.field_weather_forecast_line__forecast_datetime
+msgid "The UTC datetime this forecast line applies to."
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,help:weather_forecast.field_weather_forecast_line__raw_api_datetime
+msgid "The dt timestamp of the source API record (hourly or daily)."
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,help:weather_forecast.field_res_config_settings__weather_update_time
+msgid ""
+"Time of day at which the automatic weather update runs, expressed in the "
+"company timezone.  Format: HH:MM (24h)."
+msgstr ""
+
+#. module: weather_forecast
+#: model_terms:ir.ui.view,arch_db:weather_forecast.res_config_settings_view_form_weather
+msgid ""
+"Time of day for the automatic forecast update, in the company timezone.  "
+"Saving these settings will reschedule the cron job accordingly."
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,help:weather_forecast.field_weather_forecast_line__last_api_update_datetime
+msgid "UTC timestamp of the most recent API call that wrote this record."
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,help:weather_forecast.field_weather_location__last_weather_update
+msgid ""
+"UTC timestamp of the most recent API fetch that updated this location's "
+"forecast lines."
+msgstr ""
+
+#. module: weather_forecast
+#: model_terms:ir.ui.view,arch_db:weather_forecast.res_config_settings_view_form_weather
+msgid "Unit system used for temperature, wind speed, etc."
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_res_config_settings__weather_units
+#: model_terms:ir.ui.view,arch_db:weather_forecast.res_config_settings_view_form_weather
+msgid "Units"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.actions.server,name:weather_forecast.action_update_all_weather
+#: model:ir.ui.menu,name:weather_forecast.menu_weather_update_all
+msgid "Update All Locations Now"
+msgstr ""
+
+#. module: weather_forecast
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_form
+msgid "Update Weather Now"
+msgstr ""
+
+#. module: weather_forecast
+#. odoo-python
+#: code:addons/weather_forecast/models/weather_location.py:0
+msgid "Updated %(lines)d forecast lines for %(locs)d location(s)."
+msgstr ""
+
+#. module: weather_forecast
+#: model:res.groups,name:weather_forecast.group_weather_user
+msgid "User"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_forecast_line__weather_id
+msgid "Weather Condition ID"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_forecast_line__weather_description
+msgid "Weather Description"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.module.category,name:weather_forecast.module_category_weather_forecast
+#: model:ir.ui.menu,name:weather_forecast.menu_weather_forecast_root
+#: model_terms:ir.ui.view,arch_db:weather_forecast.res_config_settings_view_form_weather
+msgid "Weather Forecast"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model,name:weather_forecast.model_weather_forecast_line
+msgid "Weather Forecast Line"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.actions.server,name:weather_forecast.ir_cron_weather_update_ir_actions_server
+msgid "Weather Forecast: Daily Update"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model,name:weather_forecast.model_weather_location
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_form
+msgid "Weather Location"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.actions.act_window,name:weather_forecast.action_weather_location
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_list
+msgid "Weather Locations"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_forecast_line__weather_main
+msgid "Weather Main"
+msgstr ""
+
+#. module: weather_forecast
+#. odoo-python
+#: code:addons/weather_forecast/models/weather_location.py:0
+msgid "Weather Update Complete"
+msgstr ""
+
+#. module: weather_forecast
+#. odoo-python
+#: code:addons/weather_forecast/models/weather_location.py:0
+msgid "Weather Updated"
+msgstr ""
+
+#. module: weather_forecast
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_form
+msgid "Wind"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,field_description:weather_forecast.field_weather_forecast_line__wind_speed
+msgid "Wind Speed"
+msgstr ""
+
+#. module: weather_forecast
+#: model:ir.model.fields,help:weather_forecast.field_weather_forecast_line__wind_speed
+msgid "Wind speed in m/s (metric/standard) or mph (imperial)."
+msgstr ""
+
+#. module: weather_forecast
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_form
+msgid "e.g. Brussels City Centre"
+msgstr ""
+
+#. module: weather_forecast
+#: model_terms:ir.ui.view,arch_db:weather_forecast.weather_location_view_form
+msgid "e.g. Grand-Place, Brussels, Belgium"
+msgstr ""
+
+#. module: weather_forecast
+#: model_terms:ir.ui.view,arch_db:weather_forecast.res_config_settings_view_form_weather
+msgid "en"
+msgstr ""

@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Dossier confirmation email template -->
+        <record id="email_template_dossier_confirmation" model="mail.template">
+            <field name="name">Rental Flow: Dossier Confirmation</field>
+            <field name="model_id" ref="multi_channel_rental_flow.model_rental_dossier"/>
+            <field name="subject">Booking Confirmation — {{ object.display_name }}</field>
+            <field name="email_from">{{ (object.user_id.email_formatted or object.company_id.email_formatted or user.email_formatted) }}</field>
+            <field name="email_to">{{ object.partner_email or object.partner_id.email }}</field>
+            <field name="description">Sent to customers after successful dossier payment</field>
+            <field name="body_html" type="html">
+<div style="margin: 0px; padding: 0px; font-family: Arial, sans-serif; font-size: 14px;">
+
+    <p>Dear <t t-out="object.partner_id.name or 'Customer'">Customer</t>,</p>
+
+    <p>Your booking <strong><t t-out="object.display_name or ''">RD00001</t></strong>
+       has been confirmed and paid.</p>
+
+    <!-- Order references -->
+    <t t-if="object.sale_order_ids">
+        <p><strong>Order references:</strong></p>
+        <ul>
+            <t t-foreach="object.sale_order_ids" t-as="order">
+                <li>
+                    <t t-out="order.name">S00001</t>
+                    <t t-if="order.is_rental_order and order.rental_start_date">
+                        — Rental
+                        <t t-out="format_datetime(order.rental_start_date, dt_format='short')">01/06/2026 09:00</t>
+                        <t t-if="order.rental_return_date">
+                            to <t t-out="format_datetime(order.rental_return_date, dt_format='short')">01/06/2026 11:00</t>
+                        </t>
+                    </t>
+                </li>
+            </t>
+        </ul>
+    </t>
+
+    <!-- Items summary -->
+    <t t-set="active_items" t-value="object.item_ids.filtered(lambda i: i.state != 'cancelled')"/>
+    <t t-if="active_items">
+        <p><strong>Items:</strong></p>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
+            <tr style="background-color: #f5f5f5;">
+                <th style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd;">Product</th>
+                <th style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd;">Details</th>
+                <th style="padding: 8px; text-align: right; border-bottom: 1px solid #ddd;">Qty</th>
+                <th style="padding: 8px; text-align: right; border-bottom: 1px solid #ddd;">Price</th>
+            </tr>
+            <t t-foreach="active_items" t-as="item">
+                <tr>
+                    <td style="padding: 8px; border-bottom: 1px solid #eee;">
+                        <t t-out="item.product_id.display_name">Product</t>
+                    </td>
+                    <td style="padding: 8px; border-bottom: 1px solid #eee;">
+                        <t t-if="item.item_role == 'event_ticket' and item.event_id">
+                            Event: <t t-out="item.event_id.name">Event</t>
+                            <t t-if="item.event_slot_id">
+                                (<t t-out="item.event_slot_id.display_name">Slot</t>)
+                            </t>
+                        </t>
+                        <t t-elif="item.slot_id">
+                            <t t-out="item.slot_id.name">Timeslot</t>
+                        </t>
+                        <t t-else="">
+                            <t t-out="dict(item._fields['item_role'].selection).get(item.item_role, '')">Rental</t>
+                        </t>
+                    </td>
+                    <td style="padding: 8px; text-align: right; border-bottom: 1px solid #eee;">
+                        <t t-out="item.quantity">1</t>
+                    </td>
+                    <td style="padding: 8px; text-align: right; border-bottom: 1px solid #eee;">
+                        <t t-out="format_amount(item.price_subtotal, object.currency_id)">$ 50.00</t>
+                    </td>
+                </tr>
+            </t>
+            <tr style="font-weight: bold;">
+                <td colspan="3" style="padding: 8px; text-align: right; border-top: 2px solid #333;">Total paid:</td>
+                <td style="padding: 8px; text-align: right; border-top: 2px solid #333;">
+                    <t t-out="format_amount(object.amount_total, object.currency_id)">$ 100.00</t>
+                </td>
+            </tr>
+        </table>
+    </t>
+
+    <!-- Payment info -->
+    <t t-if="object.payment_reference">
+        <p>Payment reference: <strong><t t-out="object.payment_reference">TX-001</t></strong></p>
+    </t>
+
+    <hr/>
+
+    <!-- Kiosk lookup instructions -->
+    <p><strong>Retrieve your tickets at the kiosk:</strong></p>
+    <p>Enter your dossier number <strong><t t-out="object.name">RD00001</t></strong>
+       and your email address
+       <strong><t t-out="object.partner_email or object.partner_id.email or ''">customer@example.com</t></strong>
+       at any kiosk terminal to print your tickets.</p>
+
+    <hr/>
+
+    <p style="color: #666; font-size: 12px;">
+        <em>This dossier groups all your bookings, rental orders
+        and event tickets into a single confirmation.</em>
+    </p>
+
+</div>
+            </field>
+        </record>
+
+    </data>
+</odoo>

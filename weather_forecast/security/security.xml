@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Weather Forecast: module category -->
+    <record id="module_category_weather_forecast" model="ir.module.category">
+        <field name="name">Weather Forecast</field>
+        <field name="sequence">100</field>
+    </record>
+
+    <!-- Weather Forecast: privilege (links groups to category for the user form) -->
+    <record id="res_groups_privilege_weather_forecast" model="res.groups.privilege">
+        <field name="name">Weather Forecast</field>
+        <field name="sequence">100</field>
+        <field name="placeholder">No access</field>
+        <field name="category_id" ref="module_category_weather_forecast"/>
+    </record>
+
+    <!-- Weather Forecast: user group (read-only) -->
+    <record id="group_weather_user" model="res.groups">
+        <field name="name">User</field>
+        <field name="sequence">10</field>
+        <field name="privilege_id" ref="res_groups_privilege_weather_forecast"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        <field name="comment">
+            Can view weather locations and forecast data (read-only).
+        </field>
+    </record>
+
+    <!-- Weather Forecast: manager group -->
+    <record id="group_weather_manager" model="res.groups">
+        <field name="name">Weather Manager</field>
+        <field name="sequence">20</field>
+        <field name="privilege_id" ref="res_groups_privilege_weather_forecast"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user')), (4, ref('weather_forecast.group_weather_user'))]"/>
+        <field name="comment">
+            Can create, edit, and delete weather locations and trigger manual updates.
+        </field>
+    </record>
+</odoo>

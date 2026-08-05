@@ -1,0 +1,442 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="kiosk_order_page" name="Kiosk Order Flow">
+        <html>
+            <head>
+                <meta charset="utf-8"/>
+                <meta name="viewport"
+                      content="width=device-width, initial-scale=1, user-scalable=no"/>
+                <title><t t-esc="profile.name"/> — Order</title>
+                <link rel="stylesheet"
+                      href="/multi_channel_rental_flow/static/src/css/kiosk_order.css"/>
+                <!-- Dynamic branding colors -->
+                <style>
+                    :root {
+                        --ko-bg: <t t-esc="branding['bg_color']"/>;
+                        --ko-card: <t t-esc="branding['card_color']"/>;
+                        --ko-accent: <t t-esc="branding['primary_color']"/>;
+                        --ko-success: <t t-esc="branding['success_color']"/>;
+                    }
+                    /* Hero carousel */
+                    .ko-hero-carousel {
+                        position: absolute;
+                        top: 0; left: 0; right: 0; bottom: 0;
+                        overflow: hidden; z-index: 0;
+                    }
+                    .ko-hero-carousel img {
+                        position: absolute;
+                        top: 0; left: 0;
+                        width: 100%; height: 100%;
+                        object-fit: cover;
+                        opacity: 0;
+                        transition: opacity 1.2s ease-in-out;
+                    }
+                    .ko-hero-carousel img.active { opacity: 1; }
+                    .ko-hero-overlay {
+                        position: absolute;
+                        top: 0; left: 0; right: 0; bottom: 0;
+                        background: linear-gradient(
+                            to bottom,
+                            rgba(26,26,46,0.3) 0%,
+                            rgba(26,26,46,0.7) 50%,
+                            rgba(26,26,46,0.95) 100%
+                        );
+                        z-index: 1;
+                    }
+                    .ko-hero-content {
+                        position: relative; z-index: 2;
+                    }
+                    .ko-topbar-logo {
+                        height: 40px;
+                        max-width: 180px;
+                        object-fit: contain;
+                    }
+                </style>
+            </head>
+            <body class="kiosk-order">
+
+                <!-- Top bar -->
+                <div class="ko-topbar">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <button class="ko-basket-btn"
+                                onclick="showSection('page-start')"
+                                style="background:transparent; padding:8px 12px;">
+                            <t t-if="profile.kiosk_home_icon">
+                                <img t-attf-src="/rental-kiosk/home-icon/#{profile.id}"
+                                     alt="Home"
+                                     style="height:32px; width:32px; object-fit:contain;"/>
+                            </t>
+                            <t t-else="">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+                                     stroke="#eee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                                    <polyline points="9 22 9 12 15 12 15 22"/>
+                                </svg>
+                            </t>
+                        </button>
+                        <div class="ko-topbar-title">
+                            <t t-if="profile.kiosk_logo">
+                                <img t-attf-src="/rental-kiosk/logo/#{profile.id}"
+                                     class="ko-topbar-logo"
+                                     t-att-alt="profile.name"/>
+                            </t>
+                            <t t-else="">
+                                <t t-esc="profile.name"/>
+                            </t>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <button class="ko-basket-btn" onclick="showBasket()">
+                            🛒 Basket
+                            <span class="ko-basket-badge" id="basket-badge"
+                                  style="display:none;">0</span>
+                        </button>
+                        <button class="ko-basket-btn" id="topbar-checkout-btn"
+                                onclick="showBasket()"
+                                style="background:var(--ko-success); display:none;">
+                            Checkout →
+                        </button>
+                    </div>
+                </div>
+
+                <!-- =============================================
+                     PAGE: Start (with hero carousel)
+                     ============================================= -->
+                <div id="page-start" class="ko-page"
+                     style="position:relative; min-height:calc(100vh - 60px); display:flex; align-items:center; justify-content:center;">
+
+                    <!-- Hero image carousel (behind content) -->
+                    <t t-if="hero_images">
+                        <div class="ko-hero-carousel" id="hero-carousel">
+                            <t t-foreach="hero_images" t-as="img">
+                                <img t-attf-src="/rental-kiosk/hero/#{img.id}"
+                                     t-att-alt="img.name"
+                                     t-attf-class="#{img_first and 'active' or ''}"/>
+                            </t>
+                        </div>
+                        <div class="ko-hero-overlay"></div>
+                    </t>
+
+                    <!-- Content on top of carousel -->
+                    <div class="ko-hero-content" style="text-align:center; padding:40px 20px; max-width:600px;">
+
+                        <!-- Logo (large, centered on start page) -->
+                        <t t-if="profile.kiosk_logo">
+                            <div style="margin-bottom:30px;">
+                                <img t-attf-src="/rental-kiosk/logo/#{profile.id}"
+                                     t-att-alt="profile.name"
+                                     style="max-height:80px; max-width:300px; object-fit:contain;
+                                            filter:drop-shadow(0 2px 8px rgba(0,0,0,0.5));"/>
+                            </div>
+                        </t>
+
+                        <!-- Welcome text -->
+                        <h1 style="font-size:2.8rem; margin-bottom:16px; text-shadow:0 2px 12px rgba(0,0,0,0.6);">
+                            <t t-if="branding['welcome_title']">
+                                <t t-esc="branding['welcome_title']"/>
+                            </t>
+                            <t t-else="">Welcome</t>
+                        </h1>
+                        <p style="color:rgba(255,255,255,0.85); font-size:1.3rem; margin-bottom:40px;
+                                  text-shadow:0 1px 6px rgba(0,0,0,0.5);">
+                            <t t-if="branding['welcome_subtitle']">
+                                <t t-esc="branding['welcome_subtitle']"/>
+                            </t>
+                            <t t-else="">Rent equipment, buy event tickets and more</t>
+                        </p>
+
+                        <div style="max-width:400px; margin:0 auto; display:flex; flex-direction:column; gap:14px;">
+                            <button class="ko-btn ko-btn-primary"
+                                    style="font-size:1.3rem; padding:18px 32px;
+                                           box-shadow:0 4px 20px rgba(0,0,0,0.4); margin:0;"
+                                    onclick="startNewOrder()">
+                                Start New Order
+                            </button>
+                            <a t-attf-href="/rental-kiosk/#{profile.id}?lang=#{current_lang}"
+                               class="ko-btn ko-btn-secondary"
+                               style="font-size:1.3rem; padding:18px 32px; margin:0;
+                                      text-align:center; text-decoration:none;
+                                      box-shadow:0 4px 20px rgba(0,0,0,0.3); backdrop-filter:blur(4px);
+                                      box-sizing:border-box;">
+                                Already have a booking? Retrieve tickets →
+                            </a>
+                        </div>
+
+                        <!-- Language selector -->
+                        <div style="display:flex; justify-content:center; gap:10px; margin-top:40px;">
+                            <button onclick="setKioskLang('en_US')"
+                                    style="padding:8px 18px; border-radius:8px; font-size:1rem; font-weight:600;
+                                           cursor:pointer; border:2px solid rgba(255,255,255,0.2); background:rgba(22,33,62,0.6); color:#eee;
+                                           display:flex; align-items:center; gap:8px; backdrop-filter:blur(4px);"
+                                    t-attf-style="#{current_lang == 'en_US' and 'border-color:var(--ko-success); background:var(--ko-success); color:#fff;' or ''}">
+                                <svg width="24" height="16" viewBox="0 0 60 30" style="border-radius:2px;border:1px solid rgba(255,255,255,0.3);flex-shrink:0;">
+                                    <rect width="60" height="30" fill="#012169"/>
+                                    <path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/>
+                                    <path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" stroke-width="2"/>
+                                    <path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/>
+                                    <path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/>
+                                </svg>
+                                EN
+                            </button>
+                            <button onclick="setKioskLang('fr_FR')"
+                                    style="padding:8px 18px; border-radius:8px; font-size:1rem; font-weight:600;
+                                           cursor:pointer; border:2px solid rgba(255,255,255,0.2); background:rgba(22,33,62,0.6); color:#eee;
+                                           display:flex; align-items:center; gap:8px; backdrop-filter:blur(4px);"
+                                    t-attf-style="#{current_lang == 'fr_FR' and 'border-color:var(--ko-success); background:var(--ko-success); color:#fff;' or ''}">
+                                <svg width="24" height="16" viewBox="0 0 3 2" style="border-radius:2px;border:1px solid rgba(255,255,255,0.3);flex-shrink:0;">
+                                    <rect width="1" height="2" fill="#002395"/>
+                                    <rect x="1" width="1" height="2" fill="#fff"/>
+                                    <rect x="2" width="1" height="2" fill="#ED2939"/>
+                                </svg>
+                                FR
+                            </button>
+                            <button onclick="setKioskLang('nl_NL')"
+                                    style="padding:8px 18px; border-radius:8px; font-size:1rem; font-weight:600;
+                                           cursor:pointer; border:2px solid rgba(255,255,255,0.2); background:rgba(22,33,62,0.6); color:#eee;
+                                           display:flex; align-items:center; gap:8px; backdrop-filter:blur(4px);"
+                                    t-attf-style="#{current_lang == 'nl_NL' and 'border-color:var(--ko-success); background:var(--ko-success); color:#fff;' or ''}">
+                                <svg width="24" height="16" viewBox="0 0 9 6" style="border-radius:2px;border:1px solid rgba(255,255,255,0.3);flex-shrink:0;">
+                                    <rect width="9" height="2" fill="#AE1C28"/>
+                                    <rect y="2" width="9" height="2" fill="#FFF"/>
+                                    <rect y="4" width="9" height="2" fill="#21468B"/>
+                                </svg>
+                                NL
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- =============================================
+                     PAGE: Loading
+                     ============================================= -->
+                <div id="page-loading" class="ko-page ko-hidden ko-section"
+                     style="text-align:center; padding-top:100px;">
+                    <div class="ko-spinner" style="width:48px;height:48px;border-width:5px;"></div>
+                    <p id="loading-msg" style="margin-top:20px; font-size:1.2rem;">
+                        Loading...
+                    </p>
+                </div>
+
+                <!-- =============================================
+                     PAGE: Browse products
+                     ============================================= -->
+                <div id="page-browse" class="ko-page ko-hidden">
+                    <div class="ko-categories" id="category-bar"></div>
+                    <div class="ko-products" id="product-grid"></div>
+                </div>
+
+                <!-- =============================================
+                     PAGE: Product detail
+                     ============================================= -->
+                <div id="page-detail" class="ko-page ko-hidden">
+                    <div class="ko-detail">
+                        <button class="ko-btn ko-btn-secondary"
+                                onclick="backToBrowse()"
+                                style="width:auto; padding:10px 20px; margin-bottom:16px;">
+                            ← Back
+                        </button>
+                        <div style="display:flex; gap:20px; align-items:flex-start;">
+                            <img id="detail-product-img"
+                                 style="width:120px; height:120px; object-fit:cover;
+                                        border-radius:12px; background:#0d1b36; display:none;"/>
+                            <div>
+                                <div class="ko-detail-title" id="detail-title"></div>
+                                <div style="color:var(--ko-muted);" id="detail-price-base"></div>
+                            </div>
+                        </div>
+
+                        <!-- Quantity -->
+                        <div id="detail-qty-section">
+                            <h3 style="margin-top:20px;">Quantity</h3>
+                            <div class="ko-qty">
+                                <button class="ko-qty-btn" onclick="changeQty(-1)">−</button>
+                                <div class="ko-qty-val" id="qty-value">1</div>
+                                <button class="ko-qty-btn" onclick="changeQty(1)">+</button>
+                            </div>
+                        </div>
+
+                        <!-- Duration -->
+                        <div id="detail-duration-section" class="ko-hidden">
+                            <h3>Duration</h3>
+                            <div class="ko-durations" id="duration-list"></div>
+                        </div>
+
+                        <!-- Calendar -->
+                        <div id="detail-calendar-section" class="ko-hidden">
+                            <h3>Select Date</h3>
+                            <div id="selected-date-display"
+                                 style="text-align:center; font-size:1.1rem; font-weight:600;
+                                        color:var(--ko-success); margin-bottom:12px; min-height:1.4em;">
+                            </div>
+                            <div class="ko-cal-nav">
+                                <button class="ko-cal-nav-btn" onclick="calNav(-1)">◀</button>
+                                <div class="ko-cal-month" id="cal-month-label"></div>
+                                <button class="ko-cal-nav-btn" onclick="calNav(1)">▶</button>
+                            </div>
+                            <div class="ko-calendar" id="cal-grid"></div>
+                        </div>
+
+                        <!-- Timeslots -->
+                        <div id="detail-slot-section" class="ko-hidden">
+                            <h3>Select Pick-Up Moment —
+                                <span id="slot-date-display"
+                                      style="color:var(--ko-success);"></span>
+                            </h3>
+                            <div class="ko-slots" id="slot-grid"></div>
+                        </div>
+
+                        <!-- Event selection -->
+                        <div id="detail-event-section" class="ko-hidden">
+                            <h3>Select Event</h3>
+                            <div id="event-list"></div>
+                        </div>
+
+                        <!-- Availability warning -->
+                        <div id="ko-avail-warning" class="ko-hidden"
+                             style="background:var(--ko-danger); color:#fff; border-radius:10px;
+                                    padding:14px 20px; text-align:center; margin-bottom:12px;">
+                            <strong>Not enough availability.</strong>
+                            <span id="ko-avail-warning-text"></span>
+                        </div>
+
+                        <!-- Add to basket -->
+                        <div id="detail-add-section" class="ko-hidden">
+                            <div class="ko-add-summary">
+                                <div class="ko-add-price" id="add-summary-price"></div>
+                            </div>
+                            <button class="ko-btn ko-btn-success" onclick="addToBasket()">
+                                Add to Basket
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- =============================================
+                     PAGE: Basket
+                     ============================================= -->
+                <div id="page-basket" class="ko-page ko-hidden">
+                    <div class="ko-basket ko-section">
+                        <h2>Your Basket</h2>
+                        <div id="basket-items"></div>
+                        <div class="ko-basket-total" id="basket-total"></div>
+                        <button class="ko-btn ko-btn-success" onclick="showCustomerInfo()">
+                            Checkout &amp; Pay
+                        </button>
+                        <button class="ko-btn ko-btn-secondary" onclick="backToBrowse()">
+                            Continue Shopping
+                        </button>
+                    </div>
+                </div>
+
+                <!-- =============================================
+                     PAGE: Customer info (before payment)
+                     ============================================= -->
+                <div id="page-customer-info" class="ko-page ko-hidden">
+                    <div class="ko-section" style="max-width:500px; margin:0 auto; padding-top:40px;">
+                        <h2 style="text-align:center; margin-bottom:24px;">
+                            Your Details
+                        </h2>
+                        <p style="color:var(--ko-muted); text-align:center; margin-bottom:24px;">
+                            Enter your email to receive your booking confirmation
+                            and to retrieve your tickets at the kiosk.
+                        </p>
+                        <input type="text" class="kiosk-input"
+                               id="ci-name"
+                               placeholder="Your name (optional)"
+                               autocomplete="off"
+                               style="font-size:1.3rem; padding:16px 20px; border-radius:12px;
+                                      border:2px solid #333; background:#16213e; color:#eee;
+                                      width:100%; margin-bottom:16px;"/>
+                        <input type="email" class="kiosk-input"
+                               id="ci-email"
+                               placeholder="Email address"
+                               autocomplete="off"
+                               autofocus="autofocus"
+                               style="font-size:1.3rem; padding:16px 20px; border-radius:12px;
+                                      border:2px solid #333; background:#16213e; color:#eee;
+                                      width:100%; margin-bottom:16px;"/>
+                        <div class="ko-msg ko-msg-error" id="ci-msg"></div>
+                        <button class="ko-btn ko-btn-success" onclick="submitCustomerInfo()">
+                            Continue to Payment
+                        </button>
+                        <button class="ko-btn ko-btn-secondary" onclick="showBasket()">
+                            ← Back to Basket
+                        </button>
+                    </div>
+                </div>
+
+                <!-- =============================================
+                     PAGE: Success
+                     ============================================= -->
+                <div id="page-success" class="ko-page ko-hidden ko-section"
+                     style="text-align:center; padding-top:60px;">
+                    <div style="font-size:4rem; margin-bottom:16px;">✅</div>
+                    <h2>Payment Successful!</h2>
+                    <p>Dossier: <strong id="success-dossier"></strong></p>
+                    <p>Total: <strong id="success-total"></strong></p>
+                    <p id="success-count"></p>
+                    <p id="success-print-msg" style="font-size:1.1rem; margin-top:20px;"></p>
+                    <button class="ko-btn ko-btn-primary"
+                            style="max-width:400px; margin:30px auto 0;"
+                            onclick="newOrder()">
+                        New Order
+                    </button>
+                </div>
+
+                <!-- =============================================
+                     PAGE: Error
+                     ============================================= -->
+                <div id="page-error" class="ko-page ko-hidden ko-section"
+                     style="text-align:center; padding-top:60px;">
+                    <div style="font-size:4rem; margin-bottom:16px;">❌</div>
+                    <h2>Something went wrong</h2>
+                    <p class="ko-msg-error" id="error-msg"></p>
+                    <button class="ko-btn ko-btn-secondary"
+                            style="max-width:400px; margin:30px auto 0;"
+                            onclick="newOrder()">
+                        Try Again
+                    </button>
+                </div>
+
+                <!-- Config -->
+                <script type="text/javascript">
+                    var PROFILE_ID = <t t-esc="profile.id"/>;
+                    var PRINTER_CONFIG = <t t-raw="printer_config"/>;
+                    var CSRF_TOKEN = '<t t-esc="csrf_token"/>';
+                    var CURRENT_LANG = '<t t-esc="current_lang"/>';
+                    var TRANSLATIONS = <t t-raw="translations_json"/>;
+
+                    function setKioskLang(lang) {
+                        var url = new URL(window.location);
+                        url.searchParams.set('lang', lang);
+                        window.location = url;
+                    }
+
+                    // Hero image carousel
+                    (function() {
+                        var carousel = document.getElementById('hero-carousel');
+                        if (!carousel) return;
+                        var imgs = carousel.querySelectorAll('img');
+                        if (imgs.length &lt;= 1) return;
+                        var current = 0;
+                        var interval = <t t-esc="branding['hero_interval']"/> * 1000;
+                        if (interval &lt;= 0) return;
+                        setInterval(function() {
+                            imgs[current].classList.remove('active');
+                            current = (current + 1) % imgs.length;
+                            imgs[current].classList.add('active');
+                        }, interval);
+                    })();
+                </script>
+                <!-- Shared print engine (templateToEpos, xmlEl, buildQrCode, etc.) -->
+                <script type="text/javascript"
+                        src="/multi_channel_rental_flow/static/src/js/kiosk_ticket_lookup.js"/>
+                <!-- Order flow logic -->
+                <script type="text/javascript"
+                        src="/multi_channel_rental_flow/static/src/js/kiosk_order.js?v=5"/>
+            </body>
+        </html>
+    </template>
+
+</odoo>

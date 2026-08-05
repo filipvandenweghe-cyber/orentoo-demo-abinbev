@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ==========================================================
+         product.product — variant form: Multi-Channel Rental Flow
+         ========================================================== -->
+
+    <record id="product_product_form_view_mcrf" model="ir.ui.view">
+        <field name="name">product.product.form.mcrf</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_normal_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Multi-Channel Rental Flow" name="mcrf">
+                    <group>
+                        <group name="mcrf_main" string="Flow Configuration">
+                            <field name="use_in_multi_channel_rental_flow"/>
+                            <field name="multi_channel_item_role"
+                                   invisible="not use_in_multi_channel_rental_flow"/>
+                        </group>
+                        <group name="mcrf_channels" string="Channel Availability"
+                               invisible="not use_in_multi_channel_rental_flow">
+                            <field name="available_in_multi_channel_website"/>
+                            <field name="available_in_multi_channel_kiosk"/>
+                        </group>
+                    </group>
+                    <group invisible="not use_in_multi_channel_rental_flow">
+                        <group name="mcrf_behavior" string="Behavior">
+                            <field name="requires_timeslot"/>
+                            <field name="requires_duration"/>
+                            <field name="allow_quantity_selection"/>
+                        </group>
+                        <group name="mcrf_display" string="Display">
+                            <field name="use_product_image_in_flow"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ==========================================================
+         product.template — form: full config for single-variant,
+         summary + per-variant message for multi-variant
+         ========================================================== -->
+
+    <record id="product_template_form_view_mcrf" model="ir.ui.view">
+        <field name="name">product.template.form.mcrf</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Multi-Channel Rental Flow" name="mcrf">
+
+                    <!-- Single-variant: show full config directly -->
+                    <div invisible="product_variant_count &gt; 1">
+                        <group>
+                            <group name="mcrf_main" string="Flow Configuration">
+                                <field name="use_in_multi_channel_rental_flow"/>
+                                <field name="multi_channel_item_role"
+                                       invisible="not use_in_multi_channel_rental_flow"/>
+                            </group>
+                            <group name="mcrf_channels" string="Channel Availability"
+                                   invisible="not use_in_multi_channel_rental_flow">
+                                <field name="available_in_multi_channel_website"/>
+                                <field name="available_in_multi_channel_kiosk"/>
+                            </group>
+                        </group>
+                        <group invisible="not use_in_multi_channel_rental_flow">
+                            <group name="mcrf_behavior" string="Behavior">
+                                <field name="requires_timeslot"/>
+                                <field name="requires_duration"/>
+                                <field name="allow_quantity_selection"/>
+                            </group>
+                            <group name="mcrf_display" string="Display">
+                                <field name="use_product_image_in_flow"/>
+                            </group>
+                        </group>
+                    </div>
+
+                    <!-- Multi-variant: summary + hint -->
+                    <div invisible="product_variant_count &lt;= 1">
+                        <group>
+                            <group string="Flow Status">
+                                <field name="mcrf_any_variant_enabled"/>
+                                <field name="mcrf_variant_count"
+                                       invisible="not mcrf_any_variant_enabled"/>
+                            </group>
+                        </group>
+                        <div class="alert alert-info" role="alert">
+                            <strong>Multi-variant product:</strong>
+                            Configure the Multi-Channel Rental Flow settings on each
+                            product variant individually via the
+                            <em>Attributes &amp; Variants</em> tab.
+                        </div>
+                    </div>
+
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ==========================================================
+         product.product — tree: optional columns
+         ========================================================== -->
+
+    <record id="product_product_tree_view_mcrf" model="ir.ui.view">
+        <field name="name">product.product.list.mcrf</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_product_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='categ_id']" position="after">
+                <field name="use_in_multi_channel_rental_flow" optional="hide"
+                       string="In MC Flow"/>
+                <field name="multi_channel_item_role" optional="hide"
+                       string="MC Role"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,73 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* website_sale_stock_renting_set
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0+e\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-27 05:53+0000\n"
+"PO-Revision-Date: 2026-06-27 05:53+0000\n"
+"Last-Translator: \n"
+"Language-Team: Dutch\n"
+"Language: nl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: website_sale_stock_renting_set
+#: model:ir.model.fields,field_description:website_sale_stock_renting_set.field_product_product__display_name
+#: model:ir.model.fields,field_description:website_sale_stock_renting_set.field_product_template__display_name
+#: model:ir.model.fields,field_description:website_sale_stock_renting_set.field_sale_order__display_name
+#: model:ir.model.fields,field_description:website_sale_stock_renting_set.field_sale_order_line__display_name
+msgid "Display Name"
+msgstr "Weergavenaam"
+
+#. module: website_sale_stock_renting_set
+#: model:ir.model.fields,field_description:website_sale_stock_renting_set.field_product_product__id
+#: model:ir.model.fields,field_description:website_sale_stock_renting_set.field_product_template__id
+#: model:ir.model.fields,field_description:website_sale_stock_renting_set.field_sale_order__id
+#: model:ir.model.fields,field_description:website_sale_stock_renting_set.field_sale_order_line__id
+msgid "ID"
+msgstr "ID"
+
+#. module: website_sale_stock_renting_set
+#: model:ir.model,name:website_sale_stock_renting_set.model_product_template
+msgid "Product"
+msgstr "Product"
+
+#. module: website_sale_stock_renting_set
+#: model:ir.model,name:website_sale_stock_renting_set.model_product_product
+msgid "Product Variant"
+msgstr "Productvariant"
+
+#. module: website_sale_stock_renting_set
+#: model:ir.model,name:website_sale_stock_renting_set.model_sale_order
+msgid "Sales Order"
+msgstr "Verkooporder"
+
+#. module: website_sale_stock_renting_set
+#: model:ir.model,name:website_sale_stock_renting_set.model_sale_order_line
+msgid "Sales Order Line"
+msgstr "Verkooporderregel"
+
+#. module: website_sale_stock_renting_set
+#. odoo-python
+#: code:addons/website_sale_stock_renting_set/models/sale_order_line.py:0
+msgid ""
+"You asked for %(desired_qty)s %(product_name)s but only %(new_qty)s complete"
+" sets are available from %(rental_period)s."
+msgstr ""
+"U heeft %(desired_qty)s %(product_name)s aangevraagd maar slechts"
+" %(new_qty)s volledige sets zijn beschikbaar voor %(rental_period)s."
+
+#. module: website_sale_stock_renting_set
+#. odoo-python
+#: code:addons/website_sale_stock_renting_set/models/sale_order_line.py:0
+msgid ""
+"You asked for %(desired_qty)s %(product_name)s but only %(new_qty)s complete"
+" sets are available."
+msgstr ""
+"U heeft %(desired_qty)s %(product_name)s aangevraagd maar slechts"
+" %(new_qty)s volledige sets zijn beschikbaar."
