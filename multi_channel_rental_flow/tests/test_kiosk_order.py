@@ -65,6 +65,16 @@ class TestKioskOrder(TransactionCase):
             'allowed_ecommerce_category_ids': [(4, cls.ecom_categ.id)],
         })
 
+        # The kiosk checkout tests (test_30/60/61/62) simulate a demo
+        # payment, which needs an *enabled* demo payment provider. The
+        # demo provider (from payment_demo) ships disabled by default, so
+        # enable it for the test transaction.
+        cls.demo_provider = cls.env['payment.provider'].search(
+            [('code', '=', 'demo')], limit=1,
+        )
+        if cls.demo_provider and cls.demo_provider.state == 'disabled':
+            cls.demo_provider.write({'state': 'test'})
+
         cls.tomorrow = (datetime.now() + timedelta(days=1)).replace(
             hour=0, minute=0, second=0, microsecond=0,
         )

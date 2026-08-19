@@ -46,11 +46,12 @@ class TestPaymentOrchestration(TransactionCase):
             'multi_channel_item_role': 'service',
         })
 
-        # Demo provider
+        # Demo provider — ships disabled by default, enable it for tests.
         cls.demo_provider = cls.env['payment.provider'].search(
-            [('code', '=', 'demo'), ('state', '!=', 'disabled')],
-            limit=1,
+            [('code', '=', 'demo')], limit=1,
         )
+        if cls.demo_provider and cls.demo_provider.state == 'disabled':
+            cls.demo_provider.write({'state': 'test'})
         cls.demo_method = cls.env['payment.method'].search([], limit=1)
 
         # Profile with demo payment
