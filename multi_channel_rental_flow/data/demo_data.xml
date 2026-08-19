@@ -163,7 +163,6 @@
             <field name="name">Klimparcours</field>
             <field name="date_begin" eval="(DateTime.now() + timedelta(days=5)).strftime('%Y-%m-%d 07:00:00')"/>
             <field name="date_end" eval="(DateTime.now() + timedelta(days=9)).strftime('%Y-%m-%d 16:00:00')"/>
-            <field name="website_published" eval="True"/>
         </record>
 
         <!-- Event tickets for Klimparcours -->

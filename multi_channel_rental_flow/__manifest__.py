@@ -32,6 +32,9 @@
         'website_payment',
         # Payment engine
         'payment',
+        # Demo payment provider — backs allow_demo_payment /
+        # action_simulate_demo_payment (kiosk & backend checkout testing)
+        'payment_demo',
         # POS — needed for kiosk config, ePOS printer config, categories
         'point_of_sale',
         'pos_self_order',

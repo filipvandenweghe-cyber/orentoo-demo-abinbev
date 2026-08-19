@@ -68,11 +68,12 @@ class TestEventIntegration(TransactionCase):
             10.0,
         )
 
-        # Demo payment provider
+        # Demo payment provider — ships disabled by default, enable it.
         cls.demo_provider = cls.env['payment.provider'].search(
-            [('code', '=', 'demo'), ('state', '!=', 'disabled')],
-            limit=1,
+            [('code', '=', 'demo')], limit=1,
         )
+        if cls.demo_provider and cls.demo_provider.state == 'disabled':
+            cls.demo_provider.write({'state': 'test'})
 
         cls.prep_svc = cls.env['multi.channel.rental.payment.prep']
         cls.order_svc = cls.env['multi.channel.rental.order.service']
