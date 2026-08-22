@@ -232,6 +232,110 @@ class TestRentalSetIntegration(TransactionCase):
                              f"Component {comp.product_id.name} should have price 0")
 
     # =====================================================================
+    # Rental set + dynamic pricing: add & date-change behaviour
+    # =====================================================================
+
+    def test_sum_set_price_computed_immediately_on_add(self):
+        """Sum set: the price is computed as soon as the line is added.
+
+        Adding a sum-mode set line via a plain create() (exactly what the
+        UI does) must immediately produce the correct base price = sum of
+        the component prices — WITHOUT any manual 'Update rental prices'.
+
+        Regression guard for the create() hook that previously reset the
+        base to the set product's own list price (0.0 for a sum set)
+        instead of the component sum computed during set expansion.
+        """
+        start = datetime(2026, 6, 1, 10, 0)  # 1 day, outside DP range
+        end = start + timedelta(days=1)
+        order = self.env['sale.order'].create({
+            'partner_id': self.partner.id,
+            'warehouse_id': self.warehouse.id,
+            'pricelist_id': self.pricelist.id,
+            'rental_start_date': start,
+            'rental_return_date': end,
+            'is_rental_order': True,
+        })
+        # Add the set line like the UI: a plain create(), with NO explicit
+        # _expand_rental_set() and NO action_update_rental_prices() call.
+        parent = self.env['sale.order.line'].create({
+            'order_id': order.id,
+            'product_id': self.sum_set_product.id,
+            'product_uom_qty': 1,
+            'is_rental': True,
+        })
+        parent.invalidate_recordset()
+
+        # The set expanded into its components automatically.
+        self.assertTrue(parent.is_set)
+        self.assertGreaterEqual(len(parent.set_child_line_ids), 2)
+
+        # Base is the component sum (not the set's own list_price of 0),
+        # available right away on add.
+        expected_base = sum(
+            parent._get_component_unit_price(c)
+            * (c.set_component_qty or c.product_uom_qty)
+            for c in parent.set_child_line_ids
+        )
+        self.assertGreater(
+            expected_base, 0.0,
+            "Component sum must be strictly positive for this test to be meaningful",
+        )
+        self.assertAlmostEqual(
+            parent.base_rental_price, expected_base, places=2,
+            msg="Base price on add must equal the component sum, not the "
+                "set product's own list price",
+        )
+
+        # 1 day → coefficient 1.0; June → dynamic 1.0.
+        self.assertAlmostEqual(parent.applied_coefficient, 1.0)
+        self.assertAlmostEqual(parent.applied_dynamic_multiplier, 1.0)
+        self.assertAlmostEqual(
+            parent.price_unit,
+            parent.base_rental_price * 1.0 * 1.0,
+            places=2,
+        )
+
+        # Components never carry a price.
+        for comp in parent.set_child_line_ids:
+            self.assertEqual(comp.price_unit, 0.0)
+
+    def test_sum_set_price_updates_when_dates_change(self):
+        """Sum set: changing the rental period recomputes the price.
+
+        The coefficient (duration factor) must follow the new period while
+        the base (component sum) stays duration-independent, so the final
+        price_unit updates accordingly.
+        """
+        # Start with a 1-day rental → coefficient 1.0.
+        start = datetime(2026, 6, 1, 10, 0)  # outside DP range
+        end = start + timedelta(days=1)
+        order, parent = self._create_set_order(self.sum_set_product, start, end)
+
+        base = parent.base_rental_price
+        self.assertGreater(base, 0.0)
+        self.assertAlmostEqual(parent.applied_coefficient, 1.0)
+        self.assertAlmostEqual(parent.price_unit, base * 1.0, places=2)
+
+        # Extend the period to 7 days → coefficient 5.0, then recompute
+        # prices like the "Update rental prices" button does.
+        new_end = start + timedelta(days=7)
+        order.write({'rental_return_date': new_end})
+        order.order_line.write({'return_date': new_end})
+        order.action_update_rental_prices()
+        parent.invalidate_recordset()
+
+        # Base (component sum) is duration-independent and unchanged.
+        self.assertAlmostEqual(
+            parent.base_rental_price, base, places=2,
+            msg="Component sum base must not depend on the rental duration",
+        )
+        # Coefficient and final price reflect the new 7-day duration.
+        self.assertAlmostEqual(parent.applied_coefficient, 5.0)
+        self.assertAlmostEqual(parent.applied_dynamic_multiplier, 1.0)
+        self.assertAlmostEqual(parent.price_unit, base * 5.0 * 1.0, places=2)
+
+    # =====================================================================
     # No double application
     # =====================================================================
 

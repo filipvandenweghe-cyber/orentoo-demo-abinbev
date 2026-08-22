@@ -203,7 +203,16 @@ class SaleOrderLine(models.Model):
             # Skip set components — they always have price_unit = 0.
             if line._is_set_component_line():
                 continue
-            line._apply_coefficient_dynamic_pricing(use_write=True)
+            # ``price_unit`` after super() already holds the correct *base*
+            # price for every line type: the native pricelist price for a
+            # standalone line, the fixed set price for a fixed-mode parent,
+            # and the component sum for a sum-mode parent (set by
+            # rental_set._expand_rental_set during super().create).  Pass it
+            # explicitly as the base so sum/fixed set parents are not reset to
+            # the parent product's own list price.  Mirrors _compute_price_unit.
+            line._apply_coefficient_dynamic_pricing(
+                use_write=True, base_price_override=line.price_unit,
+            )
         return lines
 
     # =====================================================================
