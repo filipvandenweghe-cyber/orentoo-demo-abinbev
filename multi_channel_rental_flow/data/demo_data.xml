@@ -182,5 +182,27 @@
             <field name="seats_max">16</field>
         </record>
 
+        <!-- ==========================================================
+             Dynamic-pricing configs linking the kayak products (owned by
+             this module) to the coefficient/pricing tables defined in
+             rental_coefficient_dynamic_pricing. Placed here because this
+             module depends on that one, so both the products and the
+             tables exist by the time this demo file loads.
+             ========================================================== -->
+
+        <record id="demo_pricing_config_kayak_1p" model="rental.product.warehouse.pricing.config">
+            <field name="product_tmpl_id" ref="demo_product_tmpl_kayak_1p"/>
+            <field name="warehouse_id" ref="stock.warehouse0"/>
+            <field name="dynamic_pricing_table_id" ref="rental_coefficient_dynamic_pricing.demo_dynamic_pricing_table"/>
+            <field name="coefficient_table_ids" eval="[(6, 0, [ref('rental_coefficient_dynamic_pricing.demo_coeff_table_kayak_1p')])]"/>
+        </record>
+
+        <record id="demo_pricing_config_kayak_2p" model="rental.product.warehouse.pricing.config">
+            <field name="product_tmpl_id" ref="demo_product_tmpl_kayak_2p"/>
+            <field name="warehouse_id" ref="stock.warehouse0"/>
+            <field name="dynamic_pricing_table_id" ref="rental_coefficient_dynamic_pricing.demo_dynamic_pricing_table"/>
+            <field name="coefficient_table_ids" eval="[(6, 0, [ref('rental_coefficient_dynamic_pricing.demo_coeff_table_kayak_2p')])]"/>
+        </record>
+
     </data>
 </odoo>

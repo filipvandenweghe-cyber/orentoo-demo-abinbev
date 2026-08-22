@@ -162,23 +162,13 @@
         </record>
 
         <!-- ==========================================================
-             Pricing Configs — link products to tables
-             (uses product templates from multi_channel_rental_flow)
+             NOTE: Pricing Configs that link the kayak product templates
+             to these tables live in multi_channel_rental_flow's demo data,
+             because that module owns the kayak products and depends on
+             this one. A module cannot reference XML IDs from a module that
+             depends on it (it loads first), so those records must be
+             defined downstream.
              ========================================================== -->
-
-        <record id="demo_pricing_config_kayak_1p" model="rental.product.warehouse.pricing.config">
-            <field name="product_tmpl_id" ref="multi_channel_rental_flow.demo_product_tmpl_kayak_1p"/>
-            <field name="warehouse_id" ref="stock.warehouse0"/>
-            <field name="dynamic_pricing_table_id" ref="demo_dynamic_pricing_table"/>
-            <field name="coefficient_table_ids" eval="[(6, 0, [ref('demo_coeff_table_kayak_1p')])]"/>
-        </record>
-
-        <record id="demo_pricing_config_kayak_2p" model="rental.product.warehouse.pricing.config">
-            <field name="product_tmpl_id" ref="multi_channel_rental_flow.demo_product_tmpl_kayak_2p"/>
-            <field name="warehouse_id" ref="stock.warehouse0"/>
-            <field name="dynamic_pricing_table_id" ref="demo_dynamic_pricing_table"/>
-            <field name="coefficient_table_ids" eval="[(6, 0, [ref('demo_coeff_table_kayak_2p')])]"/>
-        </record>
 
     </data>
 </odoo>
