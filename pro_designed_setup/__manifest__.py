@@ -19,6 +19,9 @@ The setup runs in an idempotent ``post_init_hook`` so it survives Odoo.sh rebuil
 once this module is committed and installed on the branch.
 """,
     'depends': ['l10n_be'],
+    'demo': [
+        'demo/restore_chart_marker.xml',
+    ],
     'license': 'LGPL-3',
     'post_init_hook': 'post_init_hook',
     'installable': True,

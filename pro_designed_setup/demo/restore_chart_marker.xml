@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        One-time action (demo builds only).
+
+        The post_init_hook clears the `chart_template` marker on Pro-Designed.com
+        so the standard multi-company `account` demo (which mis-resolves demo
+        XML-IDs to the main company) skips this second charted company and no
+        longer fails with "failed to load demo data".
+
+        That clearing happens during the module-loading phase, *before* the demo
+        phase. This cron runs *after* the demo phase has completed, so it is safe
+        to put the cosmetic marker back: the account demo has already run for the
+        main company and setting the marker on Pro-Designed.com now has no effect
+        on demo loading — it only restores the "Belgium - Companies (PCMN)" label
+        in the accounting configuration.
+
+        numbercall=1 → the cron deactivates itself after its single run. It is
+        idempotent (no-op if the marker is already set) and only exists on demo
+        builds, so production/staging never gets it.
+    -->
+    <record id="cron_restore_chart_marker" model="ir.cron">
+        <field name="name">Pro-Designed: restore chart_template marker (one-time)</field>
+        <field name="model_id" ref="base.model_res_company"/>
+        <field name="state">code</field>
+        <field name="code">
+company = env['res.company'].search([('name', '=', 'Pro-Designed.com')], limit=1)
+if company and not company.chart_template:
+    if env['account.account'].sudo().search_count([('company_ids', 'in', company.id)], limit=1):
+        company.sudo().write({'chart_template': 'be_comp'})
+        log('pro_designed_setup: restored chart_template marker on %s' % company.name)
+</field>
+        <field name="user_id" ref="base.user_root"/>
+        <field name="interval_number">1</field>
+        <field name="interval_type">minutes</field>
+        <field name="numbercall">1</field>
+        <field name="nextcall" eval="DateTime.now().strftime('%Y-%m-%d %H:%M:%S')"/>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>
