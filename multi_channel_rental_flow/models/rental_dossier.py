@@ -572,6 +572,7 @@ class RentalDossier(models.Model):
 
         # Step 2: resolve provider
         provider = self._resolve_payment_provider(provider_id)
+        self._ensure_provider_journal(provider)
 
         # Step 3: resolve payment method
         pay_method = self._resolve_payment_method(
@@ -645,6 +646,37 @@ class RentalDossier(models.Model):
         if not provider:
             raise UserError(_("No payment provider configured."))
         return provider
+
+    def _ensure_provider_journal(self, provider):
+        """Guarantee the provider posts payments to a bank journal.
+
+        Odoo only auto-assigns ``payment.provider.journal_id`` when a bank
+        journal already exists for the provider's company at the moment the
+        provider is enabled. If none was available (or the provider was
+        enabled via a raw ``write``), ``journal_id`` stays empty and
+        ``payment.transaction._create_payment`` would insert an
+        ``account.payment`` with ``journal_id = NULL`` — violating the
+        not-null constraint. Assign a bank journal here so the payment can
+        be posted. [PY03]
+        """
+        if not provider or provider.journal_id:
+            return
+
+        company = provider.company_id or self.company_id or self.env.company
+        journal = self.env['account.journal'].search(
+            [('type', '=', 'bank'), ('company_id', '=', company.id)],
+            limit=1,
+        )
+        if not journal:
+            raise UserError(
+                _("No bank journal is configured for company '%s'. "
+                  "Set a Payment Journal on payment provider '%s' before "
+                  "processing payments.",
+                  company.display_name, provider.display_name)
+            )
+        # Writing journal_id triggers _ensure_payment_method_line(), which
+        # creates the account.payment.method.line the payment needs.
+        provider.sudo().journal_id = journal
 
     def _resolve_payment_method(self, provider, payment_method_id=None):
         """Find a compatible payment method for the provider."""
@@ -954,9 +986,13 @@ class RentalDossier(models.Model):
             raise UserError(_("Tickets can only be printed for paid dossiers."))
         svc = self.env['multi.channel.rental.ticket.service']
         svc._mark_tickets_printed(self)
+        # config=False: return the report action directly instead of the
+        # printer-configuration wizard (ir.actions.act_window) that
+        # report_action() would emit when wkhtmltopdf is not fully set up
+        # in the container.
         return self.env.ref(
             'multi_channel_rental_flow.action_report_dossier_tickets'
-        ).report_action(self)
+        ).report_action(self, config=False)
 
     def action_reset_tickets_printed(self):
         """Allow reprinting by resetting the printed flag.  [TK11]"""
