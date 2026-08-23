@@ -1,7 +1,16 @@
 from datetime import datetime, timedelta
-from odoo.tests.common import TransactionCase
+from odoo.tests.common import TransactionCase, tagged
 
 
+# These tests drive the full checkout flow, which creates account.payment
+# records (requiring the company's outstanding/transfer account) and
+# account.tax records (requiring the company's fiscal country). Those
+# company accounting settings are only guaranteed to be fully configured
+# once every module and its demo data have loaded, so the suite must run
+# post_install — at at_install the ambient company may still be missing
+# its chart-of-accounts wiring, which caused the "No outstanding account"
+# and account_tax.country_id NOT NULL failures. [PY03]
+@tagged('post_install', '-at_install')
 class TestKioskOrder(TransactionCase):
     """Tests for kiosk ordering flow API.  [KO01–KO15]"""
 
@@ -467,11 +476,20 @@ class TestKioskOrder(TransactionCase):
     def test_62_kiosk_mixed_items_price_consistency(self):
         """Mixed dossier (rental + addon): kiosk total matches orders."""
         # Create product with a specific tax for clear testing
+        # account.tax.country_id is NOT NULL. It normally defaults from the
+        # company's fiscal country, but pass it explicitly so the test does
+        # not depend on the ambient company having a localization loaded.
+        tax_country = (
+            self.company.account_fiscal_country_id
+            or self.company.country_id
+            or self.env.ref('base.us')
+        )
         tax_15 = self.env['account.tax'].create({
             'name': 'MCRF Test Tax 15%',
             'amount': 15.0,
             'type_tax_use': 'sale',
             'company_id': self.company.id,
+            'country_id': tax_country.id,
             'tax_group_id': self.tax_group.id,
         })
         product_taxed = self.env['product.product'].create({

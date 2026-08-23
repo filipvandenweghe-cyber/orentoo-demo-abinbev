@@ -1,8 +1,15 @@
 from datetime import datetime, timedelta
-from odoo.tests.common import TransactionCase
+from odoo.tests.common import TransactionCase, tagged
 from odoo.exceptions import UserError
 
 
+# Payment post-processing creates account.payment records, which need the
+# company's outstanding/transfer account. That accounting wiring is only
+# guaranteed once all modules and demo data have loaded, so run these
+# post_install rather than at_install (at at_install the ambient company
+# could still be missing its chart-of-accounts setup, raising the
+# "No outstanding account could be found to make the payment" error). [PY03]
+@tagged('post_install', '-at_install')
 class TestPaymentOrchestration(TransactionCase):
     """Tests for dossier-level payment orchestration.  [PY01–PY10]"""
 
