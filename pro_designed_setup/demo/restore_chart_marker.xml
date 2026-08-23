@@ -15,7 +15,8 @@
         on demo loading — it only restores the "Belgium - Companies (PCMN)" label
         in the accounting configuration.
 
-        numbercall=1 → the cron deactivates itself after its single run. It is
+        One-time run: `ir.cron` no longer has `numbercall` (removed in Odoo 17+),
+        so the cron deactivates itself at the end of its own code. It is
         idempotent (no-op if the marker is already set) and only exists on demo
         builds, so production/staging never gets it.
     -->
@@ -29,11 +30,11 @@ if company and not company.chart_template:
     if env['account.account'].sudo().search_count([('company_ids', 'in', company.id)], limit=1):
         company.sudo().write({'chart_template': 'be_comp'})
         log('pro_designed_setup: restored chart_template marker on %s' % company.name)
+env.ref('pro_designed_setup.cron_restore_chart_marker').write({'active': False})
 </field>
         <field name="user_id" ref="base.user_root"/>
         <field name="interval_number">1</field>
         <field name="interval_type">minutes</field>
-        <field name="numbercall">1</field>
         <field name="nextcall" eval="DateTime.now().strftime('%Y-%m-%d %H:%M:%S')"/>
         <field name="active" eval="True"/>
     </record>
