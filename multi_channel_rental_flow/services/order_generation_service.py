@@ -226,6 +226,16 @@ class OrderGenerationService(models.AbstractModel):
             line_vals,
         )
 
+        # Carry the basket's authoritative unit price onto the order line.
+        # The dossier item's ``price_unit`` already reflects what the
+        # customer saw and agreed to in the kiosk basket (list price with
+        # duration coefficient and dynamic multiplier applied). Without this,
+        # rental lines get re-priced by Odoo's rental duration coefficients
+        # (``in_rental_app``) and the confirmed order total no longer matches
+        # the basket the customer paid.
+        if item.price_unit and line.price_unit != item.price_unit:
+            line.write({'price_unit': item.price_unit})
+
         return line
 
     # =================================================================
