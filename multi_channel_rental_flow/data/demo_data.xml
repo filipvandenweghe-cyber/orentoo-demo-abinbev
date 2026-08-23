@@ -13,6 +13,26 @@
         </record>
 
         <!-- ==========================================================
+             Demo Payment Provider
+             The demo profiles below set allow_demo_payment=True, which
+             expects an *enabled* demo provider. The one shipped by
+             payment_demo is disabled by default, so enable it here (test
+             mode) to make the demo kiosk/website checkout payable
+             end-to-end.
+
+             We intentionally do NOT set a journal_id here: hardcoding a
+             bank-journal xmlid (e.g. account.1_bank) would create a
+             load-order dependency on the account chart being installed
+             before this demo file. Instead the bank journal is assigned
+             automatically at payment time by
+             rental.dossier._ensure_provider_journal.
+             ========================================================== -->
+
+        <record id="payment.payment_provider_demo" model="payment.provider">
+            <field name="state">test</field>
+        </record>
+
+        <!-- ==========================================================
              Demo Kiosk Profile
              ========================================================== -->
 

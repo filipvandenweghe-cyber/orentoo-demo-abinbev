@@ -75,6 +75,36 @@ class TestKioskOrder(TransactionCase):
         if cls.demo_provider and cls.demo_provider.state == 'disabled':
             cls.demo_provider.write({'state': 'test'})
 
+        # Enabling the demo provider via a raw write does not auto-assign a
+        # payment journal, and some demo/test databases have no chart of
+        # accounts loaded on the main company (hence no bank journal at all).
+        # Guarantee the provider posts to a bank journal so the checkout
+        # tests can simulate a payment regardless of the ambient setup.
+        if cls.demo_provider and not cls.demo_provider.journal_id:
+            journal = cls.env['account.journal'].search(
+                [('type', '=', 'bank'), ('company_id', '=', cls.company.id)],
+                limit=1,
+            )
+            if not journal:
+                journal = cls.env['account.journal'].create({
+                    'name': 'MCRF Test Bank',
+                    'type': 'bank',
+                    'code': 'MCRFB',
+                    'company_id': cls.company.id,
+                })
+            cls.demo_provider.journal_id = journal
+
+        # A tax group is required to create taxes; some databases have none
+        # for the test company, so get-or-create one for reuse in tests.
+        cls.tax_group = cls.env['account.tax.group'].search(
+            [('company_id', '=', cls.company.id)], limit=1,
+        )
+        if not cls.tax_group:
+            cls.tax_group = cls.env['account.tax.group'].create({
+                'name': 'MCRF Test Tax Group',
+                'company_id': cls.company.id,
+            })
+
         cls.tomorrow = (datetime.now() + timedelta(days=1)).replace(
             hour=0, minute=0, second=0, microsecond=0,
         )
@@ -442,6 +472,7 @@ class TestKioskOrder(TransactionCase):
             'amount': 15.0,
             'type_tax_use': 'sale',
             'company_id': self.company.id,
+            'tax_group_id': self.tax_group.id,
         })
         product_taxed = self.env['product.product'].create({
             'name': 'MCRF KO Taxed Addon',
