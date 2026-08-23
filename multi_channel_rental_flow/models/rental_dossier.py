@@ -668,12 +668,19 @@ class RentalDossier(models.Model):
             limit=1,
         )
         if not journal:
-            raise UserError(
-                _("No bank journal is configured for company '%s'. "
-                  "Set a Payment Journal on payment provider '%s' before "
-                  "processing payments.",
-                  company.display_name, provider.display_name)
-            )
+            # No bank journal exists for this company (e.g. a demo/test
+            # company without an accounting localization). Create a minimal
+            # one so the payment can be posted. account.journal.create()
+            # auto-provisions the default account even when no chart template
+            # is installed, so this is safe. [PY03]
+            journal = self.env['account.journal'].sudo().with_company(
+                company
+            ).create({
+                'name': _("Bank"),
+                'type': 'bank',
+                'code': 'BNK1',
+                'company_id': company.id,
+            })
         # Writing journal_id triggers _ensure_payment_method_line(), which
         # creates the account.payment.method.line the payment needs.
         provider.sudo().journal_id = journal
