@@ -455,6 +455,54 @@ class TestSetCornerCases(TestRentalSetCommon):
             "Total set allocation must increase",
         )
 
+    def test_13b_sum_price_matches_allocations_after_component_qty_change(self):
+        """S00610: sum-mode parent price must equal the sum of allocations
+        after component quantities are edited directly.
+
+        Reproduces the reported bug: the Front Light Set defaults to
+        4×LED + 3×cable + 4×clamp = 127.  Reducing the components to
+        2×LED + 1×cable + 2×clamp must reprice the set to
+        2×25 + 1×5 + 2×3 = 61, and the parent price (× qty) must stay
+        equal to the sum of the component allocated prices.  Previously the
+        parent price kept using the stale per-set base quantity (127) while
+        the allocations followed the new order content (61), so the two
+        diverged.
+        """
+        order = self._create_rental_order(self.front_light_tmpl)
+        set_parent = order.order_line.filtered(
+            lambda l: l.is_set and not l.is_set_component
+        )
+        components = order.order_line.filtered('is_set_component')
+        led = components.filtered(lambda l: l.product_id == self.led_par)
+        cable = components.filtered(lambda l: l.product_id == self.cable)
+        clamp = components.filtered(lambda l: l.product_id == self.clamp)
+
+        # Baseline: 4*25 + 3*5 + 4*3 = 127
+        self.assertAlmostEqual(set_parent.price_unit, 127.0, places=2)
+
+        # Reduce every component's quantity (direct edits)
+        led.write({'product_uom_qty': 2})
+        cable.write({'product_uom_qty': 1})
+        clamp.write({'product_uom_qty': 2})
+
+        set_parent.invalidate_recordset()
+        components.invalidate_recordset()
+
+        # New per-set price: 2*25 + 1*5 + 2*3 = 61
+        self.assertAlmostEqual(
+            set_parent.price_unit, 61.0, places=2,
+            msg="Sum-mode price must follow reduced component quantities",
+        )
+
+        # Invariant: parent total == sum of component allocations
+        total_alloc = sum(components.mapped('set_allocated_price'))
+        self.assertAlmostEqual(
+            set_parent.price_unit * set_parent.product_uom_qty,
+            total_alloc, places=2,
+            msg="Parent price x qty must equal the sum of allocations",
+        )
+        self.assertAlmostEqual(total_alloc, 61.0, places=2)
+
     # ── Test 14: Set price stable when parent qty doubled ────────────
 
     def test_14_price_stable_when_parent_qty_doubled(self):
