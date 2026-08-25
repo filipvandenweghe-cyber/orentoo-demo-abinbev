@@ -2,7 +2,7 @@ from odoo import api, fields, models
 
 
 class SaleOrderLine(models.Model):
-    """Extend sale.order.line with coefficient & dynamic pricing.  [RI01–RI05]
+    """Extend sale.order.line with coefficient & dynamic pricing.  [RI01–RI07]
 
     Upgrade-proof architecture
     --------------------------
@@ -97,6 +97,17 @@ class SaleOrderLine(models.Model):
         default=False,
         copy=False,
         help='Set automatically when the dynamic factor is manually edited.',
+    )
+    manual_price_override = fields.Boolean(
+        string='Manual Price',
+        default=False,
+        copy=False,
+        help=(
+            'Set automatically when the unit price is edited by hand. '
+            'While set, the coefficient/dynamic engine will not overwrite '
+            'the unit price on quantity changes. Cleared when the product, '
+            'rental period or partner changes, or on "Update Rental Prices".'
+        ),
     )
 
     # =====================================================================
@@ -203,6 +214,9 @@ class SaleOrderLine(models.Model):
             # Skip set components — they always have price_unit = 0.
             if line._is_set_component_line():
                 continue
+            # RI06: respect a price the user typed by hand at line creation.
+            if line.manual_price_override:
+                continue
             # ``price_unit`` after super() already holds the correct *base*
             # price for every line type: the native pricelist price for a
             # standalone line, the fixed set price for a fixed-mode parent,
@@ -232,12 +246,24 @@ class SaleOrderLine(models.Model):
 
     @api.depends('product_id', 'product_uom_id', 'product_uom_qty')
     def _compute_price_unit(self):
+        force = self.env.context.get('force_price_recomputation')
+        skip = self.env.context.get('skip_coefficient_dynamic_pricing')
+
+        # RI06: detect a manual unit-price edit *before* super() runs.  The
+        # engine always keeps technical_price_unit == price_unit, so any
+        # divergence means the price was set by hand (form edit or external
+        # write).  super() preserves that divergence via its own manual-price
+        # guard; we capture it here so the engine below refrains from
+        # overwriting the hand-typed price on a quantity change.
+        if not force and not skip:
+            for line in self:
+                if line.is_rental and line._is_manual_price_edit():
+                    line.manual_price_override = True
+
         super()._compute_price_unit()
 
-        if self.env.context.get('skip_coefficient_dynamic_pricing'):
+        if skip:
             return
-
-        force = self.env.context.get('force_price_recomputation')
 
         for line in self:
             if not line.is_rental or not line.order_id:
@@ -252,6 +278,13 @@ class SaleOrderLine(models.Model):
             if force:
                 line.manual_coefficient_override = False
                 line.manual_dynamic_factor_override = False
+                line.manual_price_override = False
+
+            # RI06: a hand-typed price must survive quantity changes.  A
+            # forced recomputation (Update Rental Prices) has cleared the
+            # flag above and falls through to recompute from the base.
+            if line.manual_price_override and not force:
+                continue
 
             # price_unit from super() is the Odoo-native base rental price
             # (or the rental_set sum/fixed price for set parents).
@@ -325,8 +358,24 @@ class SaleOrderLine(models.Model):
         if use_write:
             self.write(vals)
         else:
+            # Assign under the ``sale_write_from_compute`` context.  When a
+            # stored field is set on a persisted record, ``setattr`` routes
+            # through the standard ``SaleOrderLine.write()``.  That write
+            # strips ``technical_price_unit`` whenever it is set on its own
+            # without ``price_unit`` and without this context (a guard meant
+            # for readonly-view recomputes).  Because each ``setattr`` below
+            # is a separate write, ``technical_price_unit`` would otherwise be
+            # silently dropped and stay at the base value, desyncing from
+            # ``price_unit``.  On the next recompute that desync makes
+            # ``super()._compute_price_unit`` treat the line as a manually
+            # priced one, skip resetting ``price_unit`` to the base, and let
+            # our engine multiply the already-adjusted price by the
+            # coefficient again — compounding the price on every quantity or
+            # period change.  The context mirrors what super() itself uses in
+            # ``_reset_price_unit`` and keeps the two fields in sync.
+            line = self.with_context(sale_write_from_compute=True)
             for field_name, value in vals.items():
-                setattr(self, field_name, value)
+                setattr(line, field_name, value)
 
         # --- 6. Recalculate set allocations  [RF01] ---
         # After the parent's price_unit is adjusted by coefficient × dynamic,
@@ -432,8 +481,46 @@ class SaleOrderLine(models.Model):
         }
 
     # =====================================================================
+    # Manual unit-price detection  [RI06]
+    # =====================================================================
+
+    def _is_manual_price_edit(self):
+        """Return True when price_unit was set by hand.
+
+        The coefficient/dynamic engine always writes
+        ``technical_price_unit == price_unit``.  Any difference between the
+        two therefore signals a manual unit-price edit that must be
+        preserved instead of being overwritten by the engine.  [RI06]
+        """
+        self.ensure_one()
+        currency = (
+            self.currency_id
+            or self.company_id.currency_id
+            or self.env.company.currency_id
+        )
+        if not currency:
+            return self.technical_price_unit != self.price_unit
+        return bool(
+            currency.compare_amounts(
+                self.technical_price_unit, self.price_unit,
+            )
+        )
+
+    # =====================================================================
     # Onchange — detect manual edits on the form
     # =====================================================================
+
+    @api.onchange('price_unit')
+    def _onchange_price_unit_manual(self):
+        """Lock a manually edited unit price against engine recompute.  [RI06]
+
+        Fires for every ``price_unit`` change, but only flags the line when
+        the new value diverges from ``technical_price_unit`` — i.e. the user
+        typed it.  Engine-driven price updates keep the two in sync and are
+        therefore not mistaken for a manual edit.
+        """
+        if self.is_rental and self._is_manual_price_edit():
+            self.manual_price_override = True
 
     @api.onchange('applied_coefficient')
     def _onchange_applied_coefficient(self):
@@ -462,6 +549,9 @@ class SaleOrderLine(models.Model):
             self.applied_coefficient or 1.0,
             self.applied_dynamic_multiplier or 1.0,
         )
+        # Editing the coefficient/dynamic factor re-establishes engine
+        # control over the price, so any prior manual price lock is dropped.
+        self.manual_price_override = False
         self.price_unit = final_price
         self.technical_price_unit = final_price
 
@@ -471,7 +561,8 @@ class SaleOrderLine(models.Model):
 
     @api.onchange('product_id', 'start_date', 'return_date')
     def _onchange_reset_coefficient_dynamic_overrides(self):
-        """Clear manual overrides when key pricing context changes."""
+        """Clear manual overrides when key pricing context changes.  [RI06]"""
         if self.is_rental:
             self.manual_coefficient_override = False
             self.manual_dynamic_factor_override = False
+            self.manual_price_override = False
