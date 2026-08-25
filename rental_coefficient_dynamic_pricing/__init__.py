@@ -158,6 +158,17 @@
 #       so allocations sum to the coefficient-adjusted parent total.
 #       >>> If rental_set changes _allocate_fixed_prices or
 #           _allocate_sum_prices, review _recalculate_set_allocations. <<<
+# RF03  Component-change reprice.  When a sum-mode set's component qty/product
+#       changes, rental_set resets the parent to the RAW component sum via a
+#       new hook (_reapply_set_derived_pricing).  This module overrides that
+#       hook to reapply coefficient × dynamic to the fresh sum (base = raw sum,
+#       so no compounding — RI07) and rescale the component allocations, so
+#       price_unit = SUM(components) × coefficient × dynamic holds after an
+#       edit, exactly as on create.  A manually-priced parent
+#       (manual_price_override) is frozen: _recompute_set_price_from_components
+#       is skipped and the price is kept as typed.
+#       >>> Depends on rental_set calling _reapply_set_derived_pricing after
+#           its sum recompute; review if that hook changes. <<<
 #
 # FUTURE REQUIREMENTS (not yet implemented)
 # -------------------------------------------

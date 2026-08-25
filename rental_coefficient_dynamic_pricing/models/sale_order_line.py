@@ -202,6 +202,48 @@ class SaleOrderLine(models.Model):
                 child._allocate_sum_prices_adjusted()
 
     # =====================================================================
+    # rental_set component-change hooks  [RF03]
+    #
+    # When a set component qty/product changes, rental_set resets the sum-mode
+    # parent price to the RAW component sum (bypassing coefficient/dynamic).
+    # We (a) freeze a manually-priced parent so it is not overwritten, and
+    # (b) reapply coefficient × dynamic to the fresh sum and rescale the
+    # component allocations, so the invariant
+    #   price_unit = SUM(component prices) × coefficient × dynamic
+    # holds after a component edit — exactly as on create.
+    # =====================================================================
+
+    def _recompute_set_price_from_components(self):
+        """Freeze a manually-priced set parent; otherwise recompute the sum.
+
+        A set parent whose unit price was set by hand (manual_price_override)
+        is effectively fixed: component changes must not overwrite it.  [RF03]
+        """
+        self.ensure_one()
+        if self.manual_price_override:
+            return
+        return super()._recompute_set_price_from_components()
+
+    def _reapply_set_derived_pricing(self):
+        """Reapply coefficient × dynamic to a sum set after a component change.
+
+        rental_set has just reset the parent price to the raw component sum;
+        reapply the coefficient/dynamic adjustment to that sum (skipping a
+        manually-priced parent) and rescale the component allocations to the
+        adjusted total.  Uses the raw sum as the base, so it never compounds
+        (RI07).  [RF03]
+        """
+        super()._reapply_set_derived_pricing()
+        for line in self:
+            if not (line.is_rental and line._is_set_parent_line()):
+                continue
+            if line.manual_price_override or not line.price_unit:
+                continue
+            line._apply_coefficient_dynamic_pricing(
+                use_write=True, base_price_override=line.price_unit,
+            )
+
+    # =====================================================================
     # Create override — persist coefficient/dynamic values after INSERT
     # =====================================================================
 
