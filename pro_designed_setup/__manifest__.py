@@ -18,7 +18,11 @@ Creates and configures a Belgian company named **Pro-Designed.com** on install:
 The setup runs in an idempotent ``post_init_hook`` so it survives Odoo.sh rebuilds
 once this module is committed and installed on the branch.
 """,
-    'depends': ['l10n_be'],
+    # multi_channel_rental_flow (which pulls in rental_coefficient_dynamic_pricing)
+    # is listed so this module loads *after* the kayak rental-pricing demo data
+    # exists — the post_init_hook duplicates that config into this company's
+    # PRO warehouse. See _replicate_rental_pricing in hooks.py.
+    'depends': ['l10n_be', 'stock', 'multi_channel_rental_flow'],
     'demo': [
         'demo/restore_chart_marker.xml',
     ],
