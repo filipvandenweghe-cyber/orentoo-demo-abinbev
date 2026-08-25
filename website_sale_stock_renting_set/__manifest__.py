@@ -1,5 +1,6 @@
 {
     'name': 'eCommerce Rental Stock - Sets',
+    'author': 'Pro-Designed.com',
     'category': 'Website/Website',
     'summary': 'Stock availability checks for rental sets on eCommerce',
     'version': '1.0',

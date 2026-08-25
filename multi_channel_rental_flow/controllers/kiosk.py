@@ -101,7 +101,7 @@ class MultiChannelRentalKiosk(http.Controller):
 
     @http.route(
         '/rental-kiosk/lookup',
-        type='json', auth='public', methods=['POST'],
+        type='jsonrpc', auth='public', methods=['POST'],
     )
     def kiosk_lookup(self, profile_id, identifier, email, **kw):
         """Look up a dossier and return the ticket payload."""
@@ -128,7 +128,7 @@ class MultiChannelRentalKiosk(http.Controller):
 
     @http.route(
         '/rental-kiosk/mark-printed',
-        type='json', auth='public', methods=['POST'],
+        type='jsonrpc', auth='public', methods=['POST'],
     )
     def kiosk_mark_printed(self, profile_id, identifier, email, **kw):
         """Mark tickets as printed after kiosk print."""
