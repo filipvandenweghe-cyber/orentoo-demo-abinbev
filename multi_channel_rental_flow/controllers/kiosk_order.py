@@ -237,7 +237,7 @@ class MultiChannelRentalKioskOrder(http.Controller):
 
     @http.route(
         '/rental-kiosk/api/categories',
-        type='json', auth='public', methods=['POST'],
+        type='jsonrpc', auth='public', methods=['POST'],
     )
     def get_categories(self, profile_id, **kw):
         """Return categories available for this profile."""
@@ -278,7 +278,7 @@ class MultiChannelRentalKioskOrder(http.Controller):
 
     @http.route(
         '/rental-kiosk/api/products',
-        type='json', auth='public', methods=['POST'],
+        type='jsonrpc', auth='public', methods=['POST'],
     )
     def get_products(self, profile_id, category_id=None,
                      category_type=None, **kw):
@@ -394,7 +394,7 @@ class MultiChannelRentalKioskOrder(http.Controller):
 
     @http.route(
         '/rental-kiosk/api/durations',
-        type='json', auth='public', methods=['POST'],
+        type='jsonrpc', auth='public', methods=['POST'],
     )
     def get_durations(self, profile_id, product_id, **kw):
         """Return duration options for a product."""
@@ -409,7 +409,7 @@ class MultiChannelRentalKioskOrder(http.Controller):
 
     @http.route(
         '/rental-kiosk/api/slots',
-        type='json', auth='public', methods=['POST'],
+        type='jsonrpc', auth='public', methods=['POST'],
     )
     def get_slots(self, profile_id, product_id, date_str,
                   duration_value=None, duration_unit=None,
@@ -442,7 +442,7 @@ class MultiChannelRentalKioskOrder(http.Controller):
 
     @http.route(
         '/rental-kiosk/api/day-states',
-        type='json', auth='public', methods=['POST'],
+        type='jsonrpc', auth='public', methods=['POST'],
     )
     def get_day_states(self, profile_id, product_id, center_date_str,
                        duration_value=None, duration_unit=None,
@@ -489,7 +489,7 @@ class MultiChannelRentalKioskOrder(http.Controller):
 
     @http.route(
         '/rental-kiosk/api/events',
-        type='json', auth='public', methods=['POST'],
+        type='jsonrpc', auth='public', methods=['POST'],
     )
     def get_events(self, profile_id, product_id, **kw):
         """Return available events for an event ticket product."""
@@ -546,7 +546,7 @@ class MultiChannelRentalKioskOrder(http.Controller):
 
     @http.route(
         '/rental-kiosk/api/basket/create',
-        type='json', auth='public', methods=['POST'],
+        type='jsonrpc', auth='public', methods=['POST'],
     )
     def basket_create(self, profile_id, **kw):
         """Create a new dossier for the kiosk order."""
@@ -578,7 +578,7 @@ class MultiChannelRentalKioskOrder(http.Controller):
 
     @http.route(
         '/rental-kiosk/api/basket/add',
-        type='json', auth='public', methods=['POST'],
+        type='jsonrpc', auth='public', methods=['POST'],
     )
     def basket_add(self, dossier_id, product_id, item_role='rental',
                    quantity=1, start_datetime=None, end_datetime=None,
@@ -640,7 +640,7 @@ class MultiChannelRentalKioskOrder(http.Controller):
 
     @http.route(
         '/rental-kiosk/api/basket/update-qty',
-        type='json', auth='public', methods=['POST'],
+        type='jsonrpc', auth='public', methods=['POST'],
     )
     def basket_update_qty(self, dossier_id, item_id, quantity, **kw):
         """Update the quantity of a basket item."""
@@ -666,7 +666,7 @@ class MultiChannelRentalKioskOrder(http.Controller):
 
     @http.route(
         '/rental-kiosk/api/basket/remove',
-        type='json', auth='public', methods=['POST'],
+        type='jsonrpc', auth='public', methods=['POST'],
     )
     def basket_remove(self, dossier_id, item_id, **kw):
         """Remove an item from the dossier basket."""
@@ -681,7 +681,7 @@ class MultiChannelRentalKioskOrder(http.Controller):
 
     @http.route(
         '/rental-kiosk/api/basket/set-customer',
-        type='json', auth='public', methods=['POST'],
+        type='jsonrpc', auth='public', methods=['POST'],
     )
     def basket_set_customer(self, dossier_id, email, name=None, **kw):
         """Set customer email (and optionally name) on the dossier."""
@@ -712,7 +712,7 @@ class MultiChannelRentalKioskOrder(http.Controller):
 
     @http.route(
         '/rental-kiosk/api/basket/get',
-        type='json', auth='public', methods=['POST'],
+        type='jsonrpc', auth='public', methods=['POST'],
     )
     def basket_get(self, dossier_id, **kw):
         """Return the current basket contents."""
@@ -781,7 +781,7 @@ class MultiChannelRentalKioskOrder(http.Controller):
 
     @http.route(
         '/rental-kiosk/api/checkout',
-        type='json', auth='public', methods=['POST'],
+        type='jsonrpc', auth='public', methods=['POST'],
     )
     def checkout(self, dossier_id, **kw):
         """Prepare dossier for payment and simulate demo payment."""

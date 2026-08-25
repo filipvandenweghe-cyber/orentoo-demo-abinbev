@@ -336,6 +336,73 @@ class TestRentalSetIntegration(TransactionCase):
         self.assertAlmostEqual(parent.price_unit, base * 5.0 * 1.0, places=2)
 
     # =====================================================================
+    # Component-change reprice  [RF03]
+    # =====================================================================
+
+    def test_sum_set_reprices_on_component_qty_change(self):
+        """Editing a component qty reprices the sum set as sum × coefficient.
+
+        Regression: a component qty edit used to leave the parent at the raw
+        component sum (coefficient dropped) and desync technical_price_unit.
+        """
+        start = datetime(2026, 6, 1, 10, 0)  # outside DP range
+        end = start + timedelta(days=7)      # coefficient 5.0, dynamic 1.0
+        order, parent = self._create_set_order(self.sum_set_product, start, end)
+
+        self.assertEqual(parent.applied_coefficient, 5.0)
+        base0 = parent.base_rental_price
+        self.assertGreater(base0, 0.0)
+        self.assertAlmostEqual(parent.price_unit, base0 * 5.0, places=2)
+
+        # Edit component A quantity 2 → 4 (adds two more units to the sum).
+        comp_a = parent.set_child_line_ids.filtered(
+            lambda l: l.product_id == self.comp_product_a
+        )
+        comp_a.product_uom_qty = 4
+        parent.invalidate_recordset()
+
+        base1 = parent.base_rental_price
+        # base tracks the NEW component sum ...
+        self.assertGreater(
+            base1, base0, "base must grow with the added component qty",
+        )
+        # ... and the coefficient is reapplied to it (not dropped to raw sum).
+        self.assertAlmostEqual(
+            parent.price_unit, base1 * 5.0, places=2,
+            msg="price must be the new sum × coefficient",
+        )
+        # technical stays in sync (so it is not misread as a manual price).
+        self.assertAlmostEqual(
+            parent.technical_price_unit, parent.price_unit, places=2,
+        )
+        self.assertFalse(parent.manual_price_override)
+        # Allocations sum to the coefficient-adjusted total.
+        alloc = sum(parent.set_child_line_ids.mapped('set_allocated_price'))
+        self.assertAlmostEqual(
+            alloc, parent.price_unit * parent.product_uom_qty, places=2,
+        )
+
+    def test_sum_set_manual_price_frozen_on_component_change(self):
+        """A hand-typed set-parent price is kept when components change."""
+        start = datetime(2026, 6, 1, 10, 0)
+        end = start + timedelta(days=7)
+        order, parent = self._create_set_order(self.sum_set_product, start, end)
+
+        # User types a manual parent price → line becomes manually priced.
+        parent.price_unit = 999.0
+        parent._onchange_price_unit_manual()
+        self.assertTrue(parent.manual_price_override)
+
+        # Changing a component must NOT overwrite the manual price.
+        comp_a = parent.set_child_line_ids.filtered(
+            lambda l: l.product_id == self.comp_product_a
+        )
+        comp_a.product_uom_qty = 4
+        parent.invalidate_recordset()
+        self.assertAlmostEqual(parent.price_unit, 999.0, places=2)
+        self.assertTrue(parent.manual_price_override)
+
+    # =====================================================================
     # No double application
     # =====================================================================
 

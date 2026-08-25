@@ -653,6 +653,7 @@ class SaleOrderLine(models.Model):
                     elif parent.set_pricing_mode == 'sum':
                         parent._recompute_set_price_from_components()
                         parent._allocate_sum_prices()
+                        parent._reapply_set_derived_pricing()
 
             # Sync stock moves for changed lines
             self._sync_set_stock_moves()
@@ -701,6 +702,7 @@ class SaleOrderLine(models.Model):
                     elif parent.set_pricing_mode == 'sum':
                         parent._recompute_set_price_from_components()
                         parent._allocate_sum_prices()
+                        parent._reapply_set_derived_pricing()
 
             # Invalidate availability after qty changes
             set_lines._invalidate_set_availability()
@@ -1571,10 +1573,27 @@ class SaleOrderLine(models.Model):
             else:
                 per_set_qty = child.product_uom_qty / parent_qty
             total += price * per_set_qty
-        self.update({
+        # Write both fields together under the compute context. Using
+        # ``.update()`` assigns them one at a time, so technical_price_unit is
+        # written on its own and the core sale guard strips it (it only keeps a
+        # bare technical_price_unit write when price_unit is present or the
+        # sale_write_from_compute context is set). That left technical stale and
+        # diverging from price_unit, which pricing extensions misread as a
+        # hand-typed price.
+        self.with_context(sale_write_from_compute=True).write({
             'price_unit': total,
             'technical_price_unit': total,
         })
+
+    def _reapply_set_derived_pricing(self):
+        """Hook: reapply pricing layered on top of the set component sum.
+
+        Called after a sum-mode parent price is recomputed from a component
+        change. No-op in base rental_set; pricing extensions (e.g. the
+        coefficient / dynamic pricing module) override this to reapply their
+        adjustment to the fresh component sum and rescale the allocations.
+        """
+        return
 
     def _resync_set_component_base_qty(self):
         """Recompute ``set_component_qty`` (per-set base) from the live order

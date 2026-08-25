@@ -17,7 +17,7 @@ class MultiChannelRentalAPI(http.Controller):
 
     @http.route(
         '/multi_channel_rental/api/price_preview',
-        type='json', auth='user', methods=['POST'],
+        type='jsonrpc', auth='user', methods=['POST'],
     )
     def price_preview(self, profile_id, product_id, quantity=1.0,
                       start_datetime=None, end_datetime=None,
@@ -53,7 +53,7 @@ class MultiChannelRentalAPI(http.Controller):
 
     @http.route(
         '/multi_channel_rental/api/duration_options',
-        type='json', auth='user', methods=['POST'],
+        type='jsonrpc', auth='user', methods=['POST'],
     )
     def duration_options(self, profile_id, product_id,
                          partner_id=None, **kw):
@@ -71,7 +71,7 @@ class MultiChannelRentalAPI(http.Controller):
 
     @http.route(
         '/multi_channel_rental/api/slot_preview',
-        type='json', auth='user', methods=['POST'],
+        type='jsonrpc', auth='user', methods=['POST'],
     )
     def slot_preview(self, profile_id, product_id, date_str,
                      quantity=1.0, duration_value=None,
@@ -106,7 +106,7 @@ class MultiChannelRentalAPI(http.Controller):
 
     @http.route(
         '/multi_channel_rental/api/day_availability',
-        type='json', auth='user', methods=['POST'],
+        type='jsonrpc', auth='user', methods=['POST'],
     )
     def day_availability(self, profile_id, product_id, date_str,
                          item_role='rental', event_id=None, **kw):
@@ -128,7 +128,7 @@ class MultiChannelRentalAPI(http.Controller):
 
     @http.route(
         '/multi_channel_rental/api/ticket_lookup',
-        type='json', auth='public', methods=['POST'],
+        type='jsonrpc', auth='public', methods=['POST'],
     )
     def ticket_lookup(self, identifier, email, **kw):
         """Look up a paid dossier by number/order + email and return
@@ -147,7 +147,7 @@ class MultiChannelRentalAPI(http.Controller):
 
     @http.route(
         '/multi_channel_rental/api/mark_printed',
-        type='json', auth='public', methods=['POST'],
+        type='jsonrpc', auth='public', methods=['POST'],
     )
     def mark_printed(self, identifier, email, **kw):
         """Mark tickets as printed after kiosk print."""

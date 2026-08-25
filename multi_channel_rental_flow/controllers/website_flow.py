@@ -348,7 +348,7 @@ class MultiChannelRentalWebsite(http.Controller):
 
     @http.route(
         '/rental-flow/api/durations',
-        type='json', auth='public', website=True, methods=['POST'],
+        type='jsonrpc', auth='public', website=True, methods=['POST'],
     )
     def api_durations(self, product_id, **kw):
         profile = self._get_website_profile()
@@ -358,7 +358,7 @@ class MultiChannelRentalWebsite(http.Controller):
 
     @http.route(
         '/rental-flow/api/day-states',
-        type='json', auth='public', website=True, methods=['POST'],
+        type='jsonrpc', auth='public', website=True, methods=['POST'],
     )
     def api_day_states(self, product_id, center_date_str,
                        duration_value=None, duration_unit=None,
@@ -395,7 +395,7 @@ class MultiChannelRentalWebsite(http.Controller):
 
     @http.route(
         '/rental-flow/api/slots',
-        type='json', auth='public', website=True, methods=['POST'],
+        type='jsonrpc', auth='public', website=True, methods=['POST'],
     )
     def api_slots(self, product_id, date_str, duration_value=None,
                   duration_unit=None, quantity=1, item_role='rental',
@@ -420,7 +420,7 @@ class MultiChannelRentalWebsite(http.Controller):
 
     @http.route(
         '/rental-flow/api/events',
-        type='json', auth='public', website=True, methods=['POST'],
+        type='jsonrpc', auth='public', website=True, methods=['POST'],
     )
     def api_events(self, product_id, **kw):
         if 'event.event' not in request.env:
@@ -463,7 +463,7 @@ class MultiChannelRentalWebsite(http.Controller):
 
     @http.route(
         '/rental-flow/api/add-to-basket',
-        type='json', auth='public', website=True, methods=['POST'],
+        type='jsonrpc', auth='public', website=True, methods=['POST'],
     )
     def api_add_to_basket(self, product_id, item_role='rental',
                           quantity=1, start_datetime=None,
@@ -504,7 +504,7 @@ class MultiChannelRentalWebsite(http.Controller):
 
     @http.route(
         '/rental-flow/api/remove-from-basket',
-        type='json', auth='public', website=True, methods=['POST'],
+        type='jsonrpc', auth='public', website=True, methods=['POST'],
     )
     def api_remove_from_basket(self, item_id, **kw):
         item = request.env['rental.dossier.item'].sudo().browse(int(item_id))
@@ -518,7 +518,7 @@ class MultiChannelRentalWebsite(http.Controller):
 
     @http.route(
         '/rental-flow/api/update-qty',
-        type='json', auth='public', website=True, methods=['POST'],
+        type='jsonrpc', auth='public', website=True, methods=['POST'],
     )
     def api_update_qty(self, item_id, quantity, **kw):
         item = request.env['rental.dossier.item'].sudo().browse(int(item_id))
