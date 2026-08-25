@@ -132,6 +132,7 @@ class MultiChannelRentalKioskOrder(http.Controller):
             # Slots
             'no_slots': _('No slots available.'),
             'no_slots_date': _('No slots on this date.'),
+            'no_more_availability': _('No more availability'),
             'available': _('available'),
             'seats': _('seats'),
             # Availability

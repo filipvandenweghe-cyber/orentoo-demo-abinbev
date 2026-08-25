@@ -436,7 +436,7 @@
                         src="/multi_channel_rental_flow/static/src/js/kiosk_ticket_lookup.js"/>
                 <!-- Order flow logic -->
                 <script type="text/javascript"
-                        src="/multi_channel_rental_flow/static/src/js/kiosk_order.js?v=7"/>
+                        src="/multi_channel_rental_flow/static/src/js/kiosk_order.js?v=8"/>
             </body>
         </html>
     </template>
