@@ -117,6 +117,10 @@
 #                             none is shorter).
 #       Applied in _get_slot_preview (the picker) and _get_day_availability_state
 #       (the day calendar) via _apply_end_time_limit; events are unaffected.
+#       The past-slot cutoff (PR16) and this end-limit compose: for today, once
+#       every remaining start is in the past or beyond the cut-off the slot list
+#       is empty and the kiosk shows "No more availability" (vs "No slots
+#       available." for a future date with no slots).
 #
 # --- Order Generation (OG) ---
 # OG01  One rental slot generates one sale.order with rental dates at order level.

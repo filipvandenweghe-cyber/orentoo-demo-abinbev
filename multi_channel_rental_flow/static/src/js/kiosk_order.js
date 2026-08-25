@@ -432,11 +432,29 @@ async function loadSlots() {
     }
 }
 
+// True when the selected date is today (local). Used to distinguish an empty
+// slot list caused by all remaining slots being in the past / beyond the
+// duration end-limit ("No more availability") from a future date that simply
+// has no slots configured ("No slots available").
+function isSelectedDateToday() {
+    if (!state.selectedDate) return false;
+    var n = new Date();
+    var today = n.getFullYear() + '-' +
+        String(n.getMonth() + 1).padStart(2, '0') + '-' +
+        String(n.getDate()).padStart(2, '0');
+    return state.selectedDate === today;
+}
+
 function renderSlots() {
     var el = document.getElementById('slot-grid');
     el.innerHTML = '';
     if (state.slots.length === 0) {
-        el.innerHTML = '<div class="ko-msg" style="grid-column:1/-1;">' + (TRANSLATIONS.no_slots || 'No slots available.') + '</div>';
+        // For today, an empty list means every remaining timeslot is already
+        // in the past (or past the duration cut-off) — none can be started.
+        var emptyMsg = isSelectedDateToday()
+            ? (TRANSLATIONS.no_more_availability || 'No more availability')
+            : (TRANSLATIONS.no_slots || 'No slots available.');
+        el.innerHTML = '<div class="ko-msg" style="grid-column:1/-1;">' + escH(emptyMsg) + '</div>';
         return;
     }
     state.slots.forEach(function(s, i) {
