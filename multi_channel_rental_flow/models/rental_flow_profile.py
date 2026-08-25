@@ -191,6 +191,29 @@ class RentalFlowProfile(models.Model):
         default=30,
         help="How many days ahead to show available timeslots.",
     )
+    slot_end_limit_mode = fields.Selection(
+        selection=[
+            ('none', "Do not limit end time"),
+            ('duration', "Limit end time by selected duration"),
+            ('next_contingent', "Limit end time to next lower duration"),
+        ],
+        string="Latest Start Time Limit",
+        default='none',
+        required=True,
+        help=(
+            "How the latest selectable start time is limited relative to the "
+            "warehouse closing time, based on the selected duration:\n"
+            "• Do not limit end time: the last start slot is simply the last "
+            "one within opening hours (a long rental may end after closing).\n"
+            "• Limit end time by selected duration: the last start slot is "
+            "closing time minus the selected duration (e.g. closes 18:00, "
+            "8h selected → last start 10:00, so the rental ends at closing).\n"
+            "• Limit end time to next lower duration: the last start slot is "
+            "closing time minus the next shorter duration option (e.g. closes "
+            "18:00, 8h selected with 4h as the next lower option → last start "
+            "14:00). Falls back to the selected duration when none is lower."
+        ),
+    )
     default_duration_unit = fields.Selection(
         selection=[
             ('minute', "Minutes"),

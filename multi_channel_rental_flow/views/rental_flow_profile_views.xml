@@ -106,6 +106,7 @@
                                 <group string="Timeslot Generation">
                                     <field name="rental_slot_interval_minutes"/>
                                     <field name="slot_advance_days"/>
+                                    <field name="slot_end_limit_mode"/>
                                 </group>
                                 <group string="Duration Defaults">
                                     <field name="default_duration_unit"/>

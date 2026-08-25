@@ -1,5 +1,8 @@
+from pytz import timezone, UTC
+
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
+from odoo.tools import format_date
 
 # Business requirements: DI01–DI12
 # See __init__.py for full index.
@@ -194,6 +197,63 @@ class RentalDossierItem(models.Model):
     def _compute_price_subtotal(self):
         for item in self:
             item.price_subtotal = item.price_unit * item.quantity
+
+    # ------------------------------------------------------------------
+    # Schedule display (basket / checkout)
+    # ------------------------------------------------------------------
+
+    def _get_schedule_display(self):
+        """Return the date / start-time / duration display for this item.
+
+        Derived from the item's slot (start/end datetime) in the user's
+        timezone so the basket and checkout clearly state the date, start time
+        and duration of each rental line.  Non-scheduled items (add-ons,
+        services) return empty strings.
+        """
+        self.ensure_one()
+        empty = {
+            'date_display': '',
+            'start_time_display': '',
+            'duration_display': '',
+        }
+        slot = self.slot_id
+        if not slot or not slot.start_datetime or not slot.end_datetime:
+            return empty
+
+        # Show the slot in the same timezone the kiosk used to build it — the
+        # warehouse opening-hours calendar timezone — so the basket/checkout
+        # time matches the picker exactly (rather than the viewer's own tz).
+        warehouse = slot.warehouse_id or self.dossier_id.warehouse_id
+        tz_name = self.env['multi.channel.rental.service']._get_flow_timezone(warehouse)
+        tz = timezone(tz_name)
+        start = UTC.localize(slot.start_datetime).astimezone(tz)
+        end = UTC.localize(slot.end_datetime).astimezone(tz)
+        try:
+            date_display = format_date(self.env, start.date(), date_format='full')
+        except Exception:  # noqa: BLE001 - date formatting is best-effort
+            date_display = start.strftime('%d/%m/%Y')
+
+        return {
+            'date_display': date_display,
+            'start_time_display': start.strftime('%H:%M'),
+            'duration_display': self._format_duration(end - start),
+        }
+
+    def _format_duration(self, delta):
+        """Human-readable rental duration from a timedelta (e.g. "2 h", "3 days")."""
+        total_minutes = int(round(delta.total_seconds() / 60.0))
+        if total_minutes <= 0:
+            return ''
+        days, rem_minutes = divmod(total_minutes, 24 * 60)
+        hours, minutes = divmod(rem_minutes, 60)
+        parts = []
+        if days:
+            parts.append(_("%s day", days) if days == 1 else _("%s days", days))
+        if hours:
+            parts.append(_("%s h", hours))
+        if minutes:
+            parts.append(_("%s min", minutes))
+        return ' '.join(parts)
 
     @api.depends('dynamic_factor_percentage')
     def _compute_dynamic_multiplier(self):

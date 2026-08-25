@@ -669,3 +669,128 @@ class TestMCRFService(TransactionCase):
 
         end_30m = self.svc._compute_end_datetime(start, 30, 'minute')
         self.assertEqual(end_30m, datetime(2026, 6, 1, 10, 30))
+
+    # ------------------------------------------------------------------
+    # Slot timezone & past-slot filtering  [PR16]
+    # ------------------------------------------------------------------
+
+    def test_91_flow_timezone_from_calendar(self):
+        """The slot timezone comes from the warehouse opening-hours calendar."""
+        calendar = self.env['resource.calendar'].create({
+            'name': 'MCRF TZ Calendar',
+            'tz': 'Europe/Brussels',
+            'attendance_ids': [],
+        })
+        original_oh = self.warehouse.opening_hours
+        self.warehouse.opening_hours = calendar
+        self.assertEqual(
+            self.svc._get_flow_timezone(self.warehouse), 'Europe/Brussels',
+        )
+        # No calendar → never crashes, returns a usable tz name.
+        self.warehouse.opening_hours = False
+        self.assertTrue(self.svc._get_flow_timezone(self.warehouse))
+        self.warehouse.opening_hours = original_oh
+
+    def test_92_fallback_slots_are_timezone_aware(self):
+        """Fallback 08:00 is the local wall-clock time, stored as UTC."""
+        self.env.user.tz = 'Europe/Brussels'
+        original_oh = self.warehouse.opening_hours
+        self.warehouse.opening_hours = False
+        slots = self.svc._get_available_start_slots(
+            self.profile, self.warehouse, self.tomorrow.date(),
+            item_role='rental',
+        )
+        first = slots[0]
+        # Displayed as local 08:00 ...
+        self.assertEqual(first['start_display'], '08:00')
+        # ... and the stored UTC value converts back to 08:00 Brussels.
+        from pytz import UTC, timezone as _tz
+        local = UTC.localize(first['start_datetime']).astimezone(
+            _tz('Europe/Brussels'),
+        )
+        self.assertEqual(local.strftime('%H:%M'), '08:00')
+        self.warehouse.opening_hours = original_oh
+
+    def test_93_past_slots_are_filtered(self):
+        """Start slots already in the past are dropped (absolute-instant)."""
+        from odoo import fields
+        now = fields.Datetime.now()
+        slots = [
+            {'start_datetime': now - timedelta(hours=1), 'start_display': 'past'},
+            {'start_datetime': now + timedelta(hours=1), 'start_display': 'future'},
+        ]
+        kept = self.svc._filter_past_slots(slots)
+        self.assertEqual([s['start_display'] for s in kept], ['future'])
+
+    # ------------------------------------------------------------------
+    # Latest start slot limited by duration  [PR17]
+    # ------------------------------------------------------------------
+
+    def test_94_end_limit_delta_modes(self):
+        """The end-limit delta follows the selected mode."""
+        # Deterministic duration options (1,2,4,8h) via the profile fallback.
+        self.profile.write({
+            'fallback_duration_ids': [(5, 0, 0)] + [
+                (0, 0, {
+                    'name': f'{v} hours',
+                    'duration_value': v,
+                    'duration_unit': 'hour',
+                })
+                for v in (1, 2, 4, 8)
+            ],
+        })
+        # 'duration' → the selected duration itself.
+        self.assertEqual(
+            self.svc._get_end_limit_delta(
+                self.profile, self.product_addon, 8, 'hour', 'duration',
+            ),
+            timedelta(hours=8),
+        )
+        # 'next_contingent' → the next shorter option (4h).
+        self.assertEqual(
+            self.svc._get_end_limit_delta(
+                self.profile, self.product_addon, 8, 'hour', 'next_contingent',
+            ),
+            timedelta(hours=4),
+        )
+        # 'next_contingent' on the shortest option → falls back to itself.
+        self.assertEqual(
+            self.svc._get_end_limit_delta(
+                self.profile, self.product_addon, 1, 'hour', 'next_contingent',
+            ),
+            timedelta(hours=1),
+        )
+
+    def test_95_end_limit_duration_mode(self):
+        """'duration' caps the last start at closing minus the duration."""
+        original_oh = self.warehouse.opening_hours
+        self.warehouse.opening_hours = False  # fallback 08:00–18:00
+        self.profile.slot_end_limit_mode = 'duration'
+        future = (self.tomorrow + timedelta(days=2)).date()
+        slots = self.svc._get_slot_preview(
+            self.profile, self.product_rental, future,
+            quantity=1, duration_value=8, duration_unit='hour',
+            item_role='rental',
+        )
+        self.assertTrue(slots)
+        # 18:00 − 8h = 10:00 is the last selectable start.
+        self.assertEqual(slots[-1]['start_display'], '10:00')
+        self.warehouse.opening_hours = original_oh
+
+    def test_96_end_limit_none_mode(self):
+        """'none' leaves the last start at the last opening-hours slot."""
+        original_oh = self.warehouse.opening_hours
+        original_interval = self.profile.rental_slot_interval_minutes
+        self.warehouse.opening_hours = False
+        self.profile.slot_end_limit_mode = 'none'
+        self.profile.rental_slot_interval_minutes = 60
+        future = (self.tomorrow + timedelta(days=2)).date()
+        slots = self.svc._get_slot_preview(
+            self.profile, self.product_rental, future,
+            quantity=1, duration_value=8, duration_unit='hour',
+            item_role='rental',
+        )
+        # Unlimited: last start is the final 60-min opening-hours slot (17:00).
+        self.assertEqual(slots[-1]['start_display'], '17:00')
+        self.profile.rental_slot_interval_minutes = original_interval
+        self.warehouse.opening_hours = original_oh

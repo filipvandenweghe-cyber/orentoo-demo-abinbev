@@ -121,6 +121,14 @@ class MultiChannelRentalKioskOrder(http.Controller):
             'mon': _('Mon'), 'tue': _('Tue'), 'wed': _('Wed'),
             'thu': _('Thu'), 'fri': _('Fri'), 'sat': _('Sat'), 'sun': _('Sun'),
             'selected': _('Selected: '),
+            # Selection summary (detail page + basket/checkout)
+            'summary_adding': _('You are adding'),
+            'summary_product': _('Product'),
+            'summary_event': _('Event'),
+            'summary_date': _('Date'),
+            'summary_start': _('Start time'),
+            'summary_duration': _('Duration'),
+            'select_timeslot_first': _('Please select a timeslot first.'),
             # Slots
             'no_slots': _('No slots available.'),
             'no_slots_date': _('No slots on this date.'),
@@ -585,6 +593,16 @@ class MultiChannelRentalKioskOrder(http.Controller):
         product = request.env['product.product'].sudo().browse(product_id)
         slot = False
 
+        # Guard: a rental that requires a timeslot must always carry one.
+        # Without this, a race in the quantity buttons could add a slot-less,
+        # base-priced line with no date/time to show in the basket.  [KO17]
+        rejection = request.env['multi.channel.rental.service'].sudo(
+        )._basket_add_rejection(
+            product, item_role, start_datetime, end_datetime,
+        )
+        if rejection:
+            return {'ok': False, 'message': rejection}
+
         # Create or find a slot for rental items with timeslots
         if start_datetime and end_datetime and item_role == 'rental':
             start_dt = datetime.fromisoformat(start_datetime)
@@ -730,6 +748,7 @@ class MultiChannelRentalKioskOrder(http.Controller):
             subtotal += item_subtotal
             tax_total += item_tax
 
+            schedule = item._get_schedule_display()
             items.append({
                 'id': item.id,
                 'product_name': item.product_id.name,
@@ -740,6 +759,10 @@ class MultiChannelRentalKioskOrder(http.Controller):
                 'price_total': item_total_incl,
                 'slot_name': item.slot_id.name if item.slot_id else '',
                 'event_name': item.event_id.name if item.event_id else '',
+                # Labeled schedule for the basket / checkout display.
+                'date_display': schedule['date_display'],
+                'start_time_display': schedule['start_time_display'],
+                'duration_display': schedule['duration_display'],
             })
 
         return {
