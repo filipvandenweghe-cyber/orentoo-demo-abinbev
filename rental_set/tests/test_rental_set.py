@@ -229,6 +229,37 @@ class TestSetPricing(TestRentalSetCommon):
         # Order total = 127 * 2 = 254
         self.assertAlmostEqual(order.amount_untaxed, 254.0, places=2)
 
+    def test_06b_component_price_chatter_only_on_real_change(self):
+        """The "component price ignored" chatter is posted only for a genuine
+        non-zero attempt — not for benign price_unit=0 echoes (e.g. a form
+        save re-sending the field)."""
+        order = self.env['sale.order'].create({'partner_id': self.partner.id})
+        self.env['sale.order.line'].create({
+            'order_id': order.id,
+            'product_id': self.front_light_tmpl.product_variant_id.id,
+            'product_uom_qty': 1,
+        })
+        component = order.order_line.filtered('is_set_component')[:1]
+
+        def ignored_count():
+            order.invalidate_recordset()
+            return len(order.message_ids.filtered(
+                lambda m: 'component price change was ignored' in (m.body or '')
+            ))
+
+        # Unchanged price_unit=0 echoes (what the form sends on save) → silent.
+        order.write({'order_line': [(1, component.id, {'price_unit': 0.0})]})
+        order.write({'order_line': [
+            (1, component.id, {'price_unit': 0.0, 'product_uom_qty': 2}),
+        ]})
+        self.assertEqual(ignored_count(), 0, "benign 0-price writes must not post")
+
+        # A genuine non-zero attempt → exactly one note, and price stays 0.
+        order.write({'order_line': [(1, component.id, {'price_unit': 42.0})]})
+        self.assertEqual(ignored_count(), 1, "a real non-zero attempt must warn")
+        component.invalidate_recordset()
+        self.assertEqual(component.price_unit, 0.0)
+
 
 class TestSetStockAndReservation(TestRentalSetCommon):
     """Test 7-8: substitution and availability warnings."""
