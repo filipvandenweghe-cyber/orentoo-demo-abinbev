@@ -168,7 +168,7 @@ class TestCombinedPricing(TestSaleOrderIntegrationBase):
 
 
 class TestQuantityChanges(TestSaleOrderIntegrationBase):
-    """Tests for quantity changes  [RI05]"""
+    """Tests for quantity changes  [RI05, RI07]"""
 
     def test_ri05_qty_change_keeps_coefficient(self):
         """Changing quantity keeps the same coefficient and factor."""
@@ -183,6 +183,66 @@ class TestQuantityChanges(TestSaleOrderIntegrationBase):
         self.assertEqual(
             line.applied_dynamic_factor_percentage, factor_before,
         )
+
+    def test_ri07_no_price_compounding_on_qty_change(self):
+        """Repeated quantity changes must not compound the coefficient.
+
+        Regression: the engine previously read the already-adjusted
+        price_unit as the base (because technical_price_unit desynced and
+        super() skipped the base reset), multiplying by the coefficient
+        again on every quantity change.  [RI07]
+        """
+        start = datetime(2026, 6, 1, 10, 0)
+        end = start + timedelta(days=7)  # coefficient 5.0
+        order, line = self._create_rental_order(start, end, qty=1)
+
+        base = line.base_rental_price
+        price = line.price_unit
+        # Sanity: price is base × coefficient (dynamic 100% outside DP range).
+        self.assertAlmostEqual(price, base * line.applied_coefficient, places=2)
+
+        for qty in (2, 3, 5, 2, 1):
+            line.product_uom_qty = qty
+            self.assertAlmostEqual(
+                line.base_rental_price, base, places=2,
+                msg=f"base drifted at qty={qty}",
+            )
+            self.assertAlmostEqual(
+                line.price_unit, price, places=2,
+                msg=f"price compounded at qty={qty}",
+            )
+            # technical_price_unit must stay in sync with price_unit so the
+            # standard manual-price guard never misfires.
+            self.assertAlmostEqual(
+                line.technical_price_unit, line.price_unit, places=2,
+                msg=f"technical desynced at qty={qty}",
+            )
+
+    def test_ri07_no_price_compounding_on_period_change(self):
+        """Shrinking/growing the rental period recomputes from the base. [RI07]
+
+        The rental "Update Rental Prices" flow (triggered whenever the
+        duration changes) recomputes via ``action_update_rental_prices``.
+        Each recompute must derive from the native base, never compound the
+        previous period's adjusted price.
+        """
+        start = datetime(2026, 6, 1, 10, 0)
+        order, line = self._create_rental_order(
+            start, start + timedelta(days=7),
+        )
+        base = line.base_rental_price
+
+        # 3-day period → coefficient 2.5, price = base × 2.5.
+        line.return_date = start + timedelta(days=3)
+        order._recompute_rental_prices()
+        self.assertAlmostEqual(line.base_rental_price, base, places=2)
+        self.assertAlmostEqual(line.price_unit, base * 2.5, places=2)
+
+        # Back to 7 days → coefficient 5.0, no compounding from the 3-day price.
+        line.return_date = start + timedelta(days=7)
+        order._recompute_rental_prices()
+        self.assertAlmostEqual(line.base_rental_price, base, places=2)
+        self.assertAlmostEqual(line.price_unit, base * 5.0, places=2)
 
 
 class TestManualOverrides(TestSaleOrderIntegrationBase):
@@ -218,6 +278,149 @@ class TestManualOverrides(TestSaleOrderIntegrationBase):
         })
         self.assertTrue(line.manual_dynamic_factor_override)
         self.assertEqual(line.applied_dynamic_factor_percentage, 200.0)
+
+
+class TestManualPriceOverride(TestSaleOrderIntegrationBase):
+    """Manual unit-price override survives quantity changes.  [RI06]"""
+
+    def test_ri06_manual_price_survives_qty_change(self):
+        """A hand-typed unit price is not overwritten on a quantity change."""
+        start = datetime(2026, 6, 1, 10, 0)
+        end = start + timedelta(days=7)
+        order, line = self._create_rental_order(start, end, qty=1)
+        engine_price = line.price_unit
+        self.assertFalse(line.manual_price_override)
+
+        # User types a manual unit price (diverges from technical_price_unit).
+        manual_price = engine_price + 13.0
+        line.price_unit = manual_price
+
+        # Changing the quantity must keep the manual price and lock the line.
+        # Reading price_unit triggers the recompute that both preserves the
+        # hand-typed price and flags the line.
+        line.product_uom_qty = 4
+        self.assertAlmostEqual(line.price_unit, manual_price, places=2)
+        self.assertTrue(line.manual_price_override)
+
+        # A further quantity change must still not touch it.
+        line.product_uom_qty = 7
+        self.assertAlmostEqual(line.price_unit, manual_price, places=2)
+
+    def test_ri06_engine_priced_line_not_locked(self):
+        """A normally engine-priced line is never treated as manual."""
+        start = datetime(2026, 6, 1, 10, 0)
+        end = start + timedelta(days=7)
+        order, line = self._create_rental_order(start, end, qty=1)
+        line.product_uom_qty = 3
+        self.assertFalse(line.manual_price_override)
+
+    def test_ri06_onchange_flags_manual_edit(self):
+        """The price_unit onchange flags a divergent (hand-typed) price."""
+        start = datetime(2026, 6, 1, 10, 0)
+        end = start + timedelta(days=7)
+        order, line = self._create_rental_order(start, end, qty=1)
+
+        # Simulate the form: user edits the price, onchange fires.
+        line.price_unit = line.price_unit + 5.0
+        line._onchange_price_unit_manual()
+        self.assertTrue(line.manual_price_override)
+
+    def test_ri06_force_recompute_clears_manual_price(self):
+        """Update Rental Prices (force) drops the lock and restores engine price."""
+        start = datetime(2026, 6, 1, 10, 0)
+        end = start + timedelta(days=7)
+        order, line = self._create_rental_order(start, end, qty=1)
+        engine_price = line.price_unit
+
+        line.price_unit = engine_price + 13.0
+        line.product_uom_qty = 2  # locks the manual price
+        self.assertAlmostEqual(line.price_unit, engine_price + 13.0, places=2)
+        self.assertTrue(line.manual_price_override)
+
+        line.with_context(force_price_recomputation=True)._compute_price_unit()
+        self.assertFalse(line.manual_price_override)
+        self.assertAlmostEqual(line.price_unit, engine_price, places=2)
+
+    def test_ri06_editing_coefficient_releases_manual_price(self):
+        """Editing the coefficient hands price control back to the engine."""
+        start = datetime(2026, 6, 1, 10, 0)
+        end = start + timedelta(days=7)
+        order, line = self._create_rental_order(start, end, qty=1)
+        base = line.base_rental_price
+        engine_price = line.price_unit
+
+        line.price_unit = engine_price + 13.0
+        line.product_uom_qty = 2  # locks the manual price
+        self.assertAlmostEqual(line.price_unit, engine_price + 13.0, places=2)
+        self.assertTrue(line.manual_price_override)
+
+        # User now edits the coefficient → engine reasserts base × coefficient.
+        line.applied_coefficient = 3.0
+        line._onchange_applied_coefficient()
+        self.assertFalse(line.manual_price_override)
+        self.assertAlmostEqual(line.price_unit, base * 3.0, places=2)
+
+
+class TestAutoRecomputeOnSave(TestSaleOrderIntegrationBase):
+    """Saving a quotation auto-refreshes rental prices without the button. [RI08]"""
+
+    def _save_period(self, order, line, new_return):
+        """Simulate a form save that changes the line's rental period."""
+        order.write({'order_line': [(1, line.id, {'return_date': new_return})]})
+
+    def test_ri08_period_change_recomputes_on_save(self):
+        """Changing the period and saving recomputes the coefficient price."""
+        start = datetime(2026, 6, 1, 10, 0)
+        order, line = self._create_rental_order(
+            start, start + timedelta(days=7),  # coefficient 5.0
+        )
+        base = line.base_rental_price
+        self.assertAlmostEqual(line.price_unit, base * 5.0, places=2)
+
+        # Shrink to 3 days → coefficient 2.5, applied on save (no button).
+        self._save_period(order, line, start + timedelta(days=3))
+        self.assertAlmostEqual(line.base_rental_price, base, places=2)
+        self.assertAlmostEqual(line.price_unit, base * 2.5, places=2)
+
+        # Grow back to 7 days → coefficient 5.0 again, no compounding.
+        self._save_period(order, line, start + timedelta(days=7))
+        self.assertAlmostEqual(line.price_unit, base * 5.0, places=2)
+
+    def test_ri08_manual_price_preserved_on_save(self):
+        """A hand-typed price is NOT recomputed by the save-refresh."""
+        start = datetime(2026, 6, 1, 10, 0)
+        order, line = self._create_rental_order(
+            start, start + timedelta(days=7),
+        )
+        manual_price = line.price_unit + 21.0
+        line.price_unit = manual_price  # diverges from technical → manual
+
+        # Saving a period change must leave the hand-typed price untouched.
+        self._save_period(order, line, start + timedelta(days=3))
+        self.assertAlmostEqual(line.price_unit, manual_price, places=2)
+
+    def test_ri08_no_recompute_on_confirmed_order(self):
+        """Confirmed orders keep their agreed prices on save."""
+        start = datetime(2026, 6, 1, 10, 0)
+        order, line = self._create_rental_order(
+            start, start + timedelta(days=7),
+        )
+        order.action_confirm()
+        price_before = line.price_unit
+
+        # Even a period edit must not re-price a confirmed order.
+        self._save_period(order, line, start + timedelta(days=3))
+        self.assertAlmostEqual(line.price_unit, price_before, places=2)
+
+    def test_ri08_non_price_field_save_is_noop(self):
+        """Saving an unrelated field does not recompute prices."""
+        start = datetime(2026, 6, 1, 10, 0)
+        order, line = self._create_rental_order(
+            start, start + timedelta(days=7),
+        )
+        price_before = line.price_unit
+        order.write({'note': 'just a note'})
+        self.assertAlmostEqual(line.price_unit, price_before, places=2)
 
 
 class TestFallbackPricing(TestSaleOrderIntegrationBase):

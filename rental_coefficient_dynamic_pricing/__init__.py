@@ -119,6 +119,34 @@
 #       recalculates price from stored base × coeff × multiplier.
 # RI05  Period/product/partner changes clear manual overrides and
 #       trigger full recalculation.  Quantity changes do not.
+# RI06  Manual unit-price override.  Editing price_unit by hand sets
+#       manual_price_override (detected via a divergence between
+#       price_unit and technical_price_unit, which the engine always keeps
+#       equal).  While set, the coefficient/dynamic engine does NOT
+#       overwrite the unit price on quantity changes — the hand-typed price
+#       is preserved.  The flag is cleared (engine regains control) when the
+#       product, rental period or partner changes, when the coefficient or
+#       dynamic factor is edited, or on "Update Rental Prices"
+#       (force_price_recomputation).
+# RI07  Idempotent recomputation — no coefficient compounding.  Each
+#       recomputation derives the final price from the Odoo-native base
+#       (base × coefficient × dynamic_multiplier), never from the
+#       already-adjusted price_unit.  The engine writes price_unit and
+#       technical_price_unit together under the sale_write_from_compute
+#       context so they stay in sync; otherwise super()._compute_price_unit
+#       would mistake the line for a manually priced one, skip the base
+#       reset, and let the engine multiply the already-adjusted price by the
+#       coefficient again — compounding the price on every quantity or
+#       period change.
+# RI08  Auto-recompute rental prices on save.  sale.order.write() refreshes
+#       the coefficient/duration/dynamic driven unit price of rental lines
+#       whenever a price-relevant field changes (period, customer, pricelist,
+#       or any order-line edit) on a draft/sent quotation — so the user need
+#       not press "Update Rental Prices".  It runs WITHOUT force, so lines
+#       with a hand-typed price (technical_price_unit != price_unit, i.e.
+#       manual_price_override) are preserved; only the explicit button
+#       force-resets them.  Re-entrancy is guarded by the rental_save_recompute
+#       context flag, and a button-driven force recomputation is skipped.
 #
 # RENTAL_SET COMPATIBILITY
 # --------------------------
