@@ -1,6 +1,6 @@
 {
     'name': 'Multi-Channel Rental Flow',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'summary': 'Multi-channel rental, event, add-on ordering and kiosk flow',
     'description': (
         'Provides a multi-channel ordering flow combining rental items, '
