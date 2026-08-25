@@ -9,7 +9,7 @@
                       content="width=device-width, initial-scale=1, user-scalable=no"/>
                 <title><t t-esc="profile.name"/> — Order</title>
                 <link rel="stylesheet"
-                      href="/multi_channel_rental_flow/static/src/css/kiosk_order.css"/>
+                      href="/multi_channel_rental_flow/static/src/css/kiosk_order.css?v=2"/>
                 <!-- Dynamic branding colors -->
                 <style>
                     :root {
@@ -303,6 +303,8 @@
                         <!-- Add to basket -->
                         <div id="detail-add-section" class="ko-hidden">
                             <div class="ko-add-summary">
+                                <!-- What is being added: product, date, start time, duration -->
+                                <div class="ko-add-selection" id="add-selection"></div>
                                 <div class="ko-add-price" id="add-summary-price"></div>
                             </div>
                             <button class="ko-btn ko-btn-success" onclick="addToBasket()">
@@ -434,7 +436,7 @@
                         src="/multi_channel_rental_flow/static/src/js/kiosk_ticket_lookup.js"/>
                 <!-- Order flow logic -->
                 <script type="text/javascript"
-                        src="/multi_channel_rental_flow/static/src/js/kiosk_order.js?v=5"/>
+                        src="/multi_channel_rental_flow/static/src/js/kiosk_order.js?v=7"/>
             </body>
         </html>
     </template>

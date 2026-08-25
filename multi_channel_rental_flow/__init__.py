@@ -99,6 +99,24 @@
 # PR13  Day availability: available/partial/unavailable/closed with counts.
 # PR14  Price calendar: hourly (3-day) or daily (7-day) window.
 # PR15  Color codes from profile thresholds (low/normal/high/unavailable/closed).
+# PR16  Slot timezone & past-slot cutoff. Slot start times are computed and
+#       displayed in the warehouse opening-hours calendar timezone
+#       (_get_flow_timezone; falls back to the user tz, then UTC). Fallback
+#       08:00–18:00 slots are localized to that tz and stored as UTC, so the
+#       picker and the basket/checkout show the same wall-clock time. Slots
+#       whose start is already in the past are dropped (_filter_past_slots),
+#       an absolute-instant comparison in UTC. The basket display
+#       (rental.dossier.item._get_schedule_display) uses the same tz.
+# PR17  Latest start slot limited by duration.  profile.slot_end_limit_mode
+#       controls how the last selectable start time relates to the warehouse
+#       closing time for the selected duration:
+#         • none            — last start is the last opening-hours slot.
+#         • duration        — last start = closing − selected duration.
+#         • next_contingent — last start = closing − next shorter duration
+#                             option (falls back to the selected duration when
+#                             none is shorter).
+#       Applied in _get_slot_preview (the picker) and _get_day_availability_state
+#       (the day calendar) via _apply_end_time_limit; events are unaffected.
 #
 # --- Order Generation (OG) ---
 # OG01  One rental slot generates one sale.order with rental dates at order level.
@@ -222,6 +240,18 @@
 # KO13  Respects profile.enable_dossier_ordering.
 # KO14  Kiosk Order URL on profile form.
 # KO15  All pricing computed server-side (no JS price calculations).
+# KO16  Selection summary. The product detail page shows what is being added
+#       (product, event, duration, date, start time) just above "Add to
+#       Basket", and the basket/checkout lists the same labeled schedule
+#       (date, start time, duration) per line — times in the warehouse
+#       calendar timezone (see PR16). Backed by
+#       rental.dossier.item._get_schedule_display / _format_duration.
+# KO17  Timeslot guard. A rental that requires a timeslot cannot be added
+#       without one: the client hides/blocks "Add to Basket" until a slot is
+#       selected (and re-selects the slot after a quantity change so the
+#       button can never fire mid-reload), and the server rejects the add via
+#       service._basket_add_rejection. Prevents slot-less, base-priced lines
+#       with no date/time in the basket.
 #
 # --- Website Flow (WF) ---
 # WF01  Website flow at /rental-flow (separate from /shop).

@@ -227,7 +227,7 @@ async function selectProduct(productId) {
 // =====================================================================
 // Quantity
 // =====================================================================
-function changeQty(delta) {
+async function changeQty(delta) {
     state.quantity = Math.max(1, state.quantity + delta);
     updateQtyDisplay();
     if (state.selectedProduct && (state.selectedProduct.item_role === 'addon' || state.selectedProduct.item_role === 'service')) {
@@ -242,10 +242,16 @@ function changeQty(delta) {
         } else {
             document.getElementById('detail-add-section').classList.add('ko-hidden');
         }
-    } else if (state.selectedDate && state.selectedProduct && state.selectedProduct.requires_timeslot) {
-        // Rental: reload slots and calendar
-        loadSlots();
+        return;
+    }
+    if (state.selectedDate && state.selectedProduct && state.selectedProduct.requires_timeslot) {
+        // Rental: reload slots for the new quantity. loadSlots() re-applies the
+        // slot selection (restoring the Add button + price) or hides the Add
+        // button when the slot is no longer selectable. Awaited so the stale
+        // selection below cannot fire mid-reload and add a slot-less line.
+        await loadSlots();
         renderCalendar();
+        return;
     }
     if (state.selectedSlot !== null && state.selectedProduct && state.selectedProduct.item_role !== 'event_ticket') updateSlotSelection();
 }
@@ -393,6 +399,12 @@ async function loadSlots() {
     document.getElementById('detail-slot-section').classList.remove('ko-hidden');
     document.getElementById('slot-grid').innerHTML = '<div class="ko-msg"><span class="ko-spinner"></span></div>';
 
+    // Remember the currently selected slot so we can re-apply it after the
+    // reload (e.g. when the quantity changes). Identify it by start time,
+    // since the slot list/indices may change with availability.
+    var prevStart = (state.selectedSlot !== null && state.slots[state.selectedSlot])
+        ? state.slots[state.selectedSlot].start_datetime : null;
+
     var res = await rpc('/rental-kiosk/api/slots', {
         profile_id: PROFILE_ID,
         product_id: state.selectedProduct.id,
@@ -404,7 +416,20 @@ async function loadSlots() {
     });
     state.slots = res.slots;
     state.selectedSlot = null;
+    // Hide the Add button until a slot is (re)selected, so it can never be
+    // clicked without a timeslot — which would add a slot-less, base-priced
+    // rental line with no date/time to show in the basket.
+    document.getElementById('detail-add-section').classList.add('ko-hidden');
     renderSlots();
+
+    // Re-select the previously chosen slot if it still exists and is
+    // selectable for the new quantity; this restores the Add button + price.
+    if (prevStart) {
+        var idx = state.slots.findIndex(function(s) {
+            return s.start_datetime === prevStart && s.selectable !== false;
+        });
+        if (idx >= 0) selectSlot(idx);
+    }
 }
 
 function renderSlots() {
@@ -465,6 +490,64 @@ function koHideAvailWarning() {
 function updateAddSummary(total) {
     document.getElementById('add-summary-price').textContent =
         total.toFixed(2) + ' ' + escH(state.currency || '');
+    renderAddSelection();
+}
+
+// Show exactly what the customer is about to add — product, date, start
+// time and duration — just above the "Add to Basket" button, so the chosen
+// timeslot is unambiguous before it lands in the basket.
+function renderAddSelection() {
+    var el = document.getElementById('add-selection');
+    if (!el) return;
+    var p = state.selectedProduct;
+    if (!p) { el.innerHTML = ''; return; }
+
+    var rows = [];
+    function row(label, value) {
+        rows.push(
+            '<div class="ko-add-sel-row">' +
+            '<span class="ko-add-sel-label">' + escH(label) + '</span>' +
+            '<span class="ko-add-sel-value">' + escH(value) + '</span>' +
+            '</div>'
+        );
+    }
+
+    // Product (always) + quantity.
+    var name = p.name || '';
+    if (state.quantity && state.quantity > 1) name += ' × ' + state.quantity;
+    row(TRANSLATIONS.summary_product || 'Product', name);
+
+    // Event (for event tickets).
+    if (p.item_role === 'event_ticket') {
+        var ev = (state.events || []).find(function(e) { return e.event_id === p._eventId; });
+        if (ev && ev.event_name) row(TRANSLATIONS.summary_event || 'Event', ev.event_name);
+    }
+
+    // Duration (rental products that offer duration options).
+    if (state.selectedDuration && state.selectedDuration.label) {
+        row(TRANSLATIONS.summary_duration || 'Duration', state.selectedDuration.label);
+    }
+
+    // Date.
+    if (state.selectedDate) {
+        var d = new Date(state.selectedDate + 'T00:00:00');
+        row(TRANSLATIONS.summary_date || 'Date', d.toLocaleDateString(JS_LANG, {
+            weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+        }));
+    }
+
+    // Start time (from the chosen slot).
+    if (state.selectedSlot !== null && state.slots && state.slots[state.selectedSlot]) {
+        var s = state.slots[state.selectedSlot];
+        if (s.start_display) {
+            row(TRANSLATIONS.summary_start || 'Start time', s.start_display);
+        }
+    }
+
+    el.innerHTML =
+        '<div class="ko-add-sel-title">' +
+        escH(TRANSLATIONS.summary_adding || 'You are adding') + '</div>' +
+        rows.join('');
 }
 
 // =====================================================================
@@ -656,6 +739,16 @@ async function addToBasket() {
     var p = state.selectedProduct;
     if (!p) return;
 
+    // A rental that needs a timeslot must have one selected. Guards against a
+    // stale Add button (e.g. right after a quantity change reloaded the slots)
+    // adding a slot-less, base-priced line with no date/time in the basket.
+    if (p.item_role === 'rental' && p.requires_timeslot && state.selectedSlot === null) {
+        koShowAvailWarning(0);
+        var warn = document.getElementById('ko-avail-warning-text');
+        if (warn) warn.textContent = ' ' + (TRANSLATIONS.select_timeslot_first || 'Please select a timeslot first.');
+        return;
+    }
+
     var params = {
         dossier_id: state.dossierId,
         product_id: p.id,
@@ -680,7 +773,15 @@ async function addToBasket() {
         params.price_unit = p.list_price;
     }
 
-    await rpc('/rental-kiosk/api/basket/add', params);
+    var res = await rpc('/rental-kiosk/api/basket/add', params);
+    if (res && res.ok === false) {
+        // Backend rejected the add (e.g. missing timeslot). Keep the customer
+        // on the detail page and surface the reason.
+        koShowAvailWarning(0);
+        var msgEl = document.getElementById('ko-avail-warning-text');
+        if (msgEl) msgEl.textContent = ' ' + (res.message || '');
+        return;
+    }
     await refreshBasket();
     showSection('page-browse');
 }
@@ -718,15 +819,30 @@ async function showBasket() {
         el.innerHTML = '<div class="ko-msg">' + (TRANSLATIONS.basket_empty || 'Your basket is empty.') + '</div>';
     }
     state.basketItems.forEach(function(item) {
+        // Labeled schedule lines (date, start time, duration) so the customer
+        // sees exactly what timeslot each basket line represents at checkout.
+        var sched = '';
+        function schedRow(label, value) {
+            if (!value) return;
+            sched +=
+                '<div class="ko-basket-sched-row">' +
+                '<span class="ko-basket-sched-label">' + escH(label) + '</span> ' +
+                '<span class="ko-basket-sched-value">' + escH(value) + '</span>' +
+                '</div>';
+        }
+        if (item.event_name) schedRow(TRANSLATIONS.summary_event || 'Event', item.event_name);
+        schedRow(TRANSLATIONS.summary_duration || 'Duration', item.duration_display);
+        schedRow(TRANSLATIONS.summary_date || 'Date', item.date_display);
+        schedRow(TRANSLATIONS.summary_start || 'Start time', item.start_time_display);
+        // Fallback for items without a parsed schedule (addons/services).
+        if (!sched && !item.event_name) {
+            sched = '<div class="ko-basket-sched-row">' + escH(item.item_role) + '</div>';
+        }
         el.innerHTML +=
             '<div class="ko-basket-item">' +
             '<div class="ko-basket-item-info">' +
             '<div class="ko-basket-item-name">' + escH(item.product_name) + '</div>' +
-            '<div class="ko-basket-item-detail">' +
-            escH(item.item_role) +
-            (item.slot_name ? ' — ' + escH(item.slot_name) : '') +
-            (item.event_name ? ' — ' + escH(item.event_name) : '') +
-            '</div></div>' +
+            '<div class="ko-basket-item-detail">' + sched + '</div></div>' +
             '<div style="display:flex; align-items:center; gap:8px;">' +
             '<button class="ko-qty-btn" style="width:36px;height:36px;font-size:1.2rem;" ' +
             'onclick="changeBasketQty(' + item.id + ',-1)">−</button>' +

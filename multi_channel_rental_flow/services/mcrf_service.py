@@ -3,7 +3,7 @@ from datetime import datetime as dt_class, time as t_class, timedelta
 
 from pytz import timezone, UTC
 
-from odoo import api, models, _
+from odoo import api, fields, models, _
 
 # Business requirements: PR01–PR15
 # See __init__.py for full index.
@@ -301,16 +301,158 @@ class MultiChannelRentalService(models.AbstractModel):
         return self._get_rental_slots_for_date(profile, warehouse, date)
 
     @api.model
+    def _basket_add_rejection(self, product, item_role, start_datetime,
+                              end_datetime):
+        """Return a rejection message for an invalid basket add, else False.
+
+        A rental that requires a timeslot must carry one — otherwise the line
+        would be slot-less and base-priced, with no date/time to show in the
+        basket.  [KO17]
+        """
+        if (
+            item_role == 'rental'
+            and product.requires_timeslot
+            and not (start_datetime and end_datetime)
+        ):
+            return _('Please select a timeslot before adding this item.')
+        return False
+
+    @api.model
+    def _get_flow_timezone(self, warehouse):
+        """Return the timezone name driving rental slot times.
+
+        Uses the warehouse opening-hours calendar timezone — the single
+        source of truth for when the branch is open and therefore for how
+        slot start times are computed and displayed.  Falls back to the
+        current user's timezone, then UTC, when no calendar is configured.
+        """
+        calendar = warehouse.opening_hours if warehouse else None
+        if calendar and calendar.tz:
+            return calendar.tz
+        return self.env.user.tz or 'UTC'
+
+    @api.model
+    def _filter_past_slots(self, slots):
+        """Drop start slots that already lie in the past.
+
+        Slot ``start_datetime`` is naive UTC and ``fields.Datetime.now()`` is
+        naive UTC, so the comparison is an absolute-instant comparison and is
+        timezone-independent — a slot at 14:00 Brussels is correctly kept or
+        dropped regardless of the display timezone.
+        """
+        now = fields.Datetime.now()
+        return [
+            s for s in slots
+            if not s.get('start_datetime') or s['start_datetime'] > now
+        ]
+
+    @api.model
+    def _duration_to_timedelta(self, value, unit):
+        """Convert a duration (value + unit) to a timedelta.
+
+        Mirrors the unit mapping of ``_compute_end_datetime`` so the end-time
+        limit and the actual rental end stay consistent.
+        """
+        value = value or 0
+        unit_map = {
+            'minute': timedelta(minutes=value),
+            'hour': timedelta(hours=value),
+            'day': timedelta(days=value),
+            'week': timedelta(weeks=value),
+            'month': timedelta(days=value * 30),
+        }
+        return unit_map.get(unit, timedelta(hours=value))
+
+    @api.model
+    def _get_day_closing_datetime(self, warehouse, date):
+        """Return the day's closing time as naive UTC (or None if closed).
+
+        For a warehouse with an opening-hours calendar this is the end of the
+        last work interval on ``date``; otherwise it is 18:00 local (the
+        fallback closing), expressed in the flow timezone.
+        """
+        tz_name = self._get_flow_timezone(warehouse)
+        tz = timezone(tz_name)
+        calendar = warehouse.opening_hours if warehouse else None
+        if not calendar:
+            close_local = tz.localize(dt_class.combine(date, t_class(18, 0)))
+            return close_local.astimezone(UTC).replace(tzinfo=None)
+
+        day_start = tz.localize(dt_class.combine(date, t_class(0, 0)))
+        day_end = day_start + timedelta(days=1)
+        intervals = calendar._work_intervals_batch(
+            day_start.astimezone(UTC), day_end.astimezone(UTC),
+        ).get(False, [])
+        if not intervals:
+            return None
+        last_end = max(iv[1] for iv in intervals)
+        return last_end.astimezone(UTC).replace(tzinfo=None)
+
+    @api.model
+    def _get_end_limit_delta(self, profile, product, duration_value,
+                             duration_unit, mode):
+        """Return the timedelta used to cap the latest start slot, or None.
+
+        - ``duration``: the selected duration itself.
+        - ``next_contingent``: the largest available duration option strictly
+          shorter than the selected one (falls back to the selected duration
+          when there is no shorter option).
+        """
+        sel_val = duration_value or 1
+        sel_unit = duration_unit or profile.default_duration_unit or 'hour'
+        sel_delta = self._duration_to_timedelta(sel_val, sel_unit)
+
+        if mode == 'duration':
+            return sel_delta
+        if mode == 'next_contingent':
+            options = self._get_duration_options(profile, product) or []
+            deltas = sorted({
+                self._duration_to_timedelta(o['value'], o['unit'])
+                for o in options
+            })
+            lower = [d for d in deltas if d < sel_delta]
+            return lower[-1] if lower else sel_delta
+        return None
+
+    @api.model
+    def _apply_end_time_limit(self, profile, product, warehouse, date, slots,
+                              duration_value, duration_unit):
+        """Drop start slots whose (limited) end would exceed closing time.
+
+        The cap depends on ``profile.slot_end_limit_mode`` [PR17].  Returns the
+        slots unchanged for mode ``none`` or when the closing time / limit
+        cannot be determined.
+        """
+        mode = getattr(profile, 'slot_end_limit_mode', 'none') or 'none'
+        if mode == 'none' or not slots:
+            return slots
+        limit_delta = self._get_end_limit_delta(
+            profile, product, duration_value, duration_unit, mode,
+        )
+        if not limit_delta:
+            return slots
+        closing = self._get_day_closing_datetime(warehouse, date)
+        if not closing:
+            return slots
+        return [
+            s for s in slots
+            if not s.get('start_datetime')
+            or (s['start_datetime'] + limit_delta) <= closing
+        ]
+
+    @api.model
     def _get_rental_slots_for_date(self, profile, warehouse, date):
         """Generate rental start-time slots for a date from opening hours."""
         interval_minutes = profile.rental_slot_interval_minutes or 30
+        tz_name = self._get_flow_timezone(warehouse)
         calendar = warehouse.opening_hours if warehouse else None
 
         if not calendar:
-            return self._get_fallback_slots(date, interval_minutes)
+            return self._filter_past_slots(
+                self._get_fallback_slots(date, interval_minutes, tz_name)
+            )
 
         # Get work intervals for the full day
-        tz_name = calendar.tz or 'UTC'
         tz = timezone(tz_name)
 
         day_start = tz.localize(
@@ -342,21 +484,25 @@ class MultiChannelRentalService(models.AbstractModel):
                 })
                 cursor += timedelta(minutes=interval_minutes)
 
-        return slots
+        return self._filter_past_slots(slots)
 
     @api.model
-    def _get_fallback_slots(self, date, interval_minutes):
+    def _get_fallback_slots(self, date, interval_minutes, tz_name='UTC'):
         """Generate slots for a day when no opening hours are configured.
 
-        Uses 08:00–18:00 as safe fallback.
+        Uses 08:00–18:00 (local to ``tz_name``) as a safe fallback.  Start
+        times are localized to ``tz_name`` and stored as UTC so they behave
+        exactly like calendar-derived slots (correct clock time in the picker
+        and the basket, correct past-slot filtering).
         """
+        tz = timezone(tz_name)
         slots = []
-        start = dt_class.combine(date, t_class(8, 0))
-        end = dt_class.combine(date, t_class(18, 0))
+        start = tz.localize(dt_class.combine(date, t_class(8, 0)))
+        end = tz.localize(dt_class.combine(date, t_class(18, 0)))
         cursor = start
         while cursor < end:
             slots.append({
-                'start_datetime': cursor,
+                'start_datetime': cursor.astimezone(UTC).replace(tzinfo=None),
                 'start_display': cursor.strftime('%H:%M'),
                 'opening_hours_state': 'unknown',
                 'selectable': True,
@@ -456,6 +602,14 @@ class MultiChannelRentalService(models.AbstractModel):
             item_role=item_role, event_id=event_id,
             quantity=quantity,
         )
+
+        # PR17: cap the latest start slot based on the selected duration and
+        # the profile's end-limit mode (rentals only — events have fixed slots).
+        if item_role != 'event_ticket':
+            raw_slots = self._apply_end_time_limit(
+                profile, product, warehouse, date, raw_slots,
+                duration_value, duration_unit,
+            )
 
         # Determine end_dt for each slot
         dur_val = duration_value or 1
@@ -684,6 +838,14 @@ class MultiChannelRentalService(models.AbstractModel):
             item_role=item_role, event_id=event_id,
             quantity=quantity,
         )
+
+        # PR17: apply the same latest-start-slot cap used by the slot picker,
+        # so the day calendar counts only genuinely selectable start times.
+        if item_role != 'event_ticket':
+            raw_slots = self._apply_end_time_limit(
+                profile, product, warehouse, date, raw_slots,
+                duration_value, duration_unit,
+            )
 
         if not raw_slots:
             return {

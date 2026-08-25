@@ -574,3 +574,135 @@ class TestKioskOrder(TransactionCase):
                 f"order total ({order_total:.2f})"
             ),
         )
+
+    # ------------------------------------------------------------------
+    # Schedule display for basket / checkout  [KO16]
+    # ------------------------------------------------------------------
+
+    def _rental_item(self, start, end, qty=1):
+        dossier = self.env['rental.dossier'].create({
+            'partner_id': self.partner.id,
+            'warehouse_id': self.warehouse.id,
+            'pricelist_id': self.pricelist.id,
+            'profile_id': self.profile.id,
+            'source': 'kiosk',
+            'is_multi_channel': True,
+        })
+        slot = self.env['rental.dossier.slot'].create({
+            'dossier_id': dossier.id,
+            'start_datetime': start,
+            'end_datetime': end,
+            'warehouse_id': self.warehouse.id,
+        })
+        return self.env['rental.dossier.item'].create({
+            'dossier_id': dossier.id,
+            'slot_id': slot.id,
+            'product_id': self.product_rental.id,
+            'item_role': 'rental',
+            'quantity': qty,
+            'price_unit': 50.0,
+        })
+
+    def test_70_schedule_display_rental_item(self):
+        """A rental item exposes date, start time and duration for checkout."""
+        item = self._rental_item(
+            self.tomorrow.replace(hour=10),
+            self.tomorrow.replace(hour=12),
+        )
+        sched = item._get_schedule_display()
+        # Duration is exactly 2 hours; start time and date are populated.
+        self.assertEqual(sched['duration_display'], '2 h')
+        self.assertTrue(sched['date_display'])
+        self.assertTrue(sched['start_time_display'])
+        # Start time matches the slot in the flow (warehouse calendar) tz.
+        from pytz import UTC, timezone
+        tz_name = self.env['multi.channel.rental.service']._get_flow_timezone(
+            item.slot_id.warehouse_id or item.dossier_id.warehouse_id,
+        )
+        start_local = UTC.localize(
+            item.slot_id.start_datetime,
+        ).astimezone(timezone(tz_name))
+        self.assertEqual(sched['start_time_display'], start_local.strftime('%H:%M'))
+
+    def test_71_schedule_display_addon_is_empty(self):
+        """Non-scheduled items (add-ons) return empty schedule fields."""
+        dossier = self.env['rental.dossier'].create({
+            'partner_id': self.partner.id,
+            'warehouse_id': self.warehouse.id,
+            'pricelist_id': self.pricelist.id,
+            'profile_id': self.profile.id,
+            'source': 'kiosk',
+            'is_multi_channel': True,
+        })
+        addon = self.env['rental.dossier.item'].create({
+            'dossier_id': dossier.id,
+            'product_id': self.product_addon.id,
+            'item_role': 'addon',
+            'quantity': 1,
+            'price_unit': 15.0,
+        })
+        sched = addon._get_schedule_display()
+        self.assertEqual(sched['date_display'], '')
+        self.assertEqual(sched['start_time_display'], '')
+        self.assertEqual(sched['duration_display'], '')
+
+    def test_72_format_duration_variants(self):
+        """Duration formatting covers minutes, hours and multi-day spans."""
+        item = self.env['rental.dossier.item']
+        self.assertEqual(item._format_duration(timedelta(hours=2)), '2 h')
+        self.assertEqual(item._format_duration(timedelta(minutes=45)), '45 min')
+        self.assertEqual(item._format_duration(timedelta(days=1)), '1 day')
+        self.assertEqual(
+            item._format_duration(timedelta(days=2, hours=8, minutes=30)),
+            '2 days 8 h 30 min',
+        )
+        self.assertEqual(item._format_duration(timedelta(0)), '')
+
+    def test_73_schedule_display_keys_present(self):
+        """The schedule dict always exposes the three checkout keys."""
+        item = self._rental_item(
+            self.tomorrow.replace(hour=9),
+            self.tomorrow.replace(hour=11),
+        )
+        sched = item._get_schedule_display()
+        self.assertEqual(
+            set(sched), {'date_display', 'start_time_display', 'duration_display'},
+        )
+        self.assertEqual(sched['duration_display'], '2 h')
+
+    def test_74_schedule_display_uses_warehouse_calendar_tz(self):
+        """Basket time is shown in the warehouse opening-hours calendar tz."""
+        calendar = self.env['resource.calendar'].create({
+            'name': 'KO TZ Calendar',
+            'tz': 'Europe/Brussels',
+            'attendance_ids': [],
+        })
+        self.warehouse.opening_hours = calendar
+        # 06:00 UTC on a summer date == 08:00 Brussels (CEST, UTC+2).
+        item = self._rental_item(
+            datetime(2026, 7, 1, 6, 0), datetime(2026, 7, 1, 8, 0),
+        )
+        sched = item._get_schedule_display()
+        self.assertEqual(sched['start_time_display'], '08:00')
+        self.assertEqual(sched['duration_display'], '2 h')
+
+    # ------------------------------------------------------------------
+    # Add-to-basket timeslot guard  [KO17]
+    # ------------------------------------------------------------------
+
+    def test_75_basket_add_rejects_rental_without_timeslot(self):
+        """A timeslot-required rental cannot be added without start/end."""
+        svc = self.env['multi.channel.rental.service']
+        # requires_timeslot rental with no schedule → rejected with a message.
+        self.assertTrue(svc._basket_add_rejection(
+            self.product_rental, 'rental', None, None,
+        ))
+        # Same rental with start/end supplied → allowed.
+        self.assertFalse(svc._basket_add_rejection(
+            self.product_rental, 'rental',
+            '2026-07-01T08:00:00', '2026-07-01T10:00:00',
+        ))
+        # Add-ons never need a timeslot → allowed.
+        self.assertFalse(svc._basket_add_rejection(
+            self.product_addon, 'addon', None, None,
+        ))

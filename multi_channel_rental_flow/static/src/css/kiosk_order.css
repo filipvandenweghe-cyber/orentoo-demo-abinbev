@@ -292,3 +292,32 @@ body.kiosk-order {
     text-align: center;
 }
 .ko-add-price { font-size: 1.8rem; font-weight: 700; color: var(--ko-success); }
+
+/* "You are adding" selection summary above the Add to Basket button */
+.ko-add-selection {
+    text-align: left;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--ko-border);
+}
+.ko-add-sel-title {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ko-muted);
+    margin-bottom: 8px;
+}
+.ko-add-sel-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 3px 0;
+    font-size: 1.05rem;
+}
+.ko-add-sel-label { color: var(--ko-muted); }
+.ko-add-sel-value { font-weight: 600; text-align: right; }
+
+/* Basket / checkout per-item schedule lines */
+.ko-basket-sched-row { line-height: 1.5; }
+.ko-basket-sched-label { color: var(--ko-muted); }
+.ko-basket-sched-value { font-weight: 600; color: #eee; }
