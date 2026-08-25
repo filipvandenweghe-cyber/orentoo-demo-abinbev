@@ -685,6 +685,17 @@ class SaleOrderLine(models.Model):
                     lambda l: l._get_top_set_parent()
                 )
                 for parent in parents_to_reallocate:
+                    # Keep the per-set base quantity in sync with a direct
+                    # component qty edit.  In sum-of-components mode the parent
+                    # price is derived from ``set_component_qty`` (the stable
+                    # per-set base), while the allocated prices use the live
+                    # ``product_uom_qty``.  If the base qty is not refreshed the
+                    # two diverge: the parent price keeps reflecting the original
+                    # set definition while the allocations follow the new order
+                    # content.  Resyncing every component of the affected set
+                    # (relative to its immediate set parent) keeps the parent
+                    # price equal to the sum of the component allocations.
+                    parent._resync_set_component_base_qty()
                     if parent.set_pricing_mode == 'fixed':
                         parent._allocate_fixed_prices()
                     elif parent.set_pricing_mode == 'sum':
@@ -1564,6 +1575,31 @@ class SaleOrderLine(models.Model):
             'price_unit': total,
             'technical_price_unit': total,
         })
+
+    def _resync_set_component_base_qty(self):
+        """Recompute ``set_component_qty`` (per-set base) from the live order
+        quantity for every descendant component of this set.
+
+        ``set_component_qty`` is the quantity of a component per 1 unit of its
+        immediate set parent.  In a consistent state it always equals
+        ``product_uom_qty / parent_qty``; the two only diverge when a component
+        quantity is edited directly.  Because the sum-mode parent price is
+        derived from ``set_component_qty`` while the allocations use the live
+        ``product_uom_qty``, a stale base qty makes the parent price disagree
+        with the sum of its component allocations.  Resyncing here restores the
+        invariant ``parent price_unit x parent_qty == SUM(allocations)``.
+        """
+        self.ensure_one()
+        parent_qty = self.product_uom_qty or 1.0
+        for child in self.set_child_line_ids:
+            new_base_qty = (child.product_uom_qty or 0.0) / parent_qty
+            if child.set_component_qty != new_base_qty:
+                child.with_context(rental_set_expanding=True).write({
+                    'set_component_qty': new_base_qty,
+                })
+            # Recurse into nested sets (base qty is relative to each level).
+            if child.is_set and child.set_child_line_ids:
+                child._resync_set_component_base_qty()
 
     def _get_top_set_parent(self):
         """Walk up the set hierarchy and return the top-level set parent line."""
