@@ -1,5 +1,6 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
+from odoo.tools import float_is_zero
 
 
 # Hard ceiling on nesting depth -- protects against accidental infinite loops
@@ -604,17 +605,25 @@ class SaleOrderLine(models.Model):
                 comp_vals['technical_price_unit'] = 0.0
                 super(SaleOrderLine, set_components).write(comp_vals)
 
-                # Notify via chatter
-                orders = set_components.mapped('order_id')
-                for order in orders:
-                    order.message_post(
-                        body=_(
-                            "A component price change was ignored: component "
-                            "lines in a Rental Set do not carry a price. The "
-                            "set price is defined on the parent set line only."
-                        ),
-                        message_type='notification',
-                    )
+                # Only notify on a genuine attempt to set a NON-ZERO component
+                # price. A write echoing price_unit = 0 (the sale order form
+                # re-sends the stored field on every save) is a no-op on lines
+                # that are already 0, and must not spam the chatter.
+                precision = self.env['decimal.precision'].precision_get(
+                    'Product Price',
+                )
+                attempted = vals.get('price_unit') or 0.0
+                if not float_is_zero(attempted, precision_digits=precision):
+                    orders = set_components.mapped('order_id')
+                    for order in orders:
+                        order.message_post(
+                            body=_(
+                                "A component price change was ignored: component "
+                                "lines in a Rental Set do not carry a price. The "
+                                "set price is defined on the parent set line only."
+                            ),
+                            message_type='notification',
+                        )
                 return True
 
         # Capture set-parent lines before mutation
