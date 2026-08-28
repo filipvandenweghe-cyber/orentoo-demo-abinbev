@@ -1,5 +1,5 @@
 # Rental Scanning — Prepared-Package & Set Picking
-*Functional & Technical Requirements — Backend / Inventory + Barcode (v4, FINAL)*
+*Functional & Technical Requirements — Backend / Inventory + Barcode (v5, FINAL)*
 
 | | |
 |---|---|
@@ -19,7 +19,7 @@ The feature grew out of a real defect: scanning / moving a physical package on a
 - The picking reserved LOOSE stock, not the package. The reserved move-lines carried no package_id, while the package's quants were unreserved.
 - The operation type had "Move Entire Packages" (show_entire_packs) = False, so the package was not treated as a movable unit.
 - The barcode routine _processPackage, finding no move-lines already linked to the scanned package, falls through to "create a line per quant" — adding NEW lines for the package contents ON TOP of the loose reservation. Result: doubling / demand-0 overflow.
-- Separately confirmed NOT to be the cause: the rental-set logic is not gated by operation type (it works on all outbound steps), and the zero-demand set header is barcode-safe (it has no move-line, so it produces no barcode line and never blocks button_validate, where the rental_set _sanity_check override neutralises it).
+- Separately confirmed NOT to be the cause: the rental-set logic is not gated by operation type (it works on all outbound steps), and the zero-demand set header is barcode-safe (no move-line, so no barcode line, and it never blocks button_validate, where the rental_set _sanity_check override neutralises it).
 **Conclusion: the fix is to reconcile a scanned package against EXISTING demand (never create overflow), and to build the "prepared package / set scan" flow on top of that. Hence rental_scanning.**
 # 3. Confirmations (verified in code)
 - Multi-step routes: rental-set grouping, the "[Set] Product" prefix, indentation and the zero-demand header work identically on Pick, Pack, Ship and single-step Delivery (keys off "outbound sale chain": sale_id set AND return_id not set — no per-operation-type branch).
@@ -97,7 +97,7 @@ The feature grew out of a real defect: scanning / moving a physical package on a
 - The serial-tracked crate itself travels and returns, so it IS the durable reusable label — "travels + reused" comes from the product, not a customised package.
 - Per-crate identity via serial; native reusable behaviour; no clutter.
 *Cons:*
-- No live "package at customer" object — container-at-customer traceability is via the delivery record + serial.
+- No live "package at customer" object — traceability is via the delivery record + serial.
 - Container return is reconciled per serial + quantity, not as one package unit.
 **Decision & rationale:** Option (iii). The serial-tracked crate gives travels-and-reused from the product side with almost no customisation. (ii-a) has no reuse lifecycle and clutters customer locations; (ii-b) adds custom code to make a reusable box travel — unnecessary given the serial already does the job.
 ## 4.5 Overflow handling (package holds more than demand)
@@ -160,7 +160,7 @@ The feature grew out of a real defect: scanning / moving a physical package on a
 - Redundant with native reusable types + the set barcode; extra surface; keeps packages non-generic.
 **Decision & rationale:** Reuse native reusable package types; drop the custom metadata field (packages stay generic).
 ## 4.9 Other confirmed choices
-- Serial-scan is equivalent to package-scan (PPB-13): scanning a content serial resolves to the package holding it and picks that package's actual contents. Chosen because it is contents-driven (truthful) and uses a native serial->package lookup; the alternative (serial drives a set) was rejected in 4.2.
+- Serial-scan is equivalent to package-scan (PPB-13): scanning a content serial resolves to the package holding it and picks that package's actual contents. If the serial is NOT in a package, it falls back to a standard single-serial scan (only that product is added). Chosen because it is contents-driven (truthful) and uses a native serial->package lookup; the alternative (serial drives a set) was rejected in 4.2.
 - Set-scan (PPB-12) is a SEPARATE, definition-driven feature: it fills a set's expected components when no physical package exists. Kept separate from the container scan so physical truth and a template are never conflated.
 - Multilingual (en + nl + fr): Belgian operation; warehouse staff use Dutch/French.
 ## 4.10 Decision summary
@@ -175,7 +175,7 @@ The feature grew out of a real defect: scanning / moving a physical package on a
 | D-06 | Any operation type | Outbound only |
 | D-07 | One module rental_scanning | Inside rental_set / many modules |
 | D-08 | Native reusable package types | Custom reusable-label field |
-| D-09 | Serial-scan = package-scan | Serial drives a set |
+| D-09 | Serial-scan = package-scan (loose serial = standard) | Serial drives a set |
 | D-10 | Set-scan separate (definition-driven) | Merge with container scan |
 | D-11 | Multilingual en/nl/fr | English only |
 
@@ -186,7 +186,7 @@ The feature grew out of a real defect: scanning / moving a physical package on a
 | Reusable package type | package_use="reusable": scanning adds contents; box emptied and reused. Basis for 4.8. |
 | Box freed after use | _check_entire_pack attaches a DISPOSABLE box to the goods (travels) but leaves a REUSABLE box behind (stays, reused). Basis for 4.4. |
 | Serial / lot tracking | A package's quants carry lot_id; delivery/return verified per serial/lot. Basis for 4.3/4.9. |
-| Usable packages in barcode | _get_usable_packages loads reusable / location-less packages into the barcode client. |
+| Usable packages in barcode | _get_usable_packages loads reusable / location-less packages into the client. |
 | Kits / phantom BoM | Explodes a product into components on delivery — same idea as our sets; no need to switch. |
 | Product packaging (UoM) | "Sell in packs of N" as a UoM — different concept, not used. |
 | Returnable container | No first-class object; standard practice is a tracked product (4.3). |
@@ -195,7 +195,7 @@ The feature grew out of a real defect: scanning / moving a physical package on a
 - The container is a generic stock.package; picking is reconciled against ACTUAL contents (never a set). Contents may include serial/lot-tracked items (the crate) and untracked items (glasses).
 - The returnable crate is a serial-tracked PRODUCT (Eurobak 40): delivered, returned, re-packed next cycle, counted like any product. Its serial is the durable, reusable identity.
 - Option (iii): at delivery the stock.package dissolves; the crate serial + glasses go to the client as products. The physical crate (the serial) provides "travels + reused"; no traveling-package customisation.
-- Serial-scan equals package-scan: scanning the crate serial resolves to its current package and picks that package's actual contents.
+- Serial-scan equals package-scan: scanning the crate serial resolves to its current package and picks that package's actual contents. If the crate serial is NOT in a package, scanning it adds only that crate (standard single-serial behaviour) - no container/set expansion.
 - Ad-hoc containers are supported alongside pre-prepared ones (native Put in Pack); same reconciliation.
 *Accepted caveats: serial-scan only behaves as a "container" while the crate is actually packed; container-at-customer traceability is via the delivery record + serial (not a live package); glasses are fungible so their return is verified by count while the crate is verified per-serial.*
 # 7. Functional Requirements
@@ -208,22 +208,22 @@ The feature grew out of a real defect: scanning / moving a physical package on a
 | PPB-04 | No silent overflow | Never exceed demand silently (fixes the demand-0/40/80 doubling). |
 | PPB-05 | Exact-fit + manual add | Accepted when contents fit within remaining demand; extra stock is added by the picker MANUALLY (explicit, never auto-pulled). |
 | PPB-06 | Overflow -> ask to split | More than needed -> prompt to split (yes = up to demand, keep remainder; no = reject). |
-| PPB-07 | Partial allowed | Covers only part of demand -> accept, fill what it can, leave rest open. |
+| PPB-07 | Partial allowed | Covers only part of demand -> accept, fill what it can, leave rest open (a backorder carries the remaining demand). |
 | PPB-08 | Set header no-op | Zero-demand header never blocks validation. |
 | PPB-09 | Any operation type | Outbound, internal AND inbound (e.g. regroup returns before stock). |
 | PPB-10 | Container lifecycle (iii) | Package dissolves at delivery; the serial-tracked product is the reusable identity; return verifies crate per-serial and glasses by count. |
 | PPB-11 | Backend parity | A backend action applies identical reconciliation/validation to the scan. |
 | PPB-12 | Set barcode (definition-driven) | Scanning a set barcode fills the set's DEFINED components (PPB-05/06 rules); no physical package; does not pin serials. |
-| PPB-13 | Serial-scan -> container | Scanning a content serial resolves to its current package and picks that package's ACTUAL contents (= package scan). |
+| PPB-13 | Serial-scan -> container (with fallback) | Scanning a content serial resolves to its current package and picks that package's ACTUAL contents (= package scan). If the serial's product is NOT currently in a package, it falls back to STANDARD behaviour: only that one product/serial is added, nothing else (no container/set expansion). |
 | PPB-14 | Multilingual | All user-facing strings translatable; nl & fr ship with the en source. |
 
 # 8. Reconciliation Algorithm (scan/assign)
-1. Resolve the scanned barcode: package -> that package; content serial -> the package holding it (PPB-13); set barcode -> the set's defined components (PPB-12). Verify PPB-02 location.
+1. Resolve the scanned barcode: package -> that package; content serial -> the package holding it (PPB-13) or, if the serial is NOT in any package, just that single product/serial (standard); set barcode -> the set's defined components (PPB-12). Verify PPB-02 location.
 1. Read contents as product -> qty (actual contents, or set components), incl. lot/serial.
 1. Compute remaining demand per product (open moves).
 1. For each product: package_qty <= remaining_demand -> apply (fill, cap, stamp package+lot/serial); product not demanded -> reject with a clear message (add manually per PPB-05).
 1. package_qty > remaining_demand -> prompt "split the package?" (PPB-06).
-1. Leave the zero-demand header untouched; proceed to button_validate; partial demand stays open.
+1. Leave the zero-demand header untouched; proceed to button_validate; partial demand -> backorder.
 # 9. Acceptance Test Scenarios
 
 | ID | Scenario | Expected result |
@@ -240,11 +240,13 @@ The feature grew out of a real defect: scanning / moving a physical package on a
 | T-10 | Serial-scan -> container | Picks the crate's current package contents. |
 | T-11 | Serial delivery/return | Serial recorded on delivery; return reconciles serial + glasses. |
 | T-12 | Multilingual | Error and split-prompt strings translated in nl/fr. |
+| T-13 | Loose serial (not packed) | Scanning a package-product serial that is NOT inside any package adds only that one product/serial (standard) - no container/set expansion (PPB-13). |
+| T-14 | Partial delivery + backorder | A package (or set/serial scan) covers only PART of a delivery: validate creates a backorder with the remaining demand; the set header is recreated on the backorder; no overflow; scanning the rest on the backorder completes it. Verifies partial fulfilment, backorder demand carry-over, header re-creation and reconciliation together. |
 
-*Note on existing coverage gaps (rationale for the new tests): today's rental_set suite has NO physical-package tests; its multi-step tests select the warehouse via search([],limit=1) (may miss the order's warehouse in a multi-warehouse DB) and contain silent early-returns that can pass without asserting. T-01..T-12 close these gaps.*
+*Note on existing coverage gaps (rationale for the new tests): today's rental_set suite has NO physical-package tests; its multi-step tests select the warehouse via search([],limit=1) (may miss the order's warehouse in a multi-warehouse DB) and contain silent early-returns that can pass without asserting. T-01..T-14 close these gaps.*
 # 10. Module Architecture
 - Single module rental_scanning, depending only on stock_barcode (+ composes with rental_set).
-- Reuse native reusable package types; the module adds strict-fit rules, the split prompt, serial-scan resolution, the set barcode, and set composition.
+- Reuse native reusable package types; the module adds strict-fit rules, the split prompt, serial-scan resolution (with loose-serial fallback), the set barcode, and set composition.
 - Keep improvements that patch the SAME barcode JS method (e.g. _processPackage) in this one module and compose them in a single patch; always call super().
 # 11. Technical Findings (appendix, for implementers)
 - Barcode payload sends all move_ids, but the client builds display LINES from move_line_ids; a zero-demand header move has no move-line, so it renders no line.
@@ -256,8 +258,8 @@ The feature grew out of a real defect: scanning / moving a physical package on a
 # 12. Scope Boundaries
 **In scope:**
 - Manual scan/assign of a package (or crate serial, or set barcode) on any operation.
-- Strict-fit reconciliation with split prompt; serial/lot handling; multilingual.
-- All routes; set-header no-op; ad-hoc and pre-prepared containers.
+- Strict-fit reconciliation with split prompt; serial/lot handling; loose-serial fallback; multilingual.
+- All routes; set-header no-op; ad-hoc and pre-prepared containers; partial + backorder.
 **Out of scope (with reason):**
 - Automated kitting/preparation build — done manually to keep scope limited.
 - Auto-reservation of a matching package (Option B) — deferred; heavy matching logic.
