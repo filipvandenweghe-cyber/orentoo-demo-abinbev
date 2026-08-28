@@ -180,13 +180,17 @@ class TestRentalScanning(TestRentalScanningCommon):
         res = picking.rental_scanning_scan('BAK03')
         self.assertEqual(res['status'], 'need_split')
         self.assertIn('Glas', res['message'])
+        # warning mentions the package will be lost
+        self.assertIn('BAK03', res['message'])
         # nothing applied yet
         self.assertEqual(self._mv(picking, self.glas).quantity, 0)
-        # confirm split -> capped at demand
+        # confirm split -> capped at demand, and the package is dissolved
         res2 = picking.rental_scanning_scan('BAK03', allow_split=True)
         self.assertEqual(res2['status'], 'partial')
         self.assertEqual(self._mv(picking, self.glas).quantity, 40)
         self.assertEqual(self._mv(picking, self.eurobak).quantity, 1)
+        self.assertFalse(self.bak03.quant_ids,
+                         "a split dissolves (unpacks) the whole package")
 
     # ── BAK04 : wrong source location (T-06) ────────────────────────────────
     def test_bak04_wrong_location(self):

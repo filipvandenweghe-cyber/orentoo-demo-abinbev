@@ -311,3 +311,8 @@ Routes a scanned package in the Barcode app through the same server reconciliati
 - Scanning a SET barcode or a SERIAL directly in the Barcode app (these go through native product/lot handling, not _processPackage). They work today via the backend "Assign Prepared Package" action.
 - Scan-to-remove in the Barcode app: semantics overlap with idempotent re-scan; needs a UX decision. Backend "Remove Scanned Package" works.
 - Browser/tour verification required (cannot be run headless in this env).
+
+# 16. Addendum v9 — split dissolves the whole package
+- Decision: on a split (package has more than needed), the package is dissolved ENTIRELY, not partially. The whole package is unpacked (stock.package.unpack) so all contents become loose; the needed portion is picked, the excess stays loose at the source, and the package no longer exists in the system.
+- The split confirmation warning now states the package will be dissolved and lost.
+- Rationale: once a package is opened to remove excess, it is no longer a sealed package; keeping a partial package (source=result) is illegal in Odoo (cannot split a package across two locations). For multi-step consolidation use Put in Pack (Path A) to build a fresh traveling package.
