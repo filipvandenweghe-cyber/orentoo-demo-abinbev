@@ -217,7 +217,7 @@ class StockPicking(models.Model):
                 overflow.append((product_id, have, need))
         return not_demanded, overflow
 
-    def _rs_overflow_message(self, overflow):
+    def _rs_overflow_message(self, overflow, package):
         Product = self.env['product.product']
         parts = []
         for product_id, have, need in overflow:
@@ -231,10 +231,11 @@ class StockPicking(models.Model):
         return _(
             "This package holds more than this operation still needs:\n"
             "%(lines)s\n\n"
-            "Splitting (opening) the package is real work.  Confirm to take "
-            "only what is needed and leave the remainder in the package, or "
-            "cancel.",
+            "Confirming will OPEN the package: only what is needed is taken and "
+            "the excess is left loose at the source.  WARNING — the package "
+            "%(pkg)s will be dissolved and will no longer exist in the system.",
             lines="\n".join(parts),
+            pkg=package.name if package else '',
         )
 
     # ── reconciliation core ──────────────────────────────────────────────────
@@ -333,22 +334,32 @@ class StockPicking(models.Model):
             return {
                 'status': 'need_split',
                 'overflow': overflow,
-                'message': self._rs_overflow_message(overflow),
+                'message': self._rs_overflow_message(overflow, package),
             }
 
-        # PPB-17: only retain the package (result package) when the WHOLE
-        # package moves — i.e. no overflow/split.  A split would put the same
-        # package in two locations, which Odoo forbids.
+        # A split "opens" the package: dissolve it ENTIRELY.  Unpack all its
+        # contents to loose stock (the package is lost); the used portion is
+        # then picked loose and the excess stays loose at the source.  A
+        # non-split scan keeps the package and may retain it (PPB-17).
+        dissolve_pack = bool(package) and bool(overflow)
         retain = bool(package) and not overflow
+        if dissolve_pack:
+            # Free this picking's reservations on the scanned products first,
+            # then open the package.
+            self.move_line_ids.filtered(
+                lambda l: not l.picked and l.product_id.id in grouped).unlink()
+            package.unpack()
+        fill_package = self.env['stock.package'] if dissolve_pack else package
 
         for product_id, entries in grouped.items():
-            remaining = self._rs_remaining(product_id, package)
+            remaining = self._rs_remaining(product_id, fill_package)
             moves = self._rs_open_moves(product_id)
 
             # Drop the loose reservation (picked=False) and any prior pick
-            # from THIS package; keep picks from other sources.
+            # from the fill package; keep picks from other sources.
             stale = moves.move_line_ids.filtered(
-                lambda l: not l.picked or (package and l.package_id == package))
+                lambda l: not l.picked
+                or (fill_package and l.package_id == fill_package))
             stale.unlink()
 
             if float_compare(remaining, 0.0, precision_digits=prec) <= 0:
@@ -362,9 +373,10 @@ class StockPicking(models.Model):
                 place = min(qty, remaining - acc)
                 if float_is_zero(place, precision_digits=prec):
                     continue
-                to_place.append((place, lot_id, src_pkg))
+                to_place.append(
+                    (place, lot_id, False if dissolve_pack else src_pkg))
                 acc += place
-            self._rs_place(moves, product_id, to_place, package, retain)
+            self._rs_place(moves, product_id, to_place, fill_package, retain)
 
         return {'status': 'partial' if overflow else 'applied'}
 
