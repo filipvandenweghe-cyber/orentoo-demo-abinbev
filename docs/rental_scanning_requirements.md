@@ -300,3 +300,14 @@ Answers "can I scan the package again at the follow-up warehouse step?"
 - T-19 nested general pack: scanning an outer pack fills from nested BAK01.
 - PPB-17 internal: scanning on an internal-destination transfer retains the package as result_package.
 - PPB-17 customer: scanning on a customer delivery leaves no result package (dissolve).
+
+# 15. Addendum v8 — Phase 2: Barcode app integration
+Routes a scanned package in the Barcode app through the same server reconciliation as the backend, replacing the native line-per-quant overflow.
+## 15.1 Implemented
+- OWL patch of BarcodePickingModel._processPackage: when a package WITH contents is scanned on a stock.picking, it calls stock.picking.rental_scanning_scan (strict-fit, idempotent, PPB-17) and reloads the client (trigger "refresh").
+- Overflow -> a confirmation dialog ("Split & continue") re-calls with allow_split; server errors (not demanded / wrong location) show as notifications.
+- Defensive: empty packages, package types, put-in-pack, batches and any unexpected failure fall back to native behaviour, so the patch cannot break the Barcode app.
+## 15.2 Deferred (follow-up, need UX/browser verification)
+- Scanning a SET barcode or a SERIAL directly in the Barcode app (these go through native product/lot handling, not _processPackage). They work today via the backend "Assign Prepared Package" action.
+- Scan-to-remove in the Barcode app: semantics overlap with idempotent re-scan; needs a UX decision. Backend "Remove Scanned Package" works.
+- Browser/tour verification required (cannot be run headless in this env).

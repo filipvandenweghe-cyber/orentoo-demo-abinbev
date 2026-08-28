@@ -1,0 +1,87 @@
+/** @odoo-module **/
+
+import BarcodePickingModel from "@stock_barcode/models/barcode_picking_model";
+import { patch } from "@web/core/utils/patch";
+import { _t } from "@web/core/l10n/translation";
+import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
+
+/**
+ * Route a scanned *source* package (a package that has contents) through the
+ * server-side rental_scanning reconciliation instead of the native
+ * "create a line per quant" path — which over-fills demand.  The server
+ * method is strict-fit, idempotent, and honours PPB-17 (retain through
+ * internal steps / dissolve at the customer).
+ *
+ * Everything else (empty packages, package types, put-in-pack, batches, …)
+ * falls back to the native behaviour.  Any unexpected failure also falls
+ * back, so this patch cannot break the Barcode app.
+ */
+patch(BarcodePickingModel.prototype, {
+    async _processPackage(barcodeData) {
+        const recPackage = barcodeData && barcodeData.package;
+        const hasContents =
+            recPackage &&
+            recPackage.contained_quant_ids &&
+            recPackage.contained_quant_ids.length;
+
+        if (this.resModel === "stock.picking" && recPackage && hasContents) {
+            let handled = false;
+            try {
+                handled = await this._rentalScanningApply(recPackage.name);
+            } catch (e) {
+                handled = false; // never break the app — fall back to native
+            }
+            if (handled) {
+                barcodeData.stopped = true;
+                return;
+            }
+        }
+        return super._processPackage(...arguments);
+    },
+
+    /**
+     * Call the server reconciliation for one scanned package.
+     * @returns {Promise<boolean>} true if the scan was handled here.
+     */
+    async _rentalScanningApply(barcode, allowSplit = false) {
+        // Persist any pending client-side changes first.
+        await this.save();
+
+        let result;
+        try {
+            result = await this.orm.call(
+                "stock.picking",
+                "rental_scanning_scan",
+                [[this.resId], barcode],
+                { allow_split: allowSplit }
+            );
+        } catch (error) {
+            const message =
+                (error && error.data && error.data.message) ||
+                (error && error.message) ||
+                _t("The scanned package could not be applied.");
+            this.notification(message, { type: "danger" });
+            return true; // handled — do not fall back to the native overflow path
+        }
+
+        if (result && result.status === "need_split") {
+            this.dialogService.add(ConfirmationDialog, {
+                title: _t("Split package?"),
+                body:
+                    result.message ||
+                    _t("This package holds more than this operation needs."),
+                confirmLabel: _t("Split & continue"),
+                confirm: async () => {
+                    await this._rentalScanningApply(barcode, true);
+                },
+                cancelLabel: _t("Cancel"),
+                cancel: () => {},
+            });
+            return true;
+        }
+
+        // applied / partial -> reload the client from the server.
+        this.trigger("refresh");
+        return true;
+    },
+});
