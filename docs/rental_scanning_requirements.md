@@ -285,3 +285,18 @@ Follows live testing on PRO/OUT/00004. Adds two requirements and clarifies the s
 - T-16 Idempotent re-scan: scanning the same package twice does not double.
 - T-17 Remove: removing a scanned package reverts its quantity to open demand.
 - T-18 Swap: remove a partial package, scan a full one -> single-source fill.
+
+# 14. Addendum v7 — PPB-17 (retain through internal steps) + nested packs
+Answers "can I scan the package again at the follow-up warehouse step?"
+## 14.1 PPB-17 — retain the scanned package through internal steps
+- When a scanned package fills a move whose DESTINATION is an internal location (Pick->Output, Pack->...), the scanned package is set as the RESULT (destination) package, so the goods travel inside it and it can be re-scanned at the next step.
+- When the destination is the CUSTOMER (final delivery), no result package is set -> the pack dissolves and goods ship as products (Option iii reconfirmed: "dissolve at delivery" = at the customer, not internal handoffs).
+- Side effect: at internal steps the native "Packages" column now shows the pack (it has a result package); at the customer delivery it stays empty.
+## 14.2 Nested / general packs (Path A) — supported natively
+- Odoo supports package-in-package (parent_package_id, contained_quant_ids aggregates all nested children). Our scan reads contained_quant_ids, so scanning a general/outer pack fulfils demand from nested packages (e.g. BAK01 inside a GENERAL pack).
+- Each line is stamped with the quant's ACTUAL (innermost) source package, not the outer one, so traceability stays correct.
+- Put-in-Pack sets a result package that travels downstream, so consolidating into a general pack and scanning it at the next step also works natively.
+## 14.3 Tests added
+- T-19 nested general pack: scanning an outer pack fills from nested BAK01.
+- PPB-17 internal: scanning on an internal-destination transfer retains the package as result_package.
+- PPB-17 customer: scanning on a customer delivery leaves no result package (dissolve).
