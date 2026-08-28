@@ -328,6 +328,49 @@ class TestRentalScanning(TestRentalScanningCommon):
             self.assertFalse(line.result_package_id,
                              "customer delivery must dissolve the pack")
 
+    # ── PPB-17: rental/customer-outside-warehouse dissolves ────────────────
+    def test_ppb17_rental_location_dissolves(self):
+        # sale_renting sends rented goods to an INTERNAL-usage location that
+        # lives OUTSIDE the warehouse ('Customers/Rental').  That is the final
+        # delivery and must dissolve — not retain (regression: BAK03 -> BAK03).
+        rental_loc = self.env['stock.location'].create({
+            'name': 'Rental', 'usage': 'internal',
+            'location_id': self.customer_loc.id,
+        })
+        picking = self.env['stock.picking'].create({
+            'picking_type_id': self.warehouse.out_type_id.id,
+            'location_id': self.stock_loc.id,
+            'location_dest_id': rental_loc.id,
+        })
+        for product, qty in [(self.eurobak, 1), (self.glas, 40)]:
+            self.env['stock.move'].create({
+                'name': product.name, 'product_id': product.id,
+                'product_uom_qty': qty, 'product_uom': product.uom_id.id,
+                'picking_id': picking.id,
+                'location_id': self.stock_loc.id,
+                'location_dest_id': rental_loc.id,
+            })
+        picking.action_confirm()
+        picking.do_unreserve()
+        picking.rental_scanning_scan('BAK01')
+        for line in picking.move_line_ids.filtered('quantity'):
+            self.assertFalse(line.result_package_id,
+                             "rental delivery (outside WH) must dissolve")
+
+    # ── PPB-17: a split must NOT retain the package ────────────────────────
+    def test_ppb17_split_does_not_retain(self):
+        # Internal step, but BAK03 overflows (41 Glas) -> split -> must NOT
+        # retain (a package cannot be split across two locations).
+        picking = self._make_internal(
+            [(self.eurobak, 1), (self.glas, 40)], self.other_loc)
+        self.assertEqual(
+            picking.rental_scanning_scan('BAK03')['status'], 'need_split')
+        res = picking.rental_scanning_scan('BAK03', allow_split=True)
+        self.assertEqual(res['status'], 'partial')
+        for line in picking.move_line_ids.filtered('quantity'):
+            self.assertFalse(line.result_package_id,
+                             "a split must not retain the package")
+
     # ── Unknown barcode ─────────────────────────────────────────────────────
     def test_unknown_barcode_raises(self):
         picking = self._set_delivery()

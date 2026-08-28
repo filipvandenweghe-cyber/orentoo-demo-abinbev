@@ -1,6 +1,6 @@
 {
     'name': 'Rental Scanning',
-    'version': '19.0.1.3.0',
+    'version': '19.0.1.4.0',
     'summary': 'Prepared-package & set picking via scanning (late binding)',
     'description': (
         'Assign a pre-prepared physical package (or a set barcode, or a '

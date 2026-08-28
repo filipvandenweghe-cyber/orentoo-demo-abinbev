@@ -239,16 +239,35 @@ class StockPicking(models.Model):
 
     # ── reconciliation core ──────────────────────────────────────────────────
 
-    def _rs_place(self, moves, product_id, to_place, package):
+    def _rs_is_internal_step(self, move):
+        """True only for a genuine in-warehouse follow-up step (e.g.
+        Pick -> Output), i.e. the destination is an internal location that
+        belongs to the operation's own warehouse.
+
+        NOT true for the final rental/customer delivery: sale_renting sends
+        rented goods to a 'Customers/Rental' location whose usage is
+        'internal' but which lives OUTSIDE the warehouse tree — that must
+        dissolve (Option iii)."""
+        dest = move.location_dest_id
+        if dest.usage != 'internal':
+            return False
+        wh = move.picking_id.picking_type_id.warehouse_id
+        view = wh.view_location_id if wh else False
+        if not (view and dest.parent_path and view.parent_path):
+            return False
+        return dest.parent_path.startswith(view.parent_path)
+
+    def _rs_place(self, moves, product_id, to_place, package, retain):
         """Create picked move-lines for ``to_place`` =
         [(qty, lot_id, src_package_id), ...], distributed across ``moves`` and
         capped at each move's remaining (demand minus already-picked).
 
-        PPB-17: when the move's destination is an INTERNAL location (a
-        follow-up warehouse step), the scanned ``package`` is retained as the
-        result (destination) package so it travels and can be re-scanned
-        downstream.  When the destination is the customer (final delivery) the
-        pack dissolves — no result package (Option iii)."""
+        PPB-17: retain the scanned ``package`` as the result (destination)
+        package ONLY for a genuine in-warehouse internal step AND only when
+        the WHOLE package moves (``retain`` — no split/overflow).  Otherwise
+        leave it dissolved: no result package (the final customer/rental
+        delivery, or any partial scan — a package cannot be split across two
+        locations)."""
         prec = self._rs_precision()
         MoveLine = self.env['stock.move.line']
         caps = []
@@ -268,7 +287,8 @@ class StockPicking(models.Model):
                     idx += 1
                     continue
                 take = min(remaining, cap)
-                keep_pack = package and move.location_dest_id.usage == 'internal'
+                keep_pack = retain and package \
+                    and self._rs_is_internal_step(move)
                 MoveLine.create({
                     'move_id': move.id,
                     'picking_id': self.id,
@@ -316,6 +336,11 @@ class StockPicking(models.Model):
                 'message': self._rs_overflow_message(overflow),
             }
 
+        # PPB-17: only retain the package (result package) when the WHOLE
+        # package moves — i.e. no overflow/split.  A split would put the same
+        # package in two locations, which Odoo forbids.
+        retain = bool(package) and not overflow
+
         for product_id, entries in grouped.items():
             remaining = self._rs_remaining(product_id, package)
             moves = self._rs_open_moves(product_id)
@@ -339,7 +364,7 @@ class StockPicking(models.Model):
                     continue
                 to_place.append((place, lot_id, src_pkg))
                 acc += place
-            self._rs_place(moves, product_id, to_place, package)
+            self._rs_place(moves, product_id, to_place, package, retain)
 
         return {'status': 'partial' if overflow else 'applied'}
 
