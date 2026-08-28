@@ -11,7 +11,17 @@
                 <button name="%(rental_scanning_assign_action)d"
                         type="action" string="Assign Prepared Package"
                         invisible="state in ('done', 'cancel', 'draft')"/>
+                <button name="%(rental_scanning_remove_action)d"
+                        type="action" string="Remove Scanned Package"
+                        invisible="state in ('done', 'cancel', 'draft')
+                                   or not rental_scanning_package_ids"/>
             </button>
+            <xpath expr="//page[@name='operations']/field[@name='move_ids']"
+                   position="before">
+                <field name="rental_scanning_package_ids" widget="many2many_tags"
+                       readonly="1"
+                       invisible="not rental_scanning_package_ids"/>
+            </xpath>
         </field>
     </record>
 
