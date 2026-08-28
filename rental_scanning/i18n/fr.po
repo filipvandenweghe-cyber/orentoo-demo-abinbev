@@ -1,0 +1,75 @@
+# French translations for the rental_scanning module.
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Report-Msgid-Bugs-To: \n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#. module: rental_scanning
+#: model_terms:ir.ui.view,arch_db:rental_scanning.rental_scanning_assign_view_form
+#: model:ir.actions.act_window,name:rental_scanning.rental_scanning_assign_action
+msgid "Assign Prepared Package"
+msgstr "Affecter un colis préparé"
+
+#. module: rental_scanning
+#: model_terms:ir.ui.view,arch_db:rental_scanning.view_picking_form_rental_scanning
+msgid "Assign Prepared Package"
+msgstr "Affecter un colis préparé"
+
+#. module: rental_scanning
+#: model_terms:ir.ui.view,arch_db:rental_scanning.rental_scanning_assign_view_form
+msgid "Split &amp; continue"
+msgstr "Diviser &amp; continuer"
+
+#. module: rental_scanning
+#: model_terms:ir.ui.view,arch_db:rental_scanning.rental_scanning_assign_view_form
+msgid "Apply"
+msgstr "Appliquer"
+
+#. module: rental_scanning
+#: model:ir.model.fields,field_description:rental_scanning.field_rental_scanning_assign__barcode
+msgid "Package / Set / Serial"
+msgstr "Colis / Ensemble / Numéro de série"
+
+#. module: rental_scanning
+#: code:addons/rental_scanning/models/stock_picking.py:0
+msgid ""
+"Package %(pkg)s is located in %(loc)s, which is not part of the source "
+"location %(src)s of this operation."
+msgstr ""
+"Le colis %(pkg)s se trouve dans %(loc)s, qui ne fait pas partie de "
+"l'emplacement source %(src)s de cette opération."
+
+#. module: rental_scanning
+#: code:addons/rental_scanning/models/stock_picking.py:0
+msgid ""
+"These products are not required by this operation: %(names)s.\n"
+"If extra stock is genuinely needed, add a line manually."
+msgstr ""
+"Ces produits ne sont pas requis par cette opération : %(names)s.\n"
+"Si du stock supplémentaire est réellement nécessaire, ajoutez une ligne "
+"manuellement."
+
+#. module: rental_scanning
+#: code:addons/rental_scanning/models/stock_picking.py:0
+msgid ""
+"Barcode '%(bc)s' was not recognised as a package, set or serial number."
+msgstr ""
+"Le code-barres '%(bc)s' n'a pas été reconnu comme colis, ensemble ou numéro "
+"de série."
+
+#. module: rental_scanning
+#: code:addons/rental_scanning/wizard/rental_scanning_assign.py:0
+msgid ""
+"This package holds more of some products than this operation still needs.\n"
+"Opening (splitting) the package is real work — confirm to consume only what "
+"is needed and leave the remainder in the package, or cancel."
+msgstr ""
+"Ce colis contient, pour certains produits, plus que ce dont cette opération "
+"a encore besoin.\n"
+"Ouvrir (diviser) le colis est un vrai travail — confirmez pour ne consommer "
+"que le nécessaire et laisser le reste dans le colis, ou annulez."
