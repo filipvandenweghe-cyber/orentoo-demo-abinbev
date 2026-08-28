@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="rental_scanning_assign_view_form" model="ir.ui.view">
+        <field name="name">rental.scanning.assign.form</field>
+        <field name="model">rental.scanning.assign</field>
+        <field name="arch" type="xml">
+            <form string="Assign Prepared Package">
+                <group>
+                    <field name="picking_id" invisible="1"/>
+                    <field name="split_pending" invisible="1"/>
+                    <field name="barcode"
+                           placeholder="Scan or type a package / set / serial…"
+                           readonly="split_pending"/>
+                    <field name="info" nolabel="1" colspan="2"
+                           invisible="not split_pending"/>
+                </group>
+                <footer>
+                    <button string="Apply" name="action_apply" type="object"
+                            class="btn-primary" invisible="split_pending"/>
+                    <button string="Split &amp; continue"
+                            name="action_confirm_split" type="object"
+                            class="btn-primary" invisible="not split_pending"/>
+                    <button string="Cancel" class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="rental_scanning_assign_action" model="ir.actions.act_window">
+        <field name="name">Assign Prepared Package</field>
+        <field name="res_model">rental.scanning.assign</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="stock.model_stock_picking"/>
+        <field name="binding_view_types">form</field>
+        <field name="context">{'default_picking_id': active_id}</field>
+    </record>
+
+</odoo>

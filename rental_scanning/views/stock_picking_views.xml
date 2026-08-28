@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- "Assign prepared package" button on the picking form (PPB-11). -->
+    <record id="view_picking_form_rental_scanning" model="ir.ui.view">
+        <field name="name">stock.picking.form.rental.scanning</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <button name="action_assign" position="after">
+                <button name="%(rental_scanning_assign_action)d"
+                        type="action" string="Assign Prepared Package"
+                        invisible="state in ('done', 'cancel', 'draft')"/>
+            </button>
+        </field>
+    </record>
+
+</odoo>
