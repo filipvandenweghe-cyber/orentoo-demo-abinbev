@@ -17,6 +17,37 @@ import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_d
  * back, so this patch cannot break the Barcode app.
  */
 patch(BarcodePickingModel.prototype, {
+    /**
+     * Intercept a scanned SET barcode (a rental-set product) and fill the
+     * set's components via the server reconciliation (PPB-12).  All other
+     * scans fall through to native handling.
+     */
+    async _processBarcode(barcode) {
+        if (this.resModel === "stock.picking") {
+            let data = null;
+            try {
+                const filters = {
+                    all: { company_id: [false].concat(this._getCompanyId() || []) },
+                };
+                data = await this._parseBarcode(barcode, filters);
+            } catch (e) {
+                data = null;
+            }
+            if (data && data.product && data.product.is_rental_set) {
+                let handled = false;
+                try {
+                    handled = await this._rentalScanningApply(barcode);
+                } catch (e) {
+                    handled = false;
+                }
+                if (handled) {
+                    return;
+                }
+            }
+        }
+        return super._processBarcode(...arguments);
+    },
+
     async _processPackage(barcodeData) {
         const recPackage = barcodeData && barcodeData.package;
         const hasContents =
