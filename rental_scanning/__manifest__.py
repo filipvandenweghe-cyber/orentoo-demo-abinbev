@@ -1,6 +1,6 @@
 {
     'name': 'Rental Scanning',
-    'version': '19.0.1.2.0',
+    'version': '19.0.1.3.0',
     'summary': 'Prepared-package & set picking via scanning (late binding)',
     'description': (
         'Assign a pre-prepared physical package (or a set barcode, or a '
@@ -24,6 +24,11 @@
         'wizard/rental_scanning_assign_views.xml',
         'views/stock_picking_views.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'rental_scanning/static/src/js/rental_scanning_barcode.js',
+        ],
+    },
     'installable': True,
     'application': False,
     'auto_install': False,
