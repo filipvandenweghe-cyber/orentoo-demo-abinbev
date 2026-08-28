@@ -16,12 +16,11 @@
                         invisible="state in ('done', 'cancel', 'draft')
                                    or not rental_scanning_package_ids"/>
             </button>
-            <xpath expr="//page[@name='operations']/field[@name='move_ids']"
-                   position="before">
+            <field name="backorder_id" position="after">
                 <field name="rental_scanning_package_ids" widget="many2many_tags"
-                       readonly="1"
+                       string="Scanned Packages" readonly="1"
                        invisible="not rental_scanning_package_ids"/>
-            </xpath>
+            </field>
         </field>
     </record>
 
