@@ -87,7 +87,11 @@ class StockPicking(models.Model):
     # ── content extraction ───────────────────────────────────────────────────
 
     def _rs_contents_from_package(self, package):
-        """Return [{'product_id', 'qty', 'lot_id'}] from a package's quants."""
+        """Return contents from a package's quants.
+
+        ``src_package_id`` is the quant's ACTUAL (innermost) package so that
+        nested/general packs stamp the correct source package on each line.
+        """
         prec = self._rs_precision()
         contents = []
         for quant in package.contained_quant_ids:
@@ -98,24 +102,27 @@ class StockPicking(models.Model):
                 'product_id': quant.product_id.id,
                 'qty': quant.quantity,
                 'lot_id': quant.lot_id.id or False,
+                'src_package_id': quant.package_id.id or package.id,
             })
         return contents
 
     def _rs_contents_from_set(self, set_product):
-        """Return flattened set components as contents (no lots)."""
+        """Return flattened set components as contents (no lots/packages)."""
         result = []
         self.env['product.template']._collect_leaf_components_for_availability(
             set_product.product_tmpl_id, 1.0, result)
         return [
-            {'product_id': product.id, 'qty': qty, 'lot_id': False}
+            {'product_id': product.id, 'qty': qty, 'lot_id': False,
+             'src_package_id': False}
             for product, qty in result
         ]
 
     def _rs_group_contents(self, contents):
-        """Group content lines by product -> [(qty, lot_id), ...]."""
+        """Group content lines by product -> [(qty, lot_id, src_package_id)]."""
         grouped = defaultdict(list)
         for c in contents:
-            grouped[c['product_id']].append((c['qty'], c['lot_id']))
+            grouped[c['product_id']].append(
+                (c['qty'], c['lot_id'], c.get('src_package_id', False)))
         return grouped
 
     # ── barcode resolution ───────────────────────────────────────────────────
@@ -155,7 +162,7 @@ class StockPicking(models.Model):
                 return ('package', pkg, self._rs_contents_from_package(pkg))
             return ('product', lot.product_id,
                     [{'product_id': lot.product_id.id, 'qty': 1.0,
-                      'lot_id': lot.id}])
+                      'lot_id': lot.id, 'src_package_id': False}])
 
         # 3) A product barcode -> set (definition-driven) or plain product
         product = Product.search([('barcode', '=', barcode)], limit=1)
@@ -163,7 +170,8 @@ class StockPicking(models.Model):
             if product.is_rental_set:
                 return ('set', product, self._rs_contents_from_set(product))
             return ('product', product,
-                    [{'product_id': product.id, 'qty': 1.0, 'lot_id': False}])
+                    [{'product_id': product.id, 'qty': 1.0, 'lot_id': False,
+                      'src_package_id': False}])
 
         return (False, False, [])
 
@@ -199,7 +207,7 @@ class StockPicking(models.Model):
         prec = self._rs_precision()
         not_demanded, overflow = [], []
         for product_id, entries in grouped.items():
-            have = sum(q for q, _lot in entries)
+            have = sum(q for q, _lot, _pkg in entries)
             demand = self._rs_demand_for(product_id)
             if float_compare(demand, 0.0, precision_digits=prec) <= 0:
                 not_demanded.append(product_id)
@@ -232,9 +240,15 @@ class StockPicking(models.Model):
     # ── reconciliation core ──────────────────────────────────────────────────
 
     def _rs_place(self, moves, product_id, to_place, package):
-        """Create picked move-lines for ``to_place`` = [(qty, lot_id), ...],
-        distributed across ``moves`` and capped at each move's remaining
-        (demand minus already-picked-on-that-move)."""
+        """Create picked move-lines for ``to_place`` =
+        [(qty, lot_id, src_package_id), ...], distributed across ``moves`` and
+        capped at each move's remaining (demand minus already-picked).
+
+        PPB-17: when the move's destination is an INTERNAL location (a
+        follow-up warehouse step), the scanned ``package`` is retained as the
+        result (destination) package so it travels and can be re-scanned
+        downstream.  When the destination is the customer (final delivery) the
+        pack dissolves — no result package (Option iii)."""
         prec = self._rs_precision()
         MoveLine = self.env['stock.move.line']
         caps = []
@@ -245,7 +259,7 @@ class StockPicking(models.Model):
 
         filled = self.env['stock.move']
         idx = 0
-        for qty, lot_id in to_place:
+        for qty, lot_id, src_pkg in to_place:
             remaining = qty
             while float_compare(remaining, 0.0, precision_digits=prec) > 0 \
                     and idx < len(caps):
@@ -254,6 +268,7 @@ class StockPicking(models.Model):
                     idx += 1
                     continue
                 take = min(remaining, cap)
+                keep_pack = package and move.location_dest_id.usage == 'internal'
                 MoveLine.create({
                     'move_id': move.id,
                     'picking_id': self.id,
@@ -262,7 +277,8 @@ class StockPicking(models.Model):
                     'location_dest_id': move.location_dest_id.id,
                     'quantity': take,
                     'picked': True,
-                    'package_id': package.id if package else False,
+                    'package_id': src_pkg or (package.id if package else False),
+                    'result_package_id': package.id if keep_pack else False,
                     'lot_id': lot_id or False,
                 })
                 caps[idx][1] = cap - take
@@ -315,13 +331,13 @@ class StockPicking(models.Model):
 
             # Build the placement list, capped at the remaining demand.
             to_place, acc = [], 0.0
-            for qty, lot_id in entries:
+            for qty, lot_id, src_pkg in entries:
                 if float_compare(acc, remaining, precision_digits=prec) >= 0:
                     break
                 place = min(qty, remaining - acc)
                 if float_is_zero(place, precision_digits=prec):
                     continue
-                to_place.append((place, lot_id))
+                to_place.append((place, lot_id, src_pkg))
                 acc += place
             self._rs_place(moves, product_id, to_place, package)
 

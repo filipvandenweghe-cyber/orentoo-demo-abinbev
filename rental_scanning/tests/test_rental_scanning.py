@@ -118,6 +118,23 @@ class TestRentalScanningCommon(TransactionCase):
             picking.do_unreserve()
         return picking
 
+    def _make_internal(self, demand, dest):
+        picking = self.env['stock.picking'].create({
+            'picking_type_id': self.warehouse.int_type_id.id,
+            'location_id': self.stock_loc.id,
+            'location_dest_id': dest.id,
+        })
+        for product, qty in demand:
+            self.env['stock.move'].create({
+                'name': product.name, 'product_id': product.id,
+                'product_uom_qty': qty, 'product_uom': product.uom_id.id,
+                'picking_id': picking.id,
+                'location_id': self.stock_loc.id, 'location_dest_id': dest.id,
+            })
+        picking.action_confirm()
+        picking.do_unreserve()
+        return picking
+
     def _mv(self, picking, product):
         return picking.move_ids.filtered(lambda m: m.product_id == product)[:1]
 
@@ -276,6 +293,40 @@ class TestRentalScanning(TestRentalScanningCommon):
             sum(backorder.move_ids.filtered(
                 lambda m: m.product_id == self.glas).mapped('product_uom_qty')),
             5)
+
+    # ── Nested / general pack (T-19, Path A) ────────────────────────────────
+    def test_nested_general_pack(self):
+        general = self.env['stock.package'].create({'name': 'GENERAL'})
+        self.bak01.parent_package_id = general.id
+        picking = self._set_delivery()
+        res = picking.rental_scanning_scan('GENERAL')
+        self.assertEqual(res['status'], 'applied')
+        self.assertEqual(self._mv(picking, self.eurobak).quantity, 1)
+        self.assertEqual(self._mv(picking, self.glas).quantity, 40)
+        # Source stamped as the ACTUAL inner package (BAK01), not the outer one.
+        line = self._mv(picking, self.glas).move_line_ids.filtered('quantity')[:1]
+        self.assertEqual(line.package_id, self.bak01)
+
+    # ── PPB-17: retain package on internal destination ─────────────────────
+    def test_ppb17_internal_dest_retains_package(self):
+        picking = self._make_internal(
+            [(self.eurobak, 1), (self.glas, 40)], self.other_loc)
+        picking.rental_scanning_scan('BAK01')
+        lines = picking.move_line_ids.filtered('quantity')
+        self.assertTrue(lines)
+        for line in lines:
+            self.assertEqual(line.result_package_id, self.bak01,
+                             "internal step must retain the scanned package")
+
+    # ── PPB-17: dissolve at customer destination (Option iii) ──────────────
+    def test_ppb17_customer_dest_dissolves(self):
+        picking = self._set_delivery()  # destination = customer
+        picking.rental_scanning_scan('BAK01')
+        lines = picking.move_line_ids.filtered('quantity')
+        self.assertTrue(lines)
+        for line in lines:
+            self.assertFalse(line.result_package_id,
+                             "customer delivery must dissolve the pack")
 
     # ── Unknown barcode ─────────────────────────────────────────────────────
     def test_unknown_barcode_raises(self):
