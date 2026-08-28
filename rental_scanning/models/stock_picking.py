@@ -13,6 +13,12 @@ class StockPicking(models.Model):
     The scan is reconciled against the picking's OPEN demand — it never
     creates demand-0 overflow lines and never infers a set from a container
     (see docs/rental_scanning_requirements, PPB-01..14).
+
+    Important semantics (Odoo 19): on a reserved ("Ready") picking the
+    reservation is stored as ``move.line.quantity`` with ``picked = False``.
+    Such reserved-but-not-picked lines are treated here as *available
+    capacity* to be re-pointed at the scanned package — NOT as already
+    fulfilled.  Only ``picked = True`` lines count as fulfilled.
     """
 
     _inherit = 'stock.picking'
@@ -22,6 +28,10 @@ class StockPicking(models.Model):
     def _rs_precision(self):
         return self.env['decimal.precision'].precision_get(
             'Product Unit of Measure')
+
+    @staticmethod
+    def _rs_fmt(value):
+        return ('%g' % value)
 
     def _rs_open_moves(self, product_id=None):
         """Open (not done/cancel) moves, optionally filtered by product."""
@@ -34,20 +44,28 @@ class StockPicking(models.Model):
             moves = moves.filtered(lambda m: m.product_id.id == product_id)
         return moves
 
-    def _rs_remaining_for(self, product_id):
-        """Remaining open demand for a product (demand minus done qty)."""
-        remaining = 0.0
-        for move in self._rs_open_moves(product_id):
-            remaining += move.product_uom_qty - move.quantity
-        return max(remaining, 0.0)
+    def _rs_demand_for(self, product_id):
+        """Total demand for a product across open moves."""
+        return sum(self._rs_open_moves(product_id).mapped('product_uom_qty'))
 
-    def _rs_open_demand(self):
-        """Return {product_id: remaining_qty} for all open moves."""
-        self.ensure_one()
-        demand = defaultdict(float)
-        for move in self._rs_open_moves():
-            demand[move.product_id.id] += move.product_uom_qty - move.quantity
-        return {p: q for p, q in demand.items() if q > 0}
+    def _rs_picked_other(self, product_id, package):
+        """Quantity already PICKED for this product from a source OTHER than
+        ``package`` (real fulfilment we must preserve).  Lines sourced from
+        ``package`` are excluded so that re-scanning the same package is
+        idempotent."""
+        total = 0.0
+        for move in self._rs_open_moves(product_id):
+            for line in move.move_line_ids:
+                if line.picked and not (package and line.package_id == package):
+                    total += line.quantity
+        return total
+
+    def _rs_remaining(self, product_id, package):
+        """How much of ``product_id`` still needs to be picked, treating any
+        prior pick from ``package`` as replaceable (idempotent re-scan)."""
+        remaining = self._rs_demand_for(product_id) \
+            - self._rs_picked_other(product_id, package)
+        return max(remaining, 0.0)
 
     # ── content extraction ───────────────────────────────────────────────────
 
@@ -56,8 +74,8 @@ class StockPicking(models.Model):
         prec = self._rs_precision()
         contents = []
         for quant in package.contained_quant_ids:
-            if float_is_zero(quant.quantity, precision_digits=prec) \
-                    or quant.quantity < 0:
+            if quant.quantity < 0 \
+                    or float_is_zero(quant.quantity, precision_digits=prec):
                 continue
             contents.append({
                 'product_id': quant.product_id.id,
@@ -76,16 +94,22 @@ class StockPicking(models.Model):
             for product, qty in result
         ]
 
+    def _rs_group_contents(self, contents):
+        """Group content lines by product -> [(qty, lot_id), ...]."""
+        grouped = defaultdict(list)
+        for c in contents:
+            grouped[c['product_id']].append((c['qty'], c['lot_id']))
+        return grouped
+
     # ── barcode resolution ───────────────────────────────────────────────────
 
     def _rs_resolve_barcode(self, barcode):
         """Resolve a scanned barcode.
 
-        Returns a tuple:
-          ('package', package, contents)
-          ('set',     product, contents)
-          ('product', product, contents)   # single loose serial/product
-          (False, False, [])               # unknown
+        Returns a tuple ``(kind, record, contents)`` where kind is one of
+        'package' / 'set' / 'product', or ``(False, False, [])`` if unknown.
+        A *packed* serial resolves to its package; a *loose* serial resolves
+        to a single-serial product add (PPB-13).
         """
         self.ensure_one()
         barcode = (barcode or '').strip()
@@ -104,9 +128,6 @@ class StockPicking(models.Model):
         # 2) A lot / serial number
         lot = Lot.search([('name', '=', barcode)], limit=1)
         if lot:
-            # Is this serial currently inside a package? -> behave as a
-            # package scan (PPB-13).  Otherwise fall back to standard
-            # single-serial behaviour.
             quant = self.env['stock.quant'].search([
                 ('lot_id', '=', lot.id),
                 ('package_id', '!=', False),
@@ -133,16 +154,16 @@ class StockPicking(models.Model):
 
     def _rs_check_package_location(self, package):
         """A package is eligible only if it is at (a sublocation of) the
-        picking's source location.  Location-less packages are allowed
-        (they will be located by their quants / reservation)."""
+        picking's source location.  Location-less packages are allowed."""
         self.ensure_one()
         loc = package.location_id
         if not loc:
             return
         source = self.location_id
-        if not (loc == source or loc.parent_path
-                and source.parent_path
-                and loc.parent_path.startswith(source.parent_path)):
+        ok = loc == source or (
+            loc.parent_path and source.parent_path
+            and loc.parent_path.startswith(source.parent_path))
+        if not ok:
             raise UserError(_(
                 "Package %(pkg)s is located in %(loc)s, which is not part of "
                 "the source location %(src)s of this operation.",
@@ -150,106 +171,142 @@ class StockPicking(models.Model):
                 src=source.display_name,
             ))
 
-    # ── reconciliation core ──────────────────────────────────────────────────
+    # ── validation & messaging ───────────────────────────────────────────────
 
-    def _rs_validate_fit(self, contents):
-        """Validate contents against open demand.
+    def _rs_validate_fit(self, grouped, package):
+        """Return (not_demanded, overflow).
 
-        Returns (not_demanded, overflow) where:
-          not_demanded = [product_id, ...]   (products absent from demand)
-          overflow     = [(product_id, qty, remaining), ...]
+          not_demanded = [product_id, ...]           (absent from the order)
+          overflow     = [(product_id, have, need)]  (more than still needed)
         """
         prec = self._rs_precision()
-        per_product = defaultdict(float)
-        for c in contents:
-            per_product[c['product_id']] += c['qty']
-
         not_demanded, overflow = [], []
-        for product_id, qty in per_product.items():
-            remaining = self._rs_remaining_for(product_id)
-            if float_compare(remaining, 0.0, precision_digits=prec) <= 0:
+        for product_id, entries in grouped.items():
+            have = sum(q for q, _lot in entries)
+            demand = self._rs_demand_for(product_id)
+            if float_compare(demand, 0.0, precision_digits=prec) <= 0:
                 not_demanded.append(product_id)
-            elif float_compare(qty, remaining, precision_digits=prec) > 0:
-                overflow.append((product_id, qty, remaining))
+                continue
+            need = self._rs_remaining(product_id, package)
+            if float_compare(have, need, precision_digits=prec) > 0:
+                overflow.append((product_id, have, need))
         return not_demanded, overflow
 
-    def _rs_fill(self, product_id, qty, lot_id, package):
-        """Fill up to ``qty`` of a product into its open moves, sourced from
-        ``package`` (and ``lot_id`` if tracked).  Reuses empty reserved
-        move-lines where possible; never exceeds demand."""
+    def _rs_overflow_message(self, overflow):
+        Product = self.env['product.product']
+        parts = []
+        for product_id, have, need in overflow:
+            parts.append(_(
+                "- %(name)s: package has %(have)s but only %(need)s still "
+                "needed (%(excess)s too many)",
+                name=Product.browse(product_id).display_name,
+                have=self._rs_fmt(have), need=self._rs_fmt(need),
+                excess=self._rs_fmt(have - need),
+            ))
+        return _(
+            "This package holds more than this operation still needs:\n"
+            "%(lines)s\n\n"
+            "Splitting (opening) the package is real work.  Confirm to take "
+            "only what is needed and leave the remainder in the package, or "
+            "cancel.",
+            lines="\n".join(parts),
+        )
+
+    # ── reconciliation core ──────────────────────────────────────────────────
+
+    def _rs_place(self, moves, product_id, to_place, package):
+        """Create picked move-lines for ``to_place`` = [(qty, lot_id), ...],
+        distributed across ``moves`` and capped at each move's remaining
+        (demand minus already-picked-on-that-move)."""
         prec = self._rs_precision()
         MoveLine = self.env['stock.move.line']
-        remaining = qty
-        for move in self._rs_open_moves(product_id):
-            if float_compare(remaining, 0.0, precision_digits=prec) <= 0:
-                break
-            move_rem = move.product_uom_qty - move.quantity
-            if float_compare(move_rem, 0.0, precision_digits=prec) <= 0:
-                continue
-            take = min(remaining, move_rem)
+        caps = []
+        for move in moves:
+            picked_here = sum(
+                line.quantity for line in move.move_line_ids if line.picked)
+            caps.append([move, move.product_uom_qty - picked_here])
 
-            # Reuse an existing, still-empty move-line (typically the
-            # loose reservation) instead of creating a duplicate.
-            reusable = move.move_line_ids.filtered(
-                lambda l: float_is_zero(l.quantity, precision_digits=prec)
-                and not l.lot_id
-                and not l.package_id
-            )[:1]
-            vals = {
-                'quantity': take,
-                'picked': True,
-                'package_id': package.id if package else False,
-            }
-            if lot_id:
-                vals['lot_id'] = lot_id
-            if reusable:
-                reusable.write(vals)
-            else:
+        filled = self.env['stock.move']
+        idx = 0
+        for qty, lot_id in to_place:
+            remaining = qty
+            while float_compare(remaining, 0.0, precision_digits=prec) > 0 \
+                    and idx < len(caps):
+                move, cap = caps[idx]
+                if float_compare(cap, 0.0, precision_digits=prec) <= 0:
+                    idx += 1
+                    continue
+                take = min(remaining, cap)
                 MoveLine.create({
                     'move_id': move.id,
                     'picking_id': self.id,
                     'product_id': product_id,
                     'location_id': move.location_id.id,
                     'location_dest_id': move.location_dest_id.id,
-                    **vals,
+                    'quantity': take,
+                    'picked': True,
+                    'package_id': package.id if package else False,
+                    'lot_id': lot_id or False,
                 })
-            move.picked = True
-            remaining -= take
+                caps[idx][1] = cap - take
+                remaining -= take
+                filled |= move
+        filled.picked = True
 
     def _rs_apply(self, contents, package=False, allow_split=False):
         """Reconcile ``contents`` against the picking demand.
 
-        Returns a result dict:
-          {'status': 'applied'}                       everything consumed
-          {'status': 'partial'}                       consumed up to demand (split)
-          {'status': 'need_split', 'overflow': [...]} caller must confirm split
-        Raises UserError when a product is not demanded by this operation.
+        Returns:
+          {'status': 'applied'}                                consumed fully
+          {'status': 'partial'}                                consumed up to demand
+          {'status': 'need_split', 'overflow': [...], 'message': str}
+        Raises UserError when a product is not on this operation.
         """
         self.ensure_one()
         prec = self._rs_precision()
-        not_demanded, overflow = self._rs_validate_fit(contents)
+        grouped = self._rs_group_contents(contents)
 
+        not_demanded, overflow = self._rs_validate_fit(grouped, package)
         if not_demanded:
-            names = self.env['product.product'].browse(not_demanded).mapped(
-                'display_name')
+            names = self.env['product.product'].browse(
+                not_demanded).mapped('display_name')
             raise UserError(_(
-                "These products are not required by this operation: %(names)s.\n"
+                "These products are in the package but not required by this "
+                "operation: %(names)s.\n"
                 "If extra stock is genuinely needed, add a line manually.",
                 names=", ".join(names),
             ))
-
         if overflow and not allow_split:
-            return {'status': 'need_split', 'overflow': overflow}
+            return {
+                'status': 'need_split',
+                'overflow': overflow,
+                'message': self._rs_overflow_message(overflow),
+            }
 
-        # Apply — cap every product at its remaining demand.
-        for c in contents:
-            remaining = self._rs_remaining_for(c['product_id'])
+        for product_id, entries in grouped.items():
+            remaining = self._rs_remaining(product_id, package)
+            moves = self._rs_open_moves(product_id)
+
+            # Drop the loose reservation (picked=False) and any prior pick
+            # from THIS package; keep picks from other sources.
+            stale = moves.move_line_ids.filtered(
+                lambda l: not l.picked or (package and l.package_id == package))
+            stale.unlink()
+
             if float_compare(remaining, 0.0, precision_digits=prec) <= 0:
                 continue
-            take = min(c['qty'], remaining)
-            if float_is_zero(take, precision_digits=prec):
-                continue
-            self._rs_fill(c['product_id'], take, c['lot_id'], package)
+
+            # Build the placement list, capped at the remaining demand.
+            to_place, acc = [], 0.0
+            for qty, lot_id in entries:
+                if float_compare(acc, remaining, precision_digits=prec) >= 0:
+                    break
+                place = min(qty, remaining - acc)
+                if float_is_zero(place, precision_digits=prec):
+                    continue
+                to_place.append((place, lot_id))
+                acc += place
+            self._rs_place(moves, product_id, to_place, package)
 
         return {'status': 'partial' if overflow else 'applied'}
 
@@ -258,9 +315,9 @@ class StockPicking(models.Model):
     def rental_scanning_scan(self, barcode, allow_split=False):
         """Scan a package / set / serial and reconcile it against demand.
 
-        This is the single server entry point used by both the backend
-        action (PPB-11) and the Barcode client.  Returns the ``_rs_apply``
-        result dict, plus 'kind' and (for packages) 'package'.
+        Single server entry point for both the backend action (PPB-11) and
+        the Barcode client.  Returns the ``_rs_apply`` result dict enriched
+        with 'kind' and (for packages) 'package'.
         """
         self.ensure_one()
         kind, record, contents = self._rs_resolve_barcode(barcode)
@@ -272,6 +329,10 @@ class StockPicking(models.Model):
         package = record if kind == 'package' else False
         if package:
             self._rs_check_package_location(package)
+
+        if not contents:
+            raise UserError(_(
+                "Nothing to add: the scanned %(kind)s is empty.", kind=kind))
 
         result = self._rs_apply(contents, package=package,
                                 allow_split=allow_split)

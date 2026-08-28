@@ -87,8 +87,13 @@ class TestRentalScanningCommon(TransactionCase):
             self._set_stock(product, location, qty, lot=lot, package=package)
         return package
 
-    def _make_delivery(self, demand):
-        """demand = [(product, qty)]; returns a confirmed, unreserved picking."""
+    def _make_delivery(self, demand, reserve=False):
+        """demand = [(product, qty)]; returns a confirmed picking.
+
+        reserve=False -> unreserved (clean slate);
+        reserve=True  -> reserved ("Ready"), i.e. move-lines with
+        quantity set and picked=False (the real-world case).
+        """
         picking = self.env['stock.picking'].create({
             'picking_type_id': self.warehouse.out_type_id.id,
             'location_id': self.stock_loc.id,
@@ -105,7 +110,10 @@ class TestRentalScanningCommon(TransactionCase):
                 'location_dest_id': self.customer_loc.id,
             })
         picking.action_confirm()
-        picking.do_unreserve()  # clean slate: no reserved lines
+        if reserve:
+            picking.action_assign()
+        else:
+            picking.do_unreserve()  # clean slate: no reserved lines
         return picking
 
     def _move(self, picking, product):
@@ -229,3 +237,37 @@ class TestRentalScanning(TestRentalScanningCommon):
             sum(backorder.move_ids.filtered(
                 lambda m: m.product_id == self.glas).mapped('product_uom_qty')),
             20)
+
+    def test_15_works_on_reserved_picking(self):
+        # Real-world case: picking already reserved -> move.quantity == demand
+        # with picked=False.  The scan must still recognise the demand
+        # (regression: previously mis-flagged demanded products as "not
+        # required").
+        serial = self._new_serial('EB-0015')
+        pkg = self._make_package('BAK15', [
+            (self.eurobak, 1, serial), (self.glas, 40, None)])
+        picking = self._make_delivery(
+            [(self.eurobak, 1), (self.glas, 40)], reserve=True)
+        self.assertTrue(all(not l.picked for l in picking.move_line_ids),
+                        "precondition: reserved but nothing picked")
+
+        res = picking.rental_scanning_scan('BAK15')
+
+        self.assertEqual(res['status'], 'applied')
+        eb = self._move(picking, self.eurobak)
+        self.assertEqual(eb.quantity, 1)
+        picked = eb.move_line_ids.filtered('quantity')
+        self.assertTrue(all(l.picked for l in picked))
+        self.assertEqual(picked[:1].package_id, pkg)
+        self.assertEqual(self._move(picking, self.glas).quantity, 40)
+
+    def test_16_rescan_same_package_is_idempotent(self):
+        serial = self._new_serial('EB-0016')
+        self._make_package('BAK16', [
+            (self.eurobak, 1, serial), (self.glas, 40, None)])
+        picking = self._make_delivery([(self.eurobak, 1), (self.glas, 40)])
+        picking.rental_scanning_scan('BAK16')
+        res = picking.rental_scanning_scan('BAK16')  # again
+        self.assertEqual(res['status'], 'applied')
+        self.assertEqual(self._move(picking, self.glas).quantity, 40)
+        self.assertEqual(self._move(picking, self.eurobak).quantity, 1)
