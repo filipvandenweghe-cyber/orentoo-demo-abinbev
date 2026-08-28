@@ -35,12 +35,9 @@ class RentalScanningAssign(models.TransientModel):
         if status == 'need_split':
             self.write({
                 'split_pending': True,
-                'info': _(
-                    "This package holds more of some products than this "
-                    "operation still needs.\n"
-                    "Opening (splitting) the package is real work — confirm to "
-                    "consume only what is needed and leave the remainder in the "
-                    "package, or cancel."),
+                'info': result.get('message') or _(
+                    "This package holds more than this operation still needs. "
+                    "Confirm to take only what is needed, or cancel."),
             })
             return self._reopen()
         # applied / partial -> done
