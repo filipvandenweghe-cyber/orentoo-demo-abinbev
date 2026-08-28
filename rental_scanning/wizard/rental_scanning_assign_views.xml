@@ -47,7 +47,8 @@
                 <group>
                     <field name="picking_id" invisible="1"/>
                     <field name="available_package_ids" invisible="1"/>
-                    <field name="package_id"/>
+                    <field name="package_id"
+                           options="{'no_create': True, 'no_open': True}"/>
                 </group>
                 <footer>
                     <button string="Remove" name="action_remove" type="object"
