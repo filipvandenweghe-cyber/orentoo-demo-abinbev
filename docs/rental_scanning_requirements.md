@@ -267,3 +267,21 @@ The feature grew out of a real defect: scanning / moving a physical package on a
 - A new product for the package, or package-ID=serial coupling — rejected (4.3).
 - A custom reusable-label metadata field — rejected (4.8); native types suffice.
 - Making a package physically travel (Option ii) — rejected (4.4) in favour of the serial.
+
+# 13. Addendum v6 — Remove/Unassign, Package Visibility, Put-in-Pack
+Follows live testing on PRO/OUT/00004. Adds two requirements and clarifies the source-vs-result package model. Reconfirms Option (iii).
+## 13.1 PPB-15 — Remove / unassign a scanned package
+- A previously scanned package can be removed from a transfer: the picked move-lines sourced from that package are cleared, reverting that quantity to OPEN demand, so a different package can be scanned instead.
+- No "replace" convenience (by decision): to swap, remove then scan the new package. This keeps the behaviour explicit.
+- Backend: "Remove Scanned Package" action on the picking (visible only when a scanned package is present). Barcode scan-to-remove is Phase 2.
+*Rationale: scanning is idempotent PER package, but a partial package (e.g. BAK02 = 35 of 40) leaves 5 open; scanning a full package (BAK01) afterwards would only top-up the 5 (mixed sources). Removing first gives a clean single-source pick. Rejected: an implicit "replace" (hidden, harder to reason about).*
+## 13.2 PPB-16 — Package visibility & source-vs-result packages
+- Applied SOURCE packages are shown on the picking via a "Scanned Packages" field (many2many tags). The Operations move list shows product/demand/qty; the per-line source package is only in the detailed move-lines — hence the picking-level field for at-a-glance visibility.
+- Prepared packages (BAK01/02) are SOURCE packages you pick FROM (set as the move-line package_id).
+- "Put the whole operation in one pack, then just scan that pack at checkout" = native Odoo Put-in-Pack, which builds ONE result/destination package; in a multi-step flow the next step scans that single package and the reconciliation fills it. Source scan and result Put-in-Pack are complementary.
+- Option (iii) reconfirmed: at the FINAL customer delivery the pack dissolves (goods leave as products; the crate travels as a serial-tracked product). "One pack to scan" is therefore ideal for internal handoffs (Pick/Pack/Ship), not retained at the customer.
+## 13.3 Additional acceptance tests
+- T-15 Reserved picking: scanning works when the picking is already reserved (move.quantity == demand, picked=False) — regression from live testing.
+- T-16 Idempotent re-scan: scanning the same package twice does not double.
+- T-17 Remove: removing a scanned package reverts its quantity to open demand.
+- T-18 Swap: remove a partial package, scan a full one -> single-source fill.

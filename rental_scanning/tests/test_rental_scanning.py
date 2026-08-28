@@ -271,3 +271,38 @@ class TestRentalScanning(TestRentalScanningCommon):
         self.assertEqual(res['status'], 'applied')
         self.assertEqual(self._move(picking, self.glas).quantity, 40)
         self.assertEqual(self._move(picking, self.eurobak).quantity, 1)
+
+    def test_17_remove_scanned_package(self):
+        serial = self._new_serial('EB-0017')
+        pkg = self._make_package('BAK17', [
+            (self.eurobak, 1, serial), (self.glas, 40, None)])
+        picking = self._make_delivery([(self.eurobak, 1), (self.glas, 40)])
+        picking.rental_scanning_scan('BAK17')
+        self.assertIn(pkg, picking.rental_scanning_package_ids)
+        self.assertEqual(self._move(picking, self.glas).quantity, 40)
+
+        picking.rental_scanning_remove_package('BAK17')
+        self.assertNotIn(pkg, picking.rental_scanning_package_ids)
+        self.assertEqual(self._move(picking, self.glas).quantity, 0)
+        self.assertEqual(self._move(picking, self.eurobak).quantity, 0)
+
+    def test_18_swap_partial_for_full(self):
+        # Q2: remove a partial package and pick a full one (no mixing).
+        s1 = self._new_serial('EB-0018a')
+        self._make_package('BAKPART', [
+            (self.eurobak, 1, s1), (self.glas, 35, None)])
+        s2 = self._new_serial('EB-0018b')
+        self._make_package('BAKFULL', [
+            (self.eurobak, 1, s2), (self.glas, 40, None)])
+        picking = self._make_delivery([(self.eurobak, 1), (self.glas, 40)])
+
+        picking.rental_scanning_scan('BAKPART')
+        self.assertEqual(self._move(picking, self.glas).quantity, 35)
+
+        picking.rental_scanning_remove_package('BAKPART')
+        picking.rental_scanning_scan('BAKFULL')
+        self.assertEqual(self._move(picking, self.glas).quantity, 40)
+        self.assertEqual(self._move(picking, self.eurobak).quantity, 1)
+        glas_line = self._move(picking, self.glas).move_line_ids.filtered(
+            'quantity')[:1]
+        self.assertEqual(glas_line.package_id.name, 'BAKFULL')

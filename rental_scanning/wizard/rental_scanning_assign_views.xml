@@ -38,4 +38,33 @@
         <field name="context">{'default_picking_id': active_id}</field>
     </record>
 
+    <!-- Remove / unassign a scanned package (PPB-15). -->
+    <record id="rental_scanning_remove_view_form" model="ir.ui.view">
+        <field name="name">rental.scanning.remove.form</field>
+        <field name="model">rental.scanning.remove</field>
+        <field name="arch" type="xml">
+            <form string="Remove Scanned Package">
+                <group>
+                    <field name="picking_id" invisible="1"/>
+                    <field name="available_package_ids" invisible="1"/>
+                    <field name="package_id"/>
+                </group>
+                <footer>
+                    <button string="Remove" name="action_remove" type="object"
+                            class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="rental_scanning_remove_action" model="ir.actions.act_window">
+        <field name="name">Remove Scanned Package</field>
+        <field name="res_model">rental.scanning.remove</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_picking_id': active_id}</field>
+    </record>
+
 </odoo>

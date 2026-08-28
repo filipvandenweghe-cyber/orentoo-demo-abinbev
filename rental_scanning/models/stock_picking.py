@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from odoo import _, models
+from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 from odoo.tools import float_compare, float_is_zero
 
@@ -22,6 +22,23 @@ class StockPicking(models.Model):
     """
 
     _inherit = 'stock.picking'
+
+    # Source packages currently applied (picked) on this transfer — shown on
+    # the form so an applied package is visible at a glance (Q1 / PPB-16).
+    rental_scanning_package_ids = fields.Many2many(
+        'stock.package',
+        string='Scanned Packages',
+        compute='_compute_rental_scanning_package_ids',
+        help="Source packages currently picked on this transfer via scanning.",
+    )
+
+    @api.depends('move_line_ids.package_id', 'move_line_ids.picked',
+                 'move_line_ids.quantity')
+    def _compute_rental_scanning_package_ids(self):
+        for picking in self:
+            picking.rental_scanning_package_ids = picking.move_line_ids.filtered(
+                lambda l: l.picked and l.package_id and l.quantity
+            ).mapped('package_id')
 
     # ── helpers ──────────────────────────────────────────────────────────────
 
@@ -340,3 +357,27 @@ class StockPicking(models.Model):
         if package:
             result['package'] = package.id
         return result
+
+    # ── remove / unassign a scanned package (PPB-15) ─────────────────────────
+
+    def rental_scanning_remove_package(self, package):
+        """Remove a previously-scanned source package from this transfer.
+
+        Clears the picked move-lines sourced from ``package`` (reverting that
+        quantity to open demand) so another package can be scanned instead.
+        Does not create a replacement (no 'replace' by design).
+        """
+        self.ensure_one()
+        if isinstance(package, str):
+            package = self.env['stock.package'].search(
+                [('name', '=', package.strip())], limit=1)
+        if not package:
+            raise UserError(_("Unknown package."))
+        lines = self.move_line_ids.filtered(
+            lambda l: l.picked and l.package_id == package)
+        if not lines:
+            raise UserError(_(
+                "Package %(pkg)s is not applied to this transfer.",
+                pkg=package.name))
+        lines.unlink()
+        return True

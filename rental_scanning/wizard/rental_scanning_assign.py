@@ -1,4 +1,4 @@
-from odoo import _, fields, models
+from odoo import _, api, fields, models
 
 
 class RentalScanningAssign(models.TransientModel):
@@ -45,3 +45,29 @@ class RentalScanningAssign(models.TransientModel):
 
     def action_confirm_split(self):
         return self.action_apply(allow_split=True)
+
+
+class RentalScanningRemove(models.TransientModel):
+    """Remove / unassign a previously scanned package (PPB-15)."""
+
+    _name = 'rental.scanning.remove'
+    _description = 'Remove Prepared Package from Picking'
+
+    picking_id = fields.Many2one(
+        'stock.picking', string='Transfer', required=True, ondelete='cascade')
+    available_package_ids = fields.Many2many(
+        'stock.package', compute='_compute_available_package_ids')
+    package_id = fields.Many2one(
+        'stock.package', string='Package to remove', required=True,
+        domain="[('id', 'in', available_package_ids)]")
+
+    @api.depends('picking_id')
+    def _compute_available_package_ids(self):
+        for wiz in self:
+            wiz.available_package_ids = \
+                wiz.picking_id.rental_scanning_package_ids
+
+    def action_remove(self):
+        self.ensure_one()
+        self.picking_id.rental_scanning_remove_package(self.package_id)
+        return {'type': 'ir.actions.act_window_close'}
