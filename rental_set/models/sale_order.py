@@ -9,19 +9,29 @@ class SaleOrder(models.Model):
         'order_line.is_rental', 'order_line.product_uom_qty',
         'order_line.qty_delivered', 'order_line.qty_returned',
         'order_line.is_set',
+        'picking_ids.state', 'picking_ids.return_id',
     )
     def _compute_has_action_lines(self):
-        """Exclude rental-set HEADER lines from the pickup/return status.
+        """Refine the rental pickup/return status.
 
-        A set parent (and nested set headers) carry no stock moves, so their
-        qty_delivered stays 0 and would make the order look permanently
-        'to pick up'.  The real pickup/return state comes from the set's
-        component lines.
+        1) Exclude rental-set HEADER lines: a set parent (and nested set
+           headers) carry no stock moves, so their qty_delivered stays 0 and
+           would make the order look permanently 'to pick up'.  The real
+           status comes from the set's component lines.
+
+        2) The Pickup button is driven by OPEN OUTGOING warehouse operations,
+           not by delivered-vs-ordered qty.  Once every outgoing picking is
+           done/cancelled (e.g. a no-backorder short delivery) there is
+           nothing left to pick up — WITHOUT changing the ordered quantity
+           (we must keep what the client asked for, and the warehouse may
+           still adjust set contents).
         """
         super()._compute_has_action_lines()
         for order in self:
             if order.state != 'sale' or not order.is_rental_order:
                 continue
+
+            # (1) Ignore set-header lines in the per-line status.
             lines = order.order_line.filtered(
                 lambda l: l.is_rental and l.product_type != 'combo'
                 and not l.is_set
@@ -30,6 +40,12 @@ class SaleOrder(models.Model):
                 sol.qty_delivered < sol.product_uom_qty for sol in lines)
             order.has_returnable_lines = any(
                 sol.qty_returned < sol.qty_delivered for sol in lines)
+
+            # (2) No open outgoing operation => nothing left to pick up.
+            outgoing = order.picking_ids.filtered(lambda p: not p.return_id)
+            if outgoing and not outgoing.filtered(
+                    lambda p: p.state not in ('done', 'cancel')):
+                order.has_pickable_lines = False
 
     def copy(self, default=None):
         """Skip set expansion when duplicating an order.
