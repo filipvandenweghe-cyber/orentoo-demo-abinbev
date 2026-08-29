@@ -1,8 +1,35 @@
-from odoo import models
+from odoo import api, models
 
 
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
+
+    @api.depends(
+        'is_rental_order', 'state',
+        'order_line.is_rental', 'order_line.product_uom_qty',
+        'order_line.qty_delivered', 'order_line.qty_returned',
+        'order_line.is_set',
+    )
+    def _compute_has_action_lines(self):
+        """Exclude rental-set HEADER lines from the pickup/return status.
+
+        A set parent (and nested set headers) carry no stock moves, so their
+        qty_delivered stays 0 and would make the order look permanently
+        'to pick up'.  The real pickup/return state comes from the set's
+        component lines.
+        """
+        super()._compute_has_action_lines()
+        for order in self:
+            if order.state != 'sale' or not order.is_rental_order:
+                continue
+            lines = order.order_line.filtered(
+                lambda l: l.is_rental and l.product_type != 'combo'
+                and not l.is_set
+            )
+            order.has_pickable_lines = any(
+                sol.qty_delivered < sol.product_uom_qty for sol in lines)
+            order.has_returnable_lines = any(
+                sol.qty_returned < sol.qty_delivered for sol in lines)
 
     def copy(self, default=None):
         """Skip set expansion when duplicating an order.
