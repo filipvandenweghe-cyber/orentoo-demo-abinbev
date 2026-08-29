@@ -9,7 +9,7 @@ class SaleOrder(models.Model):
         'order_line.is_rental', 'order_line.product_uom_qty',
         'order_line.qty_delivered', 'order_line.qty_returned',
         'order_line.is_set',
-        'picking_ids.state', 'picking_ids.return_id',
+        'picking_ids.state', 'picking_ids.picking_type_code',
     )
     def _compute_has_action_lines(self):
         """Refine the rental pickup/return status.
@@ -41,8 +41,15 @@ class SaleOrder(models.Model):
             order.has_returnable_lines = any(
                 sol.qty_returned < sol.qty_delivered for sol in lines)
 
-            # (2) No open outgoing operation => nothing left to pick up.
-            outgoing = order.picking_ids.filtered(lambda p: not p.return_id)
+            # (2) Pickup is driven by the customer-facing OUTGOING delivery
+            #     only.  Internal steps are ignored — both outbound Pick/Pack
+            #     (done before Ship anyway) and return-side QC/Storage — so a
+            #     multi-step receipt/return never keeps the button visible.
+            #     Once no outgoing delivery is open, there is nothing left to
+            #     pick up.  Backorders create an open outgoing delivery, so
+            #     partial-with-backorder still shows Pickup.
+            outgoing = order.picking_ids.filtered(
+                lambda p: p.picking_type_code == 'outgoing')
             if outgoing and not outgoing.filtered(
                     lambda p: p.state not in ('done', 'cancel')):
                 order.has_pickable_lines = False
