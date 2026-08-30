@@ -1,5 +1,5 @@
 # Rental Availability — Repairs, Sets & Warehouse Breakdown
-*Functional & Technical Requirements, Goals & Tests — Backend / Sales (Rental) + Inventory (v2, for approval)*
+*Functional & Technical Requirements, Goals & Tests — Backend / Sales (Rental) + Inventory (v3, for approval)*
 
 | | |
 |---|---|
@@ -28,6 +28,11 @@
    own-demand correctness, and location-based breakdown.
 6. **Decisions:** multi-step over-count → **keep native + show portion in pop-up (1B)**;
    placement → **fold into rental_set**.
+7. **Reservation split is shown explicitly (v3).** Rather than hide the own-demand
+   correction inside add-back/cap math, the pop-up shows **Reserved by this order** and
+   **Reserved by other orders** as their own lines. The availability number then becomes
+   self-explanatory and auditable — you can *see* that this order's own reservation is
+   counted as available to itself.
 
 # 1. Purpose & Business Context
 Rental staff need a **trustworthy "available for this period" figure** and a way to
@@ -82,16 +87,20 @@ reception buffer.
   (`'repair.order' in self.env`). If absent: **no deduction, no pop-up repair line, no
   crash**. `repair` is **not** added to rental_set's hard `depends`.
 
-## 3.3 Own-demand for confirmed orders (no double-count) — VERIFY
+## 3.3 Own-demand for confirmed orders (no double-count) — SHOW IT, don't hide it
 The requirement **still holds**: a confirmed order must see its **own** reserved units as
-available **to itself** (not subtracted twice). Native `ignored_soline_id` removes the
-*rental-demand* layer, but the *physical* `qty_available` is still reduced by the order's
-own reservation — so an add-back (or an equivalent base that ignores own reservation) is
-needed for the current-start branch.
-**Decision:** keep an explicit own-demand correction, but **fix the cap** so the add-back
-is not negated (cap at *total rentable ignoring own reservation*, not at the
-already-reduced `qty_available`). Cover with a dedicated test (T-05). Do **not** assume
-`ignored_soline_id` alone is sufficient for confirmed current-start orders.
+available **to itself** (not subtracted twice). Today's code tries to solve this with a
+hidden add-back that is then negated by a cap at `qty_available` — opaque and buggy.
+**Decision (the agreed solution):** make the reservation split **explicit in the pop-up**
+rather than hide a correction. The pop-up shows:
+- **Reserved by this order** — quantity this order has already reserved (its own pickup
+  moves), which **counts as available to this order**;
+- **Reserved by other orders** — quantity reserved by *other* orders, which is **not**
+  available to this order.
+The headline availability number is then defined transparently and *verifiably* from
+those lines, so the double-count question is answered by inspection. The underlying figure
+still counts this order's own reservation as available to itself; the pop-up now proves it.
+Covered by tests T-05 (number correct) and T-12 (both reservation lines shown).
 
 ## 3.4 Set availability
 **Decision:** set availability = `min over leaf components of
@@ -106,12 +115,16 @@ pop-up already live there; one module keeps the logic coherent and avoids cross-
 override ordering.
 
 ## 3.6 Pop-up breakdown = location-driven
-**Decision:** build the breakdown from **internal locations** for the warehouse + period:
+**Decision:** build the breakdown from **internal locations** for the warehouse + period,
+plus the reservation split:
 - per-location on-hand (Input / Quality Control / Stock …),
 - **At Customer** = the rental location's on-hand (rented out),
+- **Reserved by this order** — available to this order (§3.3),
+- **Reserved by other orders** — not available to this order (§3.3),
 - **In Repair** = open-repair qty (only if `repair` installed; shown as its own line
   because the unit still sits in a physical location and would otherwise be hidden),
-- **Pickable** = usable-stock on-hand − in-repair (the net staff can ship now).
+- **Pickable / Available to this order** = usable-stock on-hand − reserved-by-others −
+  in-repair (+ reserved-by-this-order counts as available to itself).
 
 # 4. Goals
 - **G1** Availability excludes units in open repair over the repair window — **only when
@@ -136,10 +149,13 @@ override ordering.
 
 ## 5.2 Availability pop-up breakdown (RAV-05…07)
 - **RAV-05** Show, for the picking warehouse + period: per-internal-location on-hand
-  (Input / QC / Stock …), **At Customer**, **In Repair** (if repair installed), and net
-  **Pickable**.
+  (Input / QC / Stock …), **At Customer**, **Reserved by this order**, **Reserved by
+  other orders**, **In Repair** (if repair installed), and net **Pickable / Available to
+  this order**.
 - **RAV-06** Repairs get an explicit line (only when repair installed).
 - **RAV-07** Read-only; adds no blocking behaviour.
+- **RAV-13** The **Reserved by this order** and **Reserved by other orders** lines are
+  always shown (rental storable lines), making the own-demand handling auditable.
 
 ## 5.3 Set availability (RAV-08…09)
 - **RAV-08** Set availability = `min over leaf components of
@@ -180,6 +196,7 @@ override ordering.
 | T-09 | test_repair_not_installed_no_crash | with repair absent (simulated), availability computes and no repair UI/deduction | RAV-04 |
 | T-10 | test_non_rental_untouched | non-rental sale line availability unchanged | RAV-12 |
 | T-11 | test_existing_set_availability_regression | prior rental_set set-availability tests still pass (no regression) | G3 |
+| T-12 | test_reservation_split_shown | pop-up exposes Reserved-by-this-order and Reserved-by-other-orders with correct values | RAV-13 |
 
 *Note:* existing rental_set availability tests will be **re-run and adjusted** where the
 figure legitimately changes (repair deduction, cap fix); any that encoded the old capped
