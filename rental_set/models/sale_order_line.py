@@ -216,10 +216,17 @@ class SaleOrderLine(models.Model):
         digits='Product Unit of Measure',
     )
     rental_pickable = fields.Float(
-        string='Pickable',
+        string='Available for Rent',
         compute='_compute_rental_breakdown',
         digits='Product Unit of Measure',
         help='Net quantity available to this order at the picking warehouse.',
+    )
+    rental_total_stock = fields.Float(
+        string='Total Stock',
+        compute='_compute_rental_breakdown',
+        digits='Product Unit of Measure',
+        help='Total units owned by the warehouse pool = Available for Rent '
+             '+ Reserved by other orders + In Repair.',
     )
     rental_onhand_json = fields.Json(
         string='On-hand by Location',
@@ -472,6 +479,7 @@ class SaleOrderLine(models.Model):
             line.rental_reserved_other = 0.0
             line.rental_in_repair = 0.0
             line.rental_pickable = 0.0
+            line.rental_total_stock = 0.0
             line.rental_onhand_json = False
             line.rental_repair_installed = repair_installed
 
@@ -539,6 +547,12 @@ class SaleOrderLine(models.Model):
             # free_qty_today is already repair-aware (see forecast) and is
             # the net "available to this order" figure.
             line.rental_pickable = line.free_qty_today
+            # Every owned unit is either available to us, held by another
+            # order, or in repair — so Total = Available + Others + Repair.
+            # Computed this way it is warehouse-scoped and always reconciles
+            # exactly with the figure shown to the user.
+            line.rental_total_stock = (
+                line.free_qty_today + reserved_other + in_repair)
             line.rental_onhand_json = onhand or False
 
     # -- Set composition permission check ----------------------------------------
