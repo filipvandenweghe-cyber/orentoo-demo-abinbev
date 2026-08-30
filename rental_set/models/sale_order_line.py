@@ -1014,8 +1014,6 @@ class SaleOrderLine(models.Model):
         'is_set', 'is_set_component', 'product_uom_qty',
         'set_child_line_ids.product_id', 'set_child_line_ids.product_uom_qty',
         'set_child_line_ids.set_component_qty',
-        'set_child_line_ids.virtual_available_at_date',
-        'order_id.rental_start_date', 'order_id.rental_return_date',
     )
     def _compute_set_availability(self):
         """Compute how many complete sets can be fulfilled for the rental period.
@@ -1133,18 +1131,29 @@ class SaleOrderLine(models.Model):
                 product = data['product']
                 total_qty = data['total_qty']
 
-                # Base availability = the SAME number the standard rental
-                # widget shows on the component line: virtual_available_at_date
-                # (= rentable minus rented during the period).  This keeps
-                # "Avail. Sets" consistent with each component's "Available for
-                # Rent" figure and removes the divergence of the custom
-                # forecast timeline, which also fenced off in-progress
-                # deliveries/returns and undercounted sets.  (RS08)
-                available = max(
-                    (leaf.virtual_available_at_date
-                     for leaf in data['line_ids']),
-                    default=0.0,
-                )
+                # For confirmed lines, use Odoo's free_qty_today from the
+                # component SOL.  This is the same value the standard stock
+                # widget uses and it correctly accounts for this order's own
+                # reservations without the double-counting issues of
+                # virtual_available + manual add-back.  (RS08)
+                #
+                # For draft lines, use _get_component_available_qty which
+                # computes availability from rental-aware stock methods.
+                confirmed_leaves = [
+                    l for l in data['line_ids'] if l.state == 'sale'
+                ]
+
+                if confirmed_leaves:
+                    available = confirmed_leaves[0].free_qty_today
+                elif product.rent_ok and hasattr(product, '_get_unavailable_qty'):
+                    available = self._get_component_available_qty(
+                        product, from_date, to_date, warehouse_id,
+                        ignored_soline_id=False,
+                    )
+                else:
+                    available = self._get_component_available_qty(
+                        product, from_date, to_date, warehouse_id,
+                    )
 
                 # Subtract demand from OTHER lines on the same order for
                 # the same product that are NOT part of this set.
