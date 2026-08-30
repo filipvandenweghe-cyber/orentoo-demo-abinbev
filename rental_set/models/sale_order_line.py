@@ -2,7 +2,7 @@ import math
 
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
-from odoo.tools import float_is_zero
+from odoo.tools import float_compare, float_is_zero
 
 
 # Hard ceiling on nesting depth -- protects against accidental infinite loops
@@ -521,26 +521,6 @@ class SaleOrderLine(models.Model):
                 from_date, to_date, warehouse_id=wh_id,
             )
 
-            # On-hand per internal location inside the warehouse view.
-            onhand = []
-            if wh_id and wh.view_location_id:
-                locs = self.env['stock.location'].search([
-                    ('id', 'child_of', wh.view_location_id.id),
-                    ('usage', '=', 'internal'),
-                ])
-                if locs:
-                    groups = self.env['stock.quant']._read_group(
-                        [('product_id', '=', product.id),
-                         ('location_id', 'in', locs.ids)],
-                        ['location_id'], ['quantity:sum'],
-                    )
-                    for location, qty in groups:
-                        if qty:
-                            onhand.append({
-                                'location': location.display_name,
-                                'qty': qty,
-                            })
-
             line.rental_reserved_self = reserved_self
             line.rental_reserved_other = reserved_other
             line.rental_in_repair = in_repair
@@ -551,9 +531,98 @@ class SaleOrderLine(models.Model):
             # order, or in repair — so Total = Available + Others + Repair.
             # Computed this way it is warehouse-scoped and always reconciles
             # exactly with the figure shown to the user.
-            line.rental_total_stock = (
-                line.free_qty_today + reserved_other + in_repair)
-            line.rental_onhand_json = onhand or False
+            total = line.free_qty_today + reserved_other + in_repair
+            line.rental_total_stock = total
+
+            # Full location partition of Total at pickup time — every owned
+            # unit is placed somewhere, so the buckets always sum to Total
+            # (stable anchor; only the distribution shifts).  (RAV-14)
+            pickup = line.reservation_begin or from_date
+            line.rental_onhand_json = self._rental_stock_partition(
+                product, order, wh, pickup, total, in_repair) or False
+
+    def _rental_forecast_by_location(self, product, location_ids, pickup):
+        """Forecast on-hand per location at ``pickup`` =
+        current on-hand + incoming(≤pickup) − outgoing(≤pickup)."""
+        result = {lid: 0.0 for lid in location_ids}
+        for loc, qty in self.env['stock.quant']._read_group(
+            [('product_id', '=', product.id),
+             ('location_id', 'in', location_ids)],
+            ['location_id'], ['quantity:sum'],
+        ):
+            result[loc.id] = qty
+        move_dom = [
+            ('product_id', '=', product.id),
+            ('state', 'not in', ('done', 'cancel')),
+            ('date', '<=', pickup),
+        ]
+        for loc, qty in self.env['stock.move']._read_group(
+            move_dom + [('location_dest_id', 'in', location_ids)],
+            ['location_dest_id'], ['product_uom_qty:sum'],
+        ):
+            result[loc.id] = result.get(loc.id, 0.0) + qty
+        for loc, qty in self.env['stock.move']._read_group(
+            move_dom + [('location_id', 'in', location_ids)],
+            ['location_id'], ['product_uom_qty:sum'],
+        ):
+            result[loc.id] = result.get(loc.id, 0.0) - qty
+        return result
+
+    def _rental_stock_partition(self, product, order, wh, pickup, total,
+                                in_repair):
+        """Return a full partition of ``total`` across physical buckets at
+        ``pickup``: warehouse internal locations (Input/QC/Stock…), At
+        customer, In repair, and a reconciling In transit / elsewhere bucket
+        so the list always sums exactly to Total.  (RAV-14)
+        """
+        rounding = product.uom_id.rounding or 0.01
+        buckets = []
+        wh_locs = self.env['stock.location']
+        if wh and wh.view_location_id:
+            wh_locs = self.env['stock.location'].search([
+                ('id', 'child_of', wh.view_location_id.id),
+                ('usage', '=', 'internal'),
+            ])
+        rental_loc = order.company_id.rental_loc_id
+        loc_ids = list(wh_locs.ids)
+        if rental_loc:
+            loc_ids.append(rental_loc.id)
+
+        forecast = self._rental_forecast_by_location(product, loc_ids, pickup)
+
+        # In repair is carved out of the warehouse stock it physically sits
+        # in, so it is shown once and does not inflate the location count.
+        repair_left = in_repair
+        shown = 0.0
+        for loc in wh_locs:
+            qty = forecast.get(loc.id, 0.0)
+            # Take repair units out of this bucket first (they usually sit in
+            # the main stock location).
+            carve = min(max(qty, 0.0), repair_left)
+            qty -= carve
+            repair_left -= carve
+            if float_compare(qty, 0.0, precision_rounding=rounding) > 0:
+                buckets.append({'location': loc.display_name, 'qty': qty})
+                shown += qty
+
+        if float_compare(in_repair, 0.0, precision_rounding=rounding) > 0:
+            buckets.append({'location': _('In repair'), 'qty': in_repair})
+            shown += in_repair
+
+        if rental_loc:
+            at_customer = forecast.get(rental_loc.id, 0.0)
+            if float_compare(at_customer, 0.0, precision_rounding=rounding) > 0:
+                buckets.append({'location': _('At customer'),
+                                'qty': at_customer})
+                shown += at_customer
+
+        # Reconcile: anything unaccounted (in transit / other warehouses)
+        # keeps the partition summing exactly to Total.
+        residual = total - shown
+        if float_compare(abs(residual), 0.0, precision_rounding=rounding) > 0:
+            buckets.append({'location': _('In transit / elsewhere'),
+                            'qty': residual})
+        return buckets
 
     # -- Set composition permission check ----------------------------------------
 

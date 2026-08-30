@@ -1,5 +1,5 @@
 # Rental Availability — Repairs, Sets & Warehouse Breakdown
-*Functional & Technical Requirements, Goals & Tests — Backend / Sales (Rental) + Inventory (v5, for approval)*
+*Functional & Technical Requirements, Goals & Tests — Backend / Sales (Rental) + Inventory (v6, for approval)*
 
 | | |
 |---|---|
@@ -52,6 +52,17 @@
     then *Located in: Input / QC / Stock*. "Total stock" is computed as
     `Available + Reserved(others) + In Repair` so it is warehouse-scoped and always
     reconciles exactly with the figure shown.
+11. **Location list is a FULL partition at pickup (v6).** To keep "Total stock" a stable
+    anchor, the location list is a *complete* partition of Total at the **pickup instant**
+    (reservation begin): warehouse internal locations (Input/QC/Stock…), **At customer**,
+    **In repair**, and a reconciling **In transit / elsewhere** bucket. It therefore
+    **always sums to Total** — the pickup date only shifts the *distribution*, never the
+    total (units are conserved: they move, they don't appear/vanish). This is a
+    *physical-presence* lens (a unit can be physically at Stock yet reserved by another
+    order), distinct from the availability math above it; both anchor to the same Total.
+    Per-location values are forecast to pickup = current on-hand + incoming(≤pickup) −
+    outgoing(≤pickup), so units that will have cleared QC into Stock (or returned from a
+    customer) by pickup show in the right place.
 
 # 1. Purpose & Business Context
 Rental staff need a **trustworthy "available for this period" figure** and a way to
@@ -174,10 +185,13 @@ correctly absorb units currently at a customer without a separate, period-blind 
 ## 5.2 Availability pop-up breakdown (RAV-05…07)
 - **RAV-05** Show, for the picking warehouse + period, an accounting flow:
   **Total stock** − **Reserved by other orders** − **In Repair** (if repair installed)
-  = **Available for Rent**; then **of which reserved for this order**; then **Located
-  in**: per-internal-location on-hand (Input / QC / Stock …). No separate "At Customer"
-  line — those units are already inside the reserved figures (§0.8). Available for Rent
-  equals the native availability figure (§0.9).
+  = **Available for Rent**; then **of which reserved for this order**. Available for Rent
+  equals the native availability figure (§0.9). No "At Customer" line in this
+  *availability* section — those units are already inside the reserved figures (§0.8).
+- **RAV-14** Below it, a **full physical partition at pickup** that always sums to Total:
+  warehouse locations (Input/QC/Stock…), **At customer**, **In repair**, and a
+  reconciling **In transit / elsewhere** bucket (§0.11). Per-location values are forecast
+  to the pickup instant. This keeps Total a stable anchor and never "drifts".
 - **RAV-06** Repairs get an explicit line (only when repair installed).
 - **RAV-07** Read-only; adds no blocking behaviour.
 - **RAV-13** The **Reserved by this order** and **Reserved by other orders** lines are
