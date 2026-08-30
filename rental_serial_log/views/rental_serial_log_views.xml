@@ -61,16 +61,27 @@
         <field name="model">rental.serial.log</field>
         <field name="arch" type="xml">
             <search>
-                <field name="lot_id"/>
+                <field name="lot_id" string="Serial/Lot"
+                       filter_domain="['|',('lot_id.name','ilike',self),('product_id.name','ilike',self)]"/>
                 <field name="product_id"/>
-                <field name="partner_id"/>
-                <field name="sale_order_id"/>
+                <field name="partner_id" string="Client"/>
+                <field name="sale_order_id" string="Sales Order"/>
+                <field name="picking_id" string="Transfer"/>
+                <field name="repair_order_id" string="Repair Order"/>
+                <field name="package_contents" string="Package Contents"/>
                 <filter name="delivered" string="Delivered"
                         domain="[('event_type','=','delivered')]"/>
                 <filter name="returned" string="Returned"
                         domain="[('event_type','=','returned')]"/>
                 <filter name="repairs" string="Repairs"
                         domain="[('event_type','in',['repair_start','repair_done'])]"/>
+                <separator/>
+                <filter name="today" string="Today"
+                        domain="[('date','&gt;=',datetime.datetime.combine(context_today(),datetime.time(0,0,0)))]"/>
+                <filter name="last_7_days" string="Last 7 Days"
+                        domain="[('date','&gt;=',(context_today()-datetime.timedelta(days=7)).strftime('%Y-%m-%d'))]"/>
+                <filter name="this_month" string="This Month"
+                        domain="[('date','&gt;=',context_today().strftime('%Y-%m-01'))]"/>
                 <group expand="0" string="Group By">
                     <filter name="g_lot" string="Serial"
                             context="{'group_by':'lot_id'}"/>
@@ -80,6 +91,8 @@
                             context="{'group_by':'partner_id'}"/>
                     <filter name="g_event" string="Event"
                             context="{'group_by':'event_type'}"/>
+                    <filter name="g_date" string="Date"
+                            context="{'group_by':'date'}"/>
                 </group>
             </search>
         </field>
