@@ -47,11 +47,11 @@
                             <field name="note"/>
                         </group>
                     </group>
-                    <footer>
-                        <button name="action_open_transaction" type="object"
-                                string="Open Transaction" class="btn-primary"/>
-                    </footer>
                 </sheet>
+                <footer>
+                    <button name="action_open_transaction" type="object"
+                            string="Open Transaction" class="btn-primary"/>
+                </footer>
             </form>
         </field>
     </record>
@@ -70,7 +70,7 @@
                 <filter name="returned" string="Returned"
                         domain="[('event_type','=','returned')]"/>
                 <filter name="repairs" string="Repairs"
-                        domain="[('event_type','in',('repair_start','repair_done'))]"/>
+                        domain="[('event_type','in',['repair_start','repair_done'])]"/>
                 <group expand="0" string="Group By">
                     <filter name="g_lot" string="Serial"
                             context="{'group_by':'lot_id'}"/>
