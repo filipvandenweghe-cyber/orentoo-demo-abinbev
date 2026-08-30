@@ -1,5 +1,5 @@
 # Rental Availability — Repairs, Sets & Warehouse Breakdown
-*Functional & Technical Requirements, Goals & Tests — Backend / Sales (Rental) + Inventory (v3, for approval)*
+*Functional & Technical Requirements, Goals & Tests — Backend / Sales (Rental) + Inventory (v4, for approval)*
 
 | | |
 |---|---|
@@ -33,6 +33,12 @@
    **Reserved by other orders** as their own lines. The availability number then becomes
    self-explanatory and auditable — you can *see* that this order's own reservation is
    counted as available to itself.
+8. **"At Customer" line removed (v4).** A unit physically at a customer is a unit
+   **committed to an order**, so it is already represented (period-correctly) inside
+   **Reserved by other orders** (or this order). A separate "At Customer" line would
+   double-count it — and, being period-blind, would wrongly reduce availability for a
+   future rental that the unit returns in time for. The period-aware reserved/other-orders
+   figure is the correct and sufficient representation.
 
 # 1. Purpose & Business Context
 Rental staff need a **trustworthy "available for this period" figure** and a way to
@@ -115,16 +121,21 @@ pop-up already live there; one module keeps the logic coherent and avoids cross-
 override ordering.
 
 ## 3.6 Pop-up breakdown = location-driven
-**Decision:** build the breakdown from **internal locations** for the warehouse + period,
-plus the reservation split:
-- per-location on-hand (Input / Quality Control / Stock …),
-- **At Customer** = the rental location's on-hand (rented out),
-- **Reserved by this order** — available to this order (§3.3),
-- **Reserved by other orders** — not available to this order (§3.3),
+**Decision:** build the breakdown from **warehouse internal locations** + the
+period-aware reservation split (no separate "At Customer" line — see §0.8):
+- per-location on-hand in the warehouse (Input / Quality Control / Stock …),
+- **Reserved by this order** — period-overlapping commitment of *this* order (its
+  reservations + not-yet-returned deliveries); **available to this order** (§3.3),
+- **Reserved by other orders** — period-overlapping commitment of *other* orders
+  (includes their units still out at customers); **not** available to this order (§3.3),
 - **In Repair** = open-repair qty (only if `repair` installed; shown as its own line
   because the unit still sits in a physical location and would otherwise be hidden),
 - **Pickable / Available to this order** = usable-stock on-hand − reserved-by-others −
   in-repair (+ reserved-by-this-order counts as available to itself).
+
+*Note:* "Reserved by …" here means the **period-aware rental commitment** (the same basis
+as `_get_unavailable_qty`), not merely current stock reservations — that is what lets it
+correctly absorb units currently at a customer without a separate, period-blind line.
 
 # 4. Goals
 - **G1** Availability excludes units in open repair over the repair window — **only when
@@ -149,9 +160,10 @@ plus the reservation split:
 
 ## 5.2 Availability pop-up breakdown (RAV-05…07)
 - **RAV-05** Show, for the picking warehouse + period: per-internal-location on-hand
-  (Input / QC / Stock …), **At Customer**, **Reserved by this order**, **Reserved by
-  other orders**, **In Repair** (if repair installed), and net **Pickable / Available to
-  this order**.
+  (Input / QC / Stock …), **Reserved by this order**, **Reserved by other orders**,
+  **In Repair** (if repair installed), and net **Pickable / Available to this order**.
+  No separate "At Customer" line — those units are already inside the reserved figures
+  (§0.8).
 - **RAV-06** Repairs get an explicit line (only when repair installed).
 - **RAV-07** Read-only; adds no blocking behaviour.
 - **RAV-13** The **Reserved by this order** and **Reserved by other orders** lines are
@@ -192,7 +204,8 @@ plus the reservation split:
 | T-05 | test_confirmed_own_demand_not_double_counted | confirmed order sees its own reserved units as available (add-back not negated by the cap) | RAV-10, G5 |
 | T-06 | test_set_availability_limiting_component | set avail = floor(min component avail / qty-per-set) | RAV-08 |
 | T-07 | test_set_non_storable_limitless | non-storable components don't constrain the set | RAV-09 |
-| T-08 | test_breakdown_is_location_consistent | breakdown: Σ per-location on-hand and Pickable = usable on-hand − in-repair | RAV-05 |
+| T-08 | test_breakdown_is_consistent | Pickable = usable on-hand − reserved-by-others − in-repair; no double-count of at-customer units | RAV-05 |
+| T-13 | test_at_customer_not_double_counted | a unit out at a customer for another order is reflected once (via reserved-by-others), and a future period it returns in time for is not reduced | §0.8 |
 | T-09 | test_repair_not_installed_no_crash | with repair absent (simulated), availability computes and no repair UI/deduction | RAV-04 |
 | T-10 | test_non_rental_untouched | non-rental sale line availability unchanged | RAV-12 |
 | T-11 | test_existing_set_availability_regression | prior rental_set set-availability tests still pass (no regression) | G3 |
