@@ -48,14 +48,13 @@ class RentalSerialLog(models.Model):
 
     note = fields.Char(string='Note')
 
-    def name_get(self):
+    @api.depends('event_type', 'lot_id.name')
+    def _compute_display_name(self):
         labels = dict(self._fields['event_type']._description_selection(self.env))
-        result = []
         for log in self:
-            result.append((log.id, '%s — %s' % (
+            log.display_name = '%s — %s' % (
                 labels.get(log.event_type, log.event_type),
-                log.lot_id.name or '')))
-        return result
+                log.lot_id.name or '')
 
     def action_open_transaction(self):
         """Open the underlying transaction for this log entry — the repair
