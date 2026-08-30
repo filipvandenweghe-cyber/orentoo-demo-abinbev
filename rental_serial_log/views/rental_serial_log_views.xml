@@ -82,7 +82,7 @@
                         domain="[('date','&gt;=',(context_today()-datetime.timedelta(days=7)).strftime('%Y-%m-%d'))]"/>
                 <filter name="this_month" string="This Month"
                         domain="[('date','&gt;=',context_today().strftime('%Y-%m-01'))]"/>
-                <group string="Group By">
+                <group>
                     <filter name="g_lot" string="Serial"
                             context="{'group_by':'lot_id'}"/>
                     <filter name="g_product" string="Product"
