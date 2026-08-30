@@ -1,3 +1,5 @@
+import math
+
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 from odoo.tools import float_is_zero
@@ -193,6 +195,39 @@ class SaleOrderLine(models.Model):
     all_warehouse_count = fields.Integer(
         string='Warehouse Count',
         compute='_compute_all_warehouse_available',
+    )
+
+    # ── Rental availability breakdown (pop-up) ──────────────────────────
+    # Period-aware, auditable split shown in the rental availability
+    # pop-up so the availability number explains itself.  (RAV-05, RAV-13)
+    rental_reserved_self = fields.Float(
+        string='Reserved by this order',
+        compute='_compute_rental_breakdown',
+        digits='Product Unit of Measure',
+    )
+    rental_reserved_other = fields.Float(
+        string='Reserved by other orders',
+        compute='_compute_rental_breakdown',
+        digits='Product Unit of Measure',
+    )
+    rental_in_repair = fields.Float(
+        string='In Repair',
+        compute='_compute_rental_breakdown',
+        digits='Product Unit of Measure',
+    )
+    rental_pickable = fields.Float(
+        string='Pickable',
+        compute='_compute_rental_breakdown',
+        digits='Product Unit of Measure',
+        help='Net quantity available to this order at the picking warehouse.',
+    )
+    rental_onhand_json = fields.Json(
+        string='On-hand by Location',
+        compute='_compute_rental_breakdown',
+    )
+    rental_repair_installed = fields.Boolean(
+        string='Repair Module Installed',
+        compute='_compute_rental_breakdown',
     )
 
     @api.depends('product_id', 'order_id.state', 'product_uom_qty')
@@ -401,11 +436,110 @@ class SaleOrderLine(models.Model):
         # The forecast includes this order's moves as outgoing (reducing
         # stock).  But "available for this order" means the stock this
         # order can draw from — including what it already claimed.
+        #
+        # The cap must ALSO be raised by own demand: current_stock_original
+        # (qty_available) is already reduced by this order's own reservation,
+        # so capping at the un-raised value would silently negate the
+        # add-back and under-count the order's own availability.  (RAV-10)
+        cap = current_stock_original
         if order.state == 'sale':
             min_stock += own_out_demand
+            cap += own_out_demand
 
-        # Cap at physical stock — reuse the value fetched at method start
-        return min(max(min_stock, 0), current_stock_original)
+        available = min(max(min_stock, 0), cap)
+
+        # Deduct units tied up in open repairs over the rental period.
+        # Repairs are physically present but not rentable, and standard
+        # Odoo never deducts them.  No-op when the repair module is absent.
+        # (RAV-01)
+        in_repair = product._get_repair_unavailable_qty(
+            from_date, to_date, warehouse_id=wh_id,
+        )
+        return max(available - in_repair, 0.0)
+
+    @api.depends('product_id', 'product_uom_qty', 'is_rental',
+                 'reservation_begin', 'return_date', 'state',
+                 'free_qty_today')
+    def _compute_rental_breakdown(self):
+        """Compute the auditable availability breakdown for the pop-up:
+        per-internal-location on-hand, reserved by this order, reserved by
+        other orders (period-aware), in-repair, and the net pickable figure.
+        (RAV-05, RAV-13)
+        """
+        repair_installed = 'repair.order' in self.env
+        for line in self:
+            line.rental_reserved_self = 0.0
+            line.rental_reserved_other = 0.0
+            line.rental_in_repair = 0.0
+            line.rental_pickable = 0.0
+            line.rental_onhand_json = False
+            line.rental_repair_installed = repair_installed
+
+            product = line.product_id
+            order = line.order_id
+            if not product or not product.is_storable or not line.is_rental:
+                continue
+            if not getattr(order, 'is_rental_order', False):
+                continue
+
+            wh = order.warehouse_id
+            wh_id = wh.id if wh else False
+            from_date = getattr(order, 'rental_start_date', None) or \
+                line.start_date or fields.Datetime.now()
+            to_date = getattr(order, 'rental_return_date', None) or \
+                line.return_date or from_date
+
+            # Reserved by OTHER orders — period-aware rental commitment,
+            # excluding this line (same basis as native availability).
+            reserved_other = 0.0
+            if product.rent_ok and hasattr(product, '_get_unavailable_qty'):
+                reserved_other = product._get_unavailable_qty(
+                    from_date, to_date,
+                    ignored_soline_id=line.id, warehouse_id=wh_id,
+                )
+
+            # Reserved by THIS order — its own outgoing rental moves for
+            # this product (only meaningful once confirmed / reserved).
+            reserved_self = 0.0
+            if order.state == 'sale':
+                own_moves = order.picking_ids.move_ids.filtered(
+                    lambda m: m.product_id == product
+                    and m.picking_id.picking_type_code == 'outgoing'
+                    and m.state not in ('done', 'cancel')
+                )
+                reserved_self = sum(own_moves.mapped('product_uom_qty'))
+
+            in_repair = product._get_repair_unavailable_qty(
+                from_date, to_date, warehouse_id=wh_id,
+            )
+
+            # On-hand per internal location inside the warehouse view.
+            onhand = []
+            if wh_id and wh.view_location_id:
+                locs = self.env['stock.location'].search([
+                    ('id', 'child_of', wh.view_location_id.id),
+                    ('usage', '=', 'internal'),
+                ])
+                if locs:
+                    groups = self.env['stock.quant']._read_group(
+                        [('product_id', '=', product.id),
+                         ('location_id', 'in', locs.ids)],
+                        ['location_id'], ['quantity:sum'],
+                    )
+                    for location, qty in groups:
+                        if qty:
+                            onhand.append({
+                                'location': location.display_name,
+                                'qty': qty,
+                            })
+
+            line.rental_reserved_self = reserved_self
+            line.rental_reserved_other = reserved_other
+            line.rental_in_repair = in_repair
+            # free_qty_today is already repair-aware (see forecast) and is
+            # the net "available to this order" figure.
+            line.rental_pickable = line.free_qty_today
+            line.rental_onhand_json = onhand or False
 
     # -- Set composition permission check ----------------------------------------
 
@@ -1170,10 +1304,11 @@ class SaleOrderLine(models.Model):
                 sets_from_product = available / total_qty if total_qty else 0.0
                 min_sets = min(min_sets, sets_from_product)
 
-            line.set_availability = max(
-                min_sets if min_sets != float('inf') else 0.0,
-                0.0,
-            )
+            # Whole sets only: a partial set cannot be fulfilled.  (RAV-08)
+            line.set_availability = float(max(
+                math.floor(min_sets) if min_sets != float('inf') else 0,
+                0,
+            ))
 
     def _collect_leaf_availability_data(self, set_line, parent_multiplier, result):
         """Recursively collect all leaf components under ``set_line``.
@@ -1248,7 +1383,12 @@ class SaleOrderLine(models.Model):
                 ignored_soline_id=ignored_soline_id,
                 warehouse_id=warehouse_id,
             )
-            return max(rentable - unavailable, 0.0)
+            # Deduct units tied up in open repairs (RAV-01); no-op without
+            # the repair module.
+            in_repair = product._get_repair_unavailable_qty(
+                from_date, to_date, warehouse_id=warehouse_id,
+            )
+            return max(rentable - unavailable - in_repair, 0.0)
         else:
             # Non-rental product: standard stock availability
             return product.with_context(

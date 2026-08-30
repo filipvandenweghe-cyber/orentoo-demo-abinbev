@@ -1159,10 +1159,11 @@ class TestSetCornerCases(TestRentalSetCommon):
             f"Standalone demand must reduce set availability (RS12). "
             f"Without: {avail_without}, with 18 standalone: {avail_with}",
         )
-        # Specifically: 20 available - 18 standalone = 2 for set / 3 needed = 0.67
-        self.assertAlmostEqual(
-            avail_with, 0.67, places=1,
-            msg="(20 - 18) / 3 ≈ 0.67 sets available",
+        # Specifically: 20 available - 18 standalone = 2 for set / 3 needed
+        # = 0.67 → floored to 0 whole sets (RAV-08: whole sets only).
+        self.assertEqual(
+            avail_with, 0.0,
+            msg="(20 - 18) / 3 = 0.67 → floor = 0 whole sets available",
         )
 
     # ── Test 26: order_product_demand aggregates correctly ────────────
