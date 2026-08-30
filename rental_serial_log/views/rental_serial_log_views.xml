@@ -98,17 +98,12 @@
         </field>
     </record>
 
+    <!-- Action kept (no menu) so a serial-form "History" smart button can
+         open this searchable/filterable list pre-filtered to one lot. -->
     <record id="rental_serial_log_action" model="ir.actions.act_window">
         <field name="name">Rental Serial Log</field>
         <field name="res_model">rental.serial.log</field>
         <field name="view_mode">list,form</field>
-        <field name="context">{'search_default_g_lot': 1}</field>
     </record>
-
-    <menuitem id="rental_serial_log_menu"
-              name="Serial Rental Log"
-              parent="stock.menu_stock_root"
-              action="rental_serial_log_action"
-              sequence="95"/>
 
 </odoo>
