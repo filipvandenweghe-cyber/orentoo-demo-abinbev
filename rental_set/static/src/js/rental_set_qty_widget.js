@@ -61,6 +61,13 @@ patch(qtyAtDateWidget, {
         { name: 'order_product_demand', type: 'float' },
         { name: 'all_warehouse_available', type: 'float' },
         { name: 'all_warehouse_count', type: 'integer' },
+        // Rental availability breakdown (RAV-05, RAV-13)
+        { name: 'rental_reserved_self', type: 'float' },
+        { name: 'rental_reserved_other', type: 'float' },
+        { name: 'rental_in_repair', type: 'float' },
+        { name: 'rental_pickable', type: 'float' },
+        { name: 'rental_repair_installed', type: 'boolean' },
+        { name: 'rental_onhand_json', type: 'json' },
     ],
 });
 
@@ -74,6 +81,7 @@ patch(QtyAtDatePopover.prototype, {
         super.setup();
         onMounted(() => {
             this._injectForecastButton();
+            this._injectRentalBreakdown();
             this._injectOrderDemand();
         });
     },
@@ -125,6 +133,65 @@ patch(QtyAtDatePopover.prototype, {
             '<i class="oi oi-fw o_button_icon oi-arrow-right"></i> ' + _t('View Forecast');
         forecastBtn.addEventListener('click', () => this.openForecast());
         rentalBtn.after(forecastBtn);
+    },
+
+    /*
+     * Inject the auditable availability breakdown into the rental popover:
+     * per-location on-hand, Reserved (this order), Reserved (other orders),
+     * In Repair (only if the repair module is installed) and Pickable.
+     * (RAV-05, RAV-13)
+     */
+    _injectRentalBreakdown() {
+        const data = this.props.record?.data;
+        if (!data?.product_id) return;
+        // Rental lines only; sets have their own set-availability popover.
+        if (!data.is_rental || !data.return_date || !data.start_date) return;
+        if (data.is_set) return;
+
+        const popovers = document.querySelectorAll('.o_popover');
+        if (!popovers.length) return;
+        const popoverEl = popovers[popovers.length - 1];
+        if (!popoverEl) return;
+        if (popoverEl.querySelector('.rental_set_breakdown')) return;
+
+        const table = popoverEl.querySelector('table tbody');
+        if (!table) return;
+
+        const uom = data.product_uom_id && data.product_uom_id[1] ? data.product_uom_id[1] : '';
+        const fmt = (v) => {
+            const n = Number(v || 0);
+            return Number.isInteger(n) ? String(n) : n.toFixed(2);
+        };
+        const addRow = (label, value, opts = {}) => {
+            const row = document.createElement('tr');
+            row.className = 'rental_set_breakdown' + (opts.top ? ' border-top' : '');
+            const strong = opts.strong ? 'strong' : 'span';
+            row.innerHTML = `
+                <td><${strong}${opts.muted ? ' class="text-muted"' : ''}>${label}</${strong}></td>
+                <td class="text-end"><${strong}${opts.danger ? ' class="text-danger"' : ''}>${fmt(value)}</${strong}> ${uom}</td>
+            `;
+            table.appendChild(row);
+        };
+
+        // Per-location on-hand (Input / QC / Stock …)
+        const onhand = data.rental_onhand_json || [];
+        if (Array.isArray(onhand) && onhand.length) {
+            for (const entry of onhand) {
+                addRow(`${_t('On hand')} — ${entry.location}`, entry.qty, { muted: true });
+            }
+        }
+
+        // Reservation split (the own-demand answer, made visible)
+        addRow(_t('Reserved by this order'), data.rental_reserved_self || 0, { top: true });
+        addRow(_t('Reserved by other orders'), data.rental_reserved_other || 0);
+
+        // In Repair — only when the repair module is installed
+        if (data.rental_repair_installed && (data.rental_in_repair || 0) > 0) {
+            addRow(_t('In Repair'), data.rental_in_repair || 0, { danger: true });
+        }
+
+        // Net pickable
+        addRow(_t('Pickable'), data.rental_pickable || 0, { strong: true, top: true });
     },
 
     _injectOrderDemand() {
