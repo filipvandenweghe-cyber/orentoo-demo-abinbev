@@ -192,6 +192,14 @@ class TestRentalAvailability(TransactionCase):
             line.rental_total_stock,
             line.rental_pickable + line.rental_reserved_other
             + line.rental_in_repair, places=2)
+        # Location partition is a full partition of Total (sums back to it).
+        line.invalidate_recordset(['rental_onhand_json'])
+        partition = line.rental_onhand_json or []
+        self.assertAlmostEqual(
+            sum(b['qty'] for b in partition),
+            line.rental_total_stock, places=2,
+            msg=f"partition {partition} must sum to Total "
+                f"{line.rental_total_stock}")
 
     # ── T-09 ─────────────────────────────────────────────────────────────
     def test_09_repair_helper_graceful(self):

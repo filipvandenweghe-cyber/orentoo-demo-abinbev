@@ -196,16 +196,20 @@ patch(QtyAtDatePopover.prototype, {
                    { muted: true, indent: true });
         }
 
-        // Where the (warehouse) stock physically sits.
+        // Full physical partition at pickup — always sums back to Total.
         const onhand = data.rental_onhand_json || [];
         if (Array.isArray(onhand) && onhand.length) {
             const hdr = document.createElement('tr');
             hdr.className = 'rental_set_breakdown border-top';
-            hdr.innerHTML = `<td colspan="2" class="text-muted small pt-1">${_t('Located in')}:</td>`;
+            hdr.innerHTML = `<td colspan="2" class="text-muted small pt-1">${_t('Where these units are, at pickup')}:</td>`;
             table.appendChild(hdr);
+            let sum = 0;
             for (const entry of onhand) {
                 addRow(entry.location, entry.qty, { muted: true, indent: true });
+                sum += Number(entry.qty || 0);
             }
+            // Reconciliation line: this partition equals Total stock.
+            addRow(`= ${_t('Total stock')}`, sum, { muted: true });
         }
     },
 
