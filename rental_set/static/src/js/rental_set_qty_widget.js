@@ -66,6 +66,7 @@ patch(qtyAtDateWidget, {
         { name: 'rental_reserved_other', type: 'float' },
         { name: 'rental_in_repair', type: 'float' },
         { name: 'rental_pickable', type: 'float' },
+        { name: 'rental_total_stock', type: 'float' },
         { name: 'rental_repair_installed', type: 'boolean' },
         { name: 'rental_onhand_json', type: 'json' },
     ],
@@ -166,32 +167,46 @@ patch(QtyAtDatePopover.prototype, {
             const row = document.createElement('tr');
             row.className = 'rental_set_breakdown' + (opts.top ? ' border-top' : '');
             const strong = opts.strong ? 'strong' : 'span';
+            const sign = opts.sign ? `<span class="text-muted me-1">${opts.sign}</span>` : '';
             row.innerHTML = `
-                <td><${strong}${opts.muted ? ' class="text-muted"' : ''}>${label}</${strong}></td>
-                <td class="text-end"><${strong}${opts.danger ? ' class="text-danger"' : ''}>${fmt(value)}</${strong}> ${uom}</td>
+                <td class="${opts.indent ? 'ps-3' : ''}"><${strong}${opts.muted ? ' class="text-muted"' : ''}>${label}</${strong}></td>
+                <td class="text-end">${sign}<${strong}${opts.danger ? ' class="text-danger"' : ''}>${fmt(value)}</${strong}> ${uom}</td>
             `;
             table.appendChild(row);
         };
 
-        // Per-location on-hand (Input / QC / Stock …)
+        const total = data.rental_total_stock || 0;
+        const other = data.rental_reserved_other || 0;
+        const repair = data.rental_in_repair || 0;
+        const avail = data.rental_pickable || 0;
+        const self = data.rental_reserved_self || 0;
+        const showRepair = !!data.rental_repair_installed;
+
+        // Accounting flow:
+        //   Total stock − Reserved (others) − In Repair = Available for Rent
+        addRow(_t('Total stock'), total, { top: true });
+        addRow(_t('Reserved by other orders'), other, { sign: '−' });
+        if (showRepair) {
+            addRow(_t('In Repair'), repair, { sign: '−', danger: repair > 0 });
+        }
+        addRow(_t('Available for Rent'), avail, { strong: true, top: true });
+        // …of which already reserved for this order (subset of Available).
+        if (self > 0) {
+            addRow(_t('of which reserved for this order'), self,
+                   { muted: true, indent: true });
+        }
+
+        // Where the (warehouse) stock physically sits.
         const onhand = data.rental_onhand_json || [];
         if (Array.isArray(onhand) && onhand.length) {
+            const hdr = document.createElement('tr');
+            hdr.className = 'rental_set_breakdown border-top';
+            hdr.innerHTML = `<td colspan="2" class="text-muted small pt-1">${_t('Located in')}:</td>`;
+            table.appendChild(hdr);
             for (const entry of onhand) {
-                addRow(`${_t('On hand')} — ${entry.location}`, entry.qty, { muted: true });
+                addRow(entry.location, entry.qty, { muted: true, indent: true });
             }
         }
-
-        // Reservation split (the own-demand answer, made visible)
-        addRow(_t('Reserved by this order'), data.rental_reserved_self || 0, { top: true });
-        addRow(_t('Reserved by other orders'), data.rental_reserved_other || 0);
-
-        // In Repair — only when the repair module is installed
-        if (data.rental_repair_installed && (data.rental_in_repair || 0) > 0) {
-            addRow(_t('In Repair'), data.rental_in_repair || 0, { danger: true });
-        }
-
-        // Net pickable
-        addRow(_t('Pickable'), data.rental_pickable || 0, { strong: true, top: true });
     },
 
     _injectOrderDemand() {

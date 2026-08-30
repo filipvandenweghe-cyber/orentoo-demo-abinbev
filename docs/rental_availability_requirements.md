@@ -1,5 +1,5 @@
 # Rental Availability — Repairs, Sets & Warehouse Breakdown
-*Functional & Technical Requirements, Goals & Tests — Backend / Sales (Rental) + Inventory (v4, for approval)*
+*Functional & Technical Requirements, Goals & Tests — Backend / Sales (Rental) + Inventory (v5, for approval)*
 
 | | |
 |---|---|
@@ -39,6 +39,19 @@
    double-count it — and, being period-blind, would wrongly reduce availability for a
    future rental that the unit returns in time for. The period-aware reserved/other-orders
    figure is the correct and sufficient representation.
+9. **Native forecast already handles "returned early → available" (v5).** Verified in
+   code: confirming a rental order registers **both** the pickup **and** the return
+   transfer immediately. So a competing order that returns before our period holds
+   nothing during it, and the full stock is available again — the native figure is
+   correct, with **no forecast rewrite and no padding crutch needed** for this case.
+   Consequently **Available for Rent = Total stock − Reserved(others) − In Repair**
+   equals the native availability figure *exactly* (checked for both overlapping and
+   future periods). There is therefore no "Option A vs B" — it is one number.
+10. **Pop-up reordered to an accounting flow (v5).** `Total stock − Reserved by other
+    orders − In Repair = Available for Rent`, then *of which reserved for this order*,
+    then *Located in: Input / QC / Stock*. "Total stock" is computed as
+    `Available + Reserved(others) + In Repair` so it is warehouse-scoped and always
+    reconciles exactly with the figure shown.
 
 # 1. Purpose & Business Context
 Rental staff need a **trustworthy "available for this period" figure** and a way to
@@ -159,11 +172,12 @@ correctly absorb units currently at a customer without a separate, period-blind 
 - **RAV-04** If `repair` is not installed: no deduction, no repair UI, **no error**.
 
 ## 5.2 Availability pop-up breakdown (RAV-05…07)
-- **RAV-05** Show, for the picking warehouse + period: per-internal-location on-hand
-  (Input / QC / Stock …), **Reserved by this order**, **Reserved by other orders**,
-  **In Repair** (if repair installed), and net **Pickable / Available to this order**.
-  No separate "At Customer" line — those units are already inside the reserved figures
-  (§0.8).
+- **RAV-05** Show, for the picking warehouse + period, an accounting flow:
+  **Total stock** − **Reserved by other orders** − **In Repair** (if repair installed)
+  = **Available for Rent**; then **of which reserved for this order**; then **Located
+  in**: per-internal-location on-hand (Input / QC / Stock …). No separate "At Customer"
+  line — those units are already inside the reserved figures (§0.8). Available for Rent
+  equals the native availability figure (§0.9).
 - **RAV-06** Repairs get an explicit line (only when repair installed).
 - **RAV-07** Read-only; adds no blocking behaviour.
 - **RAV-13** The **Reserved by this order** and **Reserved by other orders** lines are

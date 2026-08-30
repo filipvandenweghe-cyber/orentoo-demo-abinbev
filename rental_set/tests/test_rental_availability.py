@@ -181,12 +181,17 @@ class TestRentalAvailability(TransactionCase):
         order.action_confirm()
         line.invalidate_recordset([
             'free_qty_today', 'rental_pickable', 'rental_reserved_self',
-            'rental_reserved_other', 'rental_in_repair'])
-        # Pickable equals the headline availability figure.
+            'rental_reserved_other', 'rental_in_repair', 'rental_total_stock'])
+        # Available for Rent equals the headline availability figure.
         self.assertAlmostEqual(line.rental_pickable, line.free_qty_today,
                                places=2)
         # This order reserved its 4 units.
         self.assertAlmostEqual(line.rental_reserved_self, 4.0, places=2)
+        # Accounting identity: Total = Available + Others + Repair.
+        self.assertAlmostEqual(
+            line.rental_total_stock,
+            line.rental_pickable + line.rental_reserved_other
+            + line.rental_in_repair, places=2)
 
     # ── T-09 ─────────────────────────────────────────────────────────────
     def test_09_repair_helper_graceful(self):
@@ -237,9 +242,8 @@ class TestRentalAvailability(TransactionCase):
         future = self._rental_order(start_offset=30, days=1)
         line = self._line(future, self.prod, 1)
         line.invalidate_recordset(['rental_reserved_other', 'free_qty_today'])
-        # The period-aware split correctly reports 0 held by other orders
-        # for a future window they return before (§0.8 / RAV-13).  (We do
-        # not assert the headline figure here: the native forecast is kept
-        # as-is and is intentionally conservative when no return move exists
-        # yet — that is what the reservation split + padding make visible.)
+        # The confirmed competing order registered BOTH its pickup and its
+        # return transfer, so for a future window it returns before, it holds
+        # nothing — and the full stock is available again.
         self.assertAlmostEqual(line.rental_reserved_other, 0.0, places=2)
+        self.assertAlmostEqual(self._avail(line), 10, places=2)
