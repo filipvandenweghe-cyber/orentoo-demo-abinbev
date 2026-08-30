@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="rental_serial_log_view_list" model="ir.ui.view">
+        <field name="name">rental.serial.log.list</field>
+        <field name="model">rental.serial.log</field>
+        <field name="arch" type="xml">
+            <list string="Rental Serial Log" create="0" edit="0" delete="0">
+                <field name="date"/>
+                <field name="lot_id"/>
+                <field name="product_id" optional="show"/>
+                <field name="event_type"/>
+                <field name="sale_order_id"/>
+                <field name="partner_id"/>
+                <field name="picking_id" optional="show"/>
+                <field name="package_id" optional="hide"/>
+                <field name="package_contents" optional="hide"/>
+                <field name="repair_order_id" optional="show"/>
+                <field name="note" optional="hide"/>
+                <button name="action_open_transaction" type="object"
+                        string="Open" icon="fa-external-link"
+                        title="Open transaction"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="rental_serial_log_view_form" model="ir.ui.view">
+        <field name="name">rental.serial.log.form</field>
+        <field name="model">rental.serial.log</field>
+        <field name="arch" type="xml">
+            <form string="Rental Serial Log" create="0" edit="0">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="lot_id"/>
+                            <field name="product_id"/>
+                            <field name="event_type"/>
+                            <field name="date"/>
+                        </group>
+                        <group>
+                            <field name="sale_order_id"/>
+                            <field name="partner_id"/>
+                            <field name="picking_id"/>
+                            <field name="repair_order_id"/>
+                            <field name="package_id"/>
+                            <field name="package_contents"/>
+                            <field name="note"/>
+                        </group>
+                    </group>
+                    <footer>
+                        <button name="action_open_transaction" type="object"
+                                string="Open Transaction" class="btn-primary"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="rental_serial_log_view_search" model="ir.ui.view">
+        <field name="name">rental.serial.log.search</field>
+        <field name="model">rental.serial.log</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="lot_id"/>
+                <field name="product_id"/>
+                <field name="partner_id"/>
+                <field name="sale_order_id"/>
+                <filter name="delivered" string="Delivered"
+                        domain="[('event_type','=','delivered')]"/>
+                <filter name="returned" string="Returned"
+                        domain="[('event_type','=','returned')]"/>
+                <filter name="repairs" string="Repairs"
+                        domain="[('event_type','in',('repair_start','repair_done'))]"/>
+                <group expand="0" string="Group By">
+                    <filter name="g_lot" string="Serial"
+                            context="{'group_by':'lot_id'}"/>
+                    <filter name="g_product" string="Product"
+                            context="{'group_by':'product_id'}"/>
+                    <filter name="g_partner" string="Client"
+                            context="{'group_by':'partner_id'}"/>
+                    <filter name="g_event" string="Event"
+                            context="{'group_by':'event_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="rental_serial_log_action" model="ir.actions.act_window">
+        <field name="name">Rental Serial Log</field>
+        <field name="res_model">rental.serial.log</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_g_lot': 1}</field>
+    </record>
+
+    <menuitem id="rental_serial_log_menu"
+              name="Serial Rental Log"
+              parent="stock.menu_stock_root"
+              action="rental_serial_log_action"
+              sequence="95"/>
+
+</odoo>
