@@ -1435,3 +1435,69 @@ class TestSaleFlow(TransactionCase):
                 active_return.product_uom_qty, 2,
                 "After backorder cancel, return must expect only 2 (actually delivered)",
             )
+
+    # ── Multi-step delivery must NOT inflate the return ──────────────
+    def test_23_multistep_delivery_return_not_inflated(self):
+        """Regression: in a Pick->Pack->Ship route, validating each outbound
+        step must NOT grow the return demand (was 4 -> 8 -> 12, then 4).
+        The return must stay at the ordered rental qty (4) throughout.
+        """
+        prod = self.env['product.product'].create({
+            'name': 'MS Rental', 'type': 'consu', 'is_storable': True,
+            'rent_ok': True, 'list_price': 10.0,
+        })
+        wh = self.env['stock.warehouse'].search(
+            [('company_id', '=', self.env.company.id)], limit=1)
+        wh.write({'delivery_steps': 'pick_pack_ship'})
+        self.env['stock.quant'].with_context(inventory_mode=True).create({
+            'product_id': prod.id,
+            'location_id': wh.lot_stock_id.id,
+            'inventory_quantity': 10,
+        }).action_apply_inventory()
+
+        now = fields.Datetime.now()
+        order = self.env['sale.order'].with_context(in_rental_app=True).create({
+            'partner_id': self.partner.id,
+            'warehouse_id': wh.id,
+            'rental_start_date': now,
+            'rental_return_date': now + timedelta(days=7),
+            'order_line': [(0, 0, {
+                'product_id': prod.id,
+                'product_uom_qty': 4,
+                'price_unit': 10.0,
+            })],
+        })
+        order.action_confirm()
+
+        def return_demand():
+            rp = order.picking_ids.filtered(
+                lambda p: p.return_id and p.state not in ('done', 'cancel'))
+            moves = rp.move_ids.filtered(
+                lambda m: m.product_id == prod
+                and m.state != 'cancel')
+            return sum(moves.mapped('product_uom_qty'))
+
+        self.assertEqual(return_demand(), 4, "return should start at 4")
+
+        for _i in range(4):
+            step = order.picking_ids.filtered(
+                lambda p: not p.return_id
+                and p.state in ('assigned', 'confirmed', 'partially_available')
+                and p.picking_type_code in ('internal', 'outgoing')
+            ).sorted('id')[:1]
+            if not step:
+                break
+            for m in step.move_ids:
+                m.quantity = m.product_uom_qty
+                m.picked = True
+            step.with_context(
+                skip_backorder=True, skip_lost_broken_check=True,
+            ).button_validate()
+            self.assertEqual(
+                return_demand(), 4,
+                "Return demand must stay 4 after validating %s "
+                "(multi-step legs must not accumulate)" % step.name)
+
+        fl = order.flow_line_ids.filtered(
+            lambda f: f.product_id == prod)[:1]
+        self.assertEqual(fl.delivered_qty, 4, "all 4 delivered at the end")

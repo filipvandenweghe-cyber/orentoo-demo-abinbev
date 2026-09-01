@@ -269,29 +269,25 @@ class SaleFlowSyncService(models.AbstractModel):
 
         prec = self.env['decimal.precision'].precision_get('Product Unit of Measure')
 
-        # Build expected map: delivered + pending backorder demand.
-        # This is the total quantity that will eventually be at the
-        # customer and must be returned.
+        # Expected return demand = the ordered rental quantity that will end
+        # up at the customer, counted ONCE per product (current_qty).
+        #
+        # We deliberately do NOT sum the pending outbound *moves*.  In a
+        # multi-step delivery (Pick -> Pack -> Ship) the SAME units appear as
+        # a move on every leg, so summing pending moves inflated the return
+        # demand on each validated step (4 -> 8 -> 12 ...), then it collapsed
+        # to the delivered qty only on the final step.  current_qty is stable
+        # across all steps, already reflects order changes/cancellations, and
+        # equals delivered_qty + still-to-deliver.  (same principle as RS20,
+        # which already dedups delivered_qty across multi-step legs.)
         expected_map = {}
         for fl in order.flow_line_ids:
             if not fl.is_rental:
                 continue
             if fl.state == 'cancelled':
                 continue
-            product = fl.product_id
-            expected_map[product.id] = expected_map.get(product.id, 0) + fl.delivered_qty
-
-        # Add pending outgoing backorder demand (not yet delivered)
-        pending_outgoing = order.picking_ids.filtered(
-            lambda p: not p.return_id and p.state not in ('done', 'cancel')
-        )
-        for pick in pending_outgoing:
-            for move in pick.move_ids.filtered(
-                lambda m: m.state not in ('done', 'cancel')
-                and m.product_id.rent_ok
-            ):
-                pid = move.product_id.id
-                expected_map[pid] = expected_map.get(pid, 0) + move.product_uom_qty
+            pid = fl.product_id.id
+            expected_map[pid] = expected_map.get(pid, 0) + fl.current_qty
 
         for picking in return_pickings:
             active_moves = picking.move_ids.filtered(lambda m: m.state != 'cancel')
