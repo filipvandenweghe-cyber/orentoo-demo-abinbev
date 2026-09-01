@@ -1512,6 +1512,68 @@ class TestSaleFlow(TransactionCase):
             lambda f: f.product_id == prod)[:1]
         self.assertEqual(fl.delivered_qty, 4, "all 4 delivered at the end")
 
+    # ── Over-pick undo: only what SHIPS to the customer is expected ──
+    def test_33_overpick_not_shipped_is_not_expected(self):
+        """Option B / over-pick undo: if more is picked than actually shipped
+        to the customer, only what shipped is expected back.  Units left in
+        the warehouse (over-pick not sent out) are NOT return demand — no
+        special undo needed, just don't ship the excess."""
+        prod = self.env['product.product'].create({
+            'name': 'OP Rental', 'type': 'consu', 'is_storable': True,
+            'rent_ok': True, 'list_price': 10.0,
+        })
+        wh = self.env['stock.warehouse'].search(
+            [('company_id', '=', self.env.company.id)], limit=1)
+        wh.write({'delivery_steps': 'pick_pack_ship'})
+        self.env['stock.quant'].with_context(inventory_mode=True).create({
+            'product_id': prod.id, 'location_id': wh.lot_stock_id.id,
+            'inventory_quantity': 50,
+        }).action_apply_inventory()
+
+        now = fields.Datetime.now()
+        order = self.env['sale.order'].with_context(in_rental_app=True).create({
+            'partner_id': self.partner.id, 'warehouse_id': wh.id,
+            'rental_start_date': now, 'rental_return_date': now + timedelta(days=7),
+            'order_line': [(0, 0, {
+                'product_id': prod.id, 'product_uom_qty': 5, 'price_unit': 10.0,
+            })],
+        })
+        order.action_confirm()
+
+        def return_demand():
+            rp = order.picking_ids.filtered(
+                lambda p: p.return_id and p.state not in ('done', 'cancel'))
+            return sum(rp.move_ids.filtered(
+                lambda m: m.product_id == prod
+                and m.state != 'cancel').mapped('product_uom_qty'))
+
+        def next_step(code):
+            return order.picking_ids.filtered(
+                lambda p: not p.return_id
+                and p.state in ('assigned', 'confirmed', 'partially_available')
+                and p.picking_type_code == code).sorted('id')[:1]
+
+        def do(step, qty):
+            for m in step.move_ids:
+                m.quantity = qty
+                m.picked = True
+            step.with_context(
+                skip_backorder=True, skip_lost_broken_check=True,
+            ).button_validate()
+
+        # PICK 8 (over-pick on a 5-line), PACK 8, but SHIP only 5.
+        do(next_step('internal'), 8)          # PICK Stock->Packing = 8
+        do(next_step('internal'), 8)          # PACK Packing->Output = 8
+        do(next_step('outgoing'), 5)          # SHIP Output->Customer = 5 (3 stay in Output)
+
+        self.assertEqual(
+            order.order_line.filtered(lambda l: l.product_id == prod).qty_delivered,
+            5, "only 5 shipped to the customer")
+        self.assertEqual(
+            return_demand(), 5,
+            "only the 5 shipped are expected back; the 3 over-picked but not "
+            "shipped stay in the warehouse and are not return demand")
+
     # ── Over-delivery: return must match what was actually delivered ──
     def test_24_over_delivery_return_matches_delivered(self):
         """If more is delivered than ordered (over-pick), the return must

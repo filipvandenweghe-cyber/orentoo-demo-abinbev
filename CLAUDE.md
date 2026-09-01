@@ -1,0 +1,76 @@
+# Orentoo — Project Memory (for Claude)
+
+Odoo **19.0** on **Odoo.sh**. Custom rental modules under `/home/odoo/src/user`.
+This file is the durable context; the `docs/*_requirements.{md,docx}` files hold the
+full rationale per feature. Read this first.
+
+## Workflow rules (important)
+- **Push with `odoosh-push` only — never `git push`.** HEAD is detached at `main`.
+- **Bump the manifest `version`** whenever schema/views/assets change, or Odoo.sh won't
+  pick up the update on rebuild.
+- **Commit/push only when the user asks.** Commit footers:
+  - `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`
+  - `Claude-Session: https://claude.ai/code/session_015UyktmijNHjiCtQB359rzX`
+- **Running tests locally** (plain `odoo-bin -i` marks user modules "not installable" —
+  you must pass the Enterprise addons path):
+  ```
+  /home/odoo/src/odoo/odoo-bin \
+    --addons-path=/home/odoo/src/odoo/addons,/home/odoo/src/enterprise,/home/odoo/src/themes,/home/odoo/src/user \
+    -d filipvandenweghe-cyber-orentoo-demo-abinbev-main-36827463 \
+    -u <module> --test-enable --test-tags /<module> --stop-after-init --no-http
+  ```
+- `odoo shell` works (same addons path). Shell sessions **roll back** unless you call
+  `env.cr.commit()`. The dev DB is `filipvandenweghe-cyber-orentoo-demo-abinbev-main-36827463`.
+- An Odoo.sh **rebuild** rebuilds container+DB from git; it does not touch git history.
+
+## Warehouses / locations (dev)
+- **PRO** ("Pro-Designed.com", company Pro-Designed.com): 3-step reception & delivery
+  (`pick_pack_ship`). Input/QC/Stock/Packing/Output are internal children of the PRO view.
+- **WH** ("My Company (San Francisco)"): 1-step (`ship_only`).
+- **Rental "at customer" location** = `company.rental_loc_id` (displayed "Customers/Rental"),
+  `usage='internal'` (so rented goods still count as company stock) but **outside** the
+  warehouse tree; its parent "Customers" has `usage='customer'`.
+- Real rental round-trips (pickup + return) are created at confirmation only for orders
+  made **`with_context(in_rental_app=True)`** (the Rental app path). `_create_rental_order`
+  in tests does NOT set it → no return picking.
+
+## Modules
+- **rental_set** — rental sets (a product expands to hidden component lines) + **rental
+  availability** + the availability pop-up widget. `repair` is an *optional* dep (soft
+  `'repair.order' in env` check; never in `depends`).
+- **sale_flow** — commercial/logistic flow tracking (`sale.flow.line`) + **return
+  (receipt) demand reconciliation**. Hooks every `stock.move._action_done`.
+- **rental_scanning** — barcode prepared-package / set-barcode picking (backend + barcode app).
+- **rental_serial_log** — per-serial rental history (delivered/returned/repair) tab on the lot form.
+
+## Key design decisions (do not regress)
+### Availability (rental_set) — "Option A"
+- `Available to this order = max(Total physical stock − Reserved by other orders − In Repair, 0)`.
+  - **Total physical stock** = current on-hand across the warehouse internal/transit
+    locations **+** the rental (at-customer) location (conserved; stable across steps).
+  - **Reserved by other orders** = native `product._get_unavailable_qty(from,to,
+    ignored_soline_id=line.id, warehouse_id=…)` (period-aware; SOL-based; excludes this line
+    so an order never subtracts its own units from itself).
+  - **In Repair** = `product._get_repair_unavailable_qty(...)` (open repairs over their
+    window; 0 if `repair` not installed).
+- **Set availability** = `floor(min over leaf components of component_avail / qty-per-set)`.
+- Pop-up = two sections: *For this rental* (time-based) + *Physical stock (right now)*
+  (a partition that sums to Total). No forecast rewrite; padding stays standard config.
+- Docs: `docs/rental_availability_requirements.{md,docx}`.
+
+### Return (receipt) demand (sale_flow) — "Option B"
+- **Receipt = what has gone OUT to the customer** = Σ of DONE outbound moves that reached
+  the customer/rental location. "Until it is out, the client is not expected to return it."
+- Multi-step legs (to Packing/Output) never reach the customer → no inflation. Over-delivery
+  → expect what shipped. Over-pick not shipped → not expected (put it back, no special undo).
+  Pending back-order → not expected until it ships.
+- A guard leaves the return untouched while a delivery is in progress (nothing shipped +
+  outbound pending) so the return picking isn't cancelled mid-multi-step.
+- Root cause fixed: the old code summed pending outbound moves across every multi-step leg
+  (4→8→12). Docs: `docs/sale_flow_return_demand_requirements.{md,docx}`.
+
+## Requirement docs
+- `docs/rental_availability_requirements.{md,docx}`
+- `docs/sale_flow_return_demand_requirements.{md,docx}`
+- `docs/rental_serial_log_requirements.{md,docx}`
+- `docs/rental_scanning_requirements.{md,docx}`
