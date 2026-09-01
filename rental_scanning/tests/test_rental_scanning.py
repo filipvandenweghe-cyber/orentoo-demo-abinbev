@@ -105,7 +105,7 @@ class TestRentalScanningCommon(TransactionCase):
         })
         for product, qty in demand:
             self.env['stock.move'].create({
-                'name': product.name, 'product_id': product.id,
+                'product_id': product.id,
                 'product_uom_qty': qty, 'product_uom': product.uom_id.id,
                 'picking_id': picking.id,
                 'location_id': self.stock_loc.id,
@@ -126,7 +126,7 @@ class TestRentalScanningCommon(TransactionCase):
         })
         for product, qty in demand:
             self.env['stock.move'].create({
-                'name': product.name, 'product_id': product.id,
+                'product_id': product.id,
                 'product_uom_qty': qty, 'product_uom': product.uom_id.id,
                 'picking_id': picking.id,
                 'location_id': self.stock_loc.id, 'location_dest_id': dest.id,
@@ -348,7 +348,7 @@ class TestRentalScanning(TestRentalScanningCommon):
         })
         for product, qty in [(self.eurobak, 1), (self.glas, 40)]:
             self.env['stock.move'].create({
-                'name': product.name, 'product_id': product.id,
+                'product_id': product.id,
                 'product_uom_qty': qty, 'product_uom': product.uom_id.id,
                 'picking_id': picking.id,
                 'location_id': self.stock_loc.id,
