@@ -280,25 +280,30 @@ class SaleFlowSyncService(models.AbstractModel):
         # across all steps, already reflects order changes/cancellations, and
         # equals delivered_qty + still-to-deliver.  (same principle as RS20,
         # which already dedups delivered_qty across multi-step legs.)
+        # Expected return = everything heading to the customer, counted ONCE
+        # per unit at its ORIGIN leg — the outbound move whose SOURCE is the
+        # warehouse stock location.  Counting the origin leg is robust to:
+        #   * multi-step routes (Pick->Pack->Ship): only the Stock->... leg has
+        #     stock as its source, so the same units are not re-counted on the
+        #     Pack/Ship legs (fixes the 4 -> 8 -> 12 inflation);
+        #   * over-delivery: an over-picked origin move carries the real qty
+        #     (e.g. 7 done on a 5-demand line);
+        #   * back-orders: each backorder has its own origin move, so pending
+        #     backorders still to ship are included (fixes 7 -> should be 8);
+        #   * cancellations: cancelled origin legs are excluded.
+        stock_loc = order.warehouse_id.lot_stock_id
+        stock_loc_ids = set(self.env['stock.location'].search(
+            [('id', 'child_of', stock_loc.id)]).ids) if stock_loc else set()
         expected_map = {}
-        for fl in order.flow_line_ids:
-            if not fl.is_rental:
+        outbound = order.picking_ids.filtered(lambda p: not p.return_id)
+        for m in outbound.move_ids:
+            if m.state == 'cancel' or not m.product_id.rent_ok:
                 continue
-            if fl.state == 'cancelled':
+            if m.location_id.id not in stock_loc_ids:
                 continue
-            pid = fl.product_id.id
-            # Delivered-to-customer: use the SALE LINE's qty_delivered, which
-            # native computes from the final customer-facing leg only — so it
-            # is reliable mid multi-step (0 until the ship step is done),
-            # unlike flow_line.delivered_qty which is only deduped once the
-            # final step completes.
-            delivered = fl.sale_line_id.qty_delivered if fl.sale_line_id else 0.0
-            # Expect back everything that will be at the customer: the ordered
-            # (current) quantity, but NEVER less than what was actually
-            # delivered — this handles over-delivery (e.g. 7 picked on a
-            # 5-qty line must still all come back).  current_qty keeps it
-            # stable across multi-step legs (no per-leg inflation).
-            expected_map[pid] = expected_map.get(pid, 0) + max(fl.current_qty, delivered)
+            qty = m.quantity if m.state == 'done' else m.product_uom_qty
+            expected_map[m.product_id.id] = \
+                expected_map.get(m.product_id.id, 0) + qty
 
         for picking in return_pickings:
             active_moves = picking.move_ids.filtered(lambda m: m.state != 'cancel')
