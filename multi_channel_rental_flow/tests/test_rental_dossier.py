@@ -72,12 +72,28 @@ class TestRentalDossier(TransactionCase):
         self.assertEqual(dossier.state, 'draft')
 
     def test_03_dossier_currency_from_pricelist(self):
-        """Currency is computed from pricelist."""
-        dossier = self._create_dossier()
-        self.assertEqual(
-            dossier.currency_id,
-            self.pricelist.currency_id,
+        """Currency is computed from the dossier's pricelist.
+
+        Use a pricelist with an explicit currency that differs from the
+        company currency so the assertion is deterministic and actually
+        proves the currency is taken from the pricelist (and not from the
+        company fallback in ``_compute_currency_id``). Relying on an
+        arbitrary ``search(limit=1)`` pricelist is fragile: at install time
+        the picked pricelist may have no currency, which correctly makes the
+        dossier fall back to the company currency.
+        """
+        other_currency = self.env.ref('base.EUR')
+        self.assertNotEqual(
+            other_currency, self.company.currency_id,
+            "Test needs a pricelist currency different from the company one.",
         )
+        priced_list = self.env['product.pricelist'].create({
+            'name': 'MCRF Currency Test Pricelist',
+            'currency_id': other_currency.id,
+            'company_id': self.company.id,
+        })
+        dossier = self._create_dossier(pricelist_id=priced_list.id)
+        self.assertEqual(dossier.currency_id, other_currency)
 
     def test_03b_display_name_with_description(self):
         """Display name concatenates number and description."""
