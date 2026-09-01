@@ -269,41 +269,40 @@ class SaleFlowSyncService(models.AbstractModel):
 
         prec = self.env['decimal.precision'].precision_get('Product Unit of Measure')
 
-        # Expected return demand = the ordered rental quantity that will end
-        # up at the customer, counted ONCE per product (current_qty).
-        #
-        # We deliberately do NOT sum the pending outbound *moves*.  In a
-        # multi-step delivery (Pick -> Pack -> Ship) the SAME units appear as
-        # a move on every leg, so summing pending moves inflated the return
-        # demand on each validated step (4 -> 8 -> 12 ...), then it collapsed
-        # to the delivered qty only on the final step.  current_qty is stable
-        # across all steps, already reflects order changes/cancellations, and
-        # equals delivered_qty + still-to-deliver.  (same principle as RS20,
-        # which already dedups delivered_qty across multi-step legs.)
-        # Expected return = everything heading to the customer, counted ONCE
-        # per unit at its ORIGIN leg — the outbound move whose SOURCE is the
-        # warehouse stock location.  Counting the origin leg is robust to:
-        #   * multi-step routes (Pick->Pack->Ship): only the Stock->... leg has
-        #     stock as its source, so the same units are not re-counted on the
-        #     Pack/Ship legs (fixes the 4 -> 8 -> 12 inflation);
-        #   * over-delivery: an over-picked origin move carries the real qty
-        #     (e.g. 7 done on a 5-demand line);
-        #   * back-orders: each backorder has its own origin move, so pending
-        #     backorders still to ship are included (fixes 7 -> should be 8);
-        #   * cancellations: cancelled origin legs are excluded.
-        stock_loc = order.warehouse_id.lot_stock_id
-        stock_loc_ids = set(self.env['stock.location'].search(
-            [('id', 'child_of', stock_loc.id)]).ids) if stock_loc else set()
-        expected_map = {}
+        # Expected return demand = what has actually gone OUT to the customer
+        # (Option B).  "Until it is out, the client is not expected to return
+        # it."  So we count only DONE outbound moves that reached the customer
+        # / rental location.  This means:
+        #   * multi-step (Pick->Pack->Ship): the intermediate legs never reach
+        #     the customer, so the return is never inflated across the legs —
+        #     it grows only when goods actually ship;
+        #   * over-delivery: whatever was shipped is expected back (7 on a
+        #     5-line -> 7);
+        #   * over-pick then put-back-before-shipping: the excess never ships,
+        #     so it is never expected;
+        #   * back-orders: the pending part is not expected until it ships.
+        rental_loc = order.company_id.rental_loc_id
+
+        def _reached_customer(move):
+            dest = move.location_dest_id
+            return (
+                dest == rental_loc
+                or dest.usage in ('customer', 'transit')
+                or (dest.location_id and dest.location_id.usage == 'customer')
+            )
+
         outbound = order.picking_ids.filtered(lambda p: not p.return_id)
+        expected_map = {}
+        pending_products = set()   # products with a delivery still in progress
         for m in outbound.move_ids:
             if m.state == 'cancel' or not m.product_id.rent_ok:
                 continue
-            if m.location_id.id not in stock_loc_ids:
-                continue
-            qty = m.quantity if m.state == 'done' else m.product_uom_qty
-            expected_map[m.product_id.id] = \
-                expected_map.get(m.product_id.id, 0) + qty
+            if m.state == 'done':
+                if _reached_customer(m):
+                    expected_map[m.product_id.id] = \
+                        expected_map.get(m.product_id.id, 0) + m.quantity
+            else:
+                pending_products.add(m.product_id.id)
 
         for picking in return_pickings:
             active_moves = picking.move_ids.filtered(lambda m: m.state != 'cancel')
@@ -319,6 +318,15 @@ class SaleFlowSyncService(models.AbstractModel):
             for pid, moves in product_moves.items():
                 expected = expected_map.get(pid, 0)
                 current_total = sum(m.product_uom_qty for m in moves)
+
+                # Delivery still in progress and nothing has reached the
+                # customer yet: leave the return as-is (do NOT reduce/cancel).
+                # It will be set to the delivered qty once the goods ship.
+                # This keeps the return alive across multi-step legs and only
+                # cancels it when a line is genuinely not being delivered.
+                if float_compare(expected, 0, precision_digits=prec) <= 0 \
+                        and pid in pending_products:
+                    continue
 
                 if float_compare(expected, current_total, precision_digits=prec) == 0:
                     continue  # Already correct
