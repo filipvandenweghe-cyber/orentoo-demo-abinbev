@@ -343,6 +343,7 @@ class SaleOrderLine(models.Model):
 
             available = self._compute_forecast_availability(
                 line.product_id, line.order_id, wh_id, from_date, to_date,
+                ignored_soline_id=line.id,
             )
             cache[key] = available
             line.free_qty_today = available
@@ -374,96 +375,61 @@ class SaleOrderLine(models.Model):
                 line.free_qty_today = max_free
                 line.virtual_available_at_date = max_virtual
 
-    def _compute_forecast_availability(self, product, order, wh_id,
-                                        from_date, to_date):
-        """Compute availability using the forecast report's move data.
-
-        Returns the minimum forecasted stock during the rental period,
-        plus the order's own demand (if confirmed) — i.e. "how much
-        CAN this order use".
-
-        This matches the forecast report exactly and avoids timing
-        artifacts from the standard rental _get_unavailable_qty.
-        """
-        # Get all pending moves for this product in this warehouse
-        wh = self.env['stock.warehouse'].browse(wh_id)
-        stock_location = wh.lot_stock_id if wh else False
-        if not stock_location:
+    def _rental_physical_total(self, product, order, wh):
+        """Real units owned right now for this warehouse pool = current
+        on-hand across the warehouse's internal/transit locations plus the
+        internal rental ("at customer") location.  Conserved and stable."""
+        loc_ids = []
+        if wh and wh.view_location_id:
+            wh_locs = self.env['stock.location'].search([
+                ('id', 'child_of', wh.view_location_id.id),
+                ('usage', 'in', ('internal', 'transit')),
+            ])
+            loc_ids += wh_locs.ids
+        rental_loc = order.company_id.rental_loc_id if order else False
+        if rental_loc:
+            loc_ids.append(rental_loc.id)
+        if not loc_ids:
             return product.qty_available
+        total = 0.0
+        for dummy_loc, qty in self.env['stock.quant']._read_group(
+            [('product_id', '=', product.id),
+             ('location_id', 'in', loc_ids)],
+            ['location_id'], ['quantity:sum'],
+        ):
+            total += qty
+        return total
 
-        # Start with current physical stock (save original for capping later)
-        current_stock_original = product.with_context(warehouse_id=wh_id).qty_available
-        current_stock = current_stock_original
+    def _compute_forecast_availability(self, product, order, wh_id,
+                                        from_date, to_date,
+                                        ignored_soline_id=False):
+        """Availability to THIS order for the rental period (Option A):
 
-        # Collect all pending moves (not done, not cancel) sorted by date
-        domain = [
-            ('product_id', '=', product.id),
-            ('state', 'not in', ('done', 'cancel')),
-        ]
-        # Outgoing moves from this warehouse
-        out_moves = self.env['stock.move'].search(
-            domain + [('location_id', 'child_of', stock_location.id)],
-            order='date asc',
-        )
-        # Incoming moves to this warehouse
-        in_moves = self.env['stock.move'].search(
-            domain + [('location_dest_id', 'child_of', stock_location.id)],
-            order='date asc',
-        )
+            Available = max(Total physical stock
+                            − reserved by OTHER orders (period-aware)
+                            − in repair, 0)
 
-        # Build timeline of stock changes during the rental period
-        # Each event: (date, delta)
-        events = []
-        own_out_demand = 0
-        for m in out_moves:
-            if m.date and m.date >= from_date and m.date <= to_date:
-                events.append((m.date, -m.product_uom_qty))
-            elif m.date and m.date < from_date:
-                # Already scheduled before period — stock reduced
-                current_stock -= m.product_uom_qty
-            # Track own order's outgoing demand
-            if m.picking_id and m.picking_id.sale_id == order:
-                own_out_demand += m.product_uom_qty
+        Total physical stock is the real conserved count (warehouse internal
+        + rental location), so the order's own reserved/picked units are
+        never subtracted from itself (they are simply *not* part of "other
+        orders").  This replaces the old move-walk / own-demand add-back,
+        which mis-behaved once an order's pickup move was done (it dropped the
+        add-back and made a secured order look short).
+        """
+        wh = order.warehouse_id if order else self.env['stock.warehouse'].browse(wh_id)
+        total = self._rental_physical_total(product, order, wh)
 
-        for m in in_moves:
-            if m.date and m.date >= from_date and m.date <= to_date:
-                events.append((m.date, +m.product_uom_qty))
-            elif m.date and m.date < from_date:
-                current_stock += m.product_uom_qty
+        reserved_other = 0.0
+        if product.rent_ok and hasattr(product, '_get_unavailable_qty'):
+            reserved_other = product._get_unavailable_qty(
+                from_date, to_date,
+                ignored_soline_id=ignored_soline_id, warehouse_id=wh_id,
+            )
 
-        # Walk the timeline and find the minimum stock level
-        events.sort(key=lambda e: e[0])
-        min_stock = current_stock
-        running = current_stock
-        for date, delta in events:
-            running += delta
-            if running < min_stock:
-                min_stock = running
-
-        # For confirmed orders: add back own outgoing demand.
-        # The forecast includes this order's moves as outgoing (reducing
-        # stock).  But "available for this order" means the stock this
-        # order can draw from — including what it already claimed.
-        #
-        # The cap must ALSO be raised by own demand: current_stock_original
-        # (qty_available) is already reduced by this order's own reservation,
-        # so capping at the un-raised value would silently negate the
-        # add-back and under-count the order's own availability.  (RAV-10)
-        cap = current_stock_original
-        if order.state == 'sale':
-            min_stock += own_out_demand
-            cap += own_out_demand
-
-        available = min(max(min_stock, 0), cap)
-
-        # Deduct units tied up in open repairs over the rental period.
-        # Repairs are physically present but not rentable, and standard
-        # Odoo never deducts them.  No-op when the repair module is absent.
-        # (RAV-01)
         in_repair = product._get_repair_unavailable_qty(
             from_date, to_date, warehouse_id=wh_id,
         )
-        return max(available - in_repair, 0.0)
+        return max(total - reserved_other - in_repair, 0.0)
 
     @api.depends('product_id', 'product_uom_qty', 'is_rental',
                  'reservation_begin', 'return_date', 'state',
@@ -1399,52 +1365,27 @@ class SaleOrderLine(models.Model):
 
     def _get_component_available_qty(self, product, from_date, to_date,
                                       warehouse_id, ignored_soline_id=False):
-        """Return available quantity of ``product`` for the rental period.
+        """Available quantity of ``product`` for the rental period, using the
+        same Option-A formula as line availability:
 
-        For rental products, computes the total rentable stock and subtracts
-        the rental demand from other orders that overlap with the requested
-        period.
+            max(Total physical stock − reserved by OTHER orders − in repair, 0)
 
-        For current/past dates: uses qty_available (on-hand).
-        For future dates: uses total on-hand stock (ignoring current
-        reservations) because today's reservations are for orders that
-        will be completed before the future rental starts.  Only rental
-        demand that actually overlaps the requested period is subtracted
-        via _get_unavailable_qty.
+        (See ``_compute_forecast_availability``.)  Keeps set-component
+        availability consistent with standalone-line availability.
         """
         if product.rent_ok and hasattr(product, '_get_unavailable_qty'):
-            # Use virtual_available (forecast) plus items currently rented
-            # out that will return before from_date.  This gives a consistent
-            # availability figure for both draft and confirmed orders,
-            # regardless of whether from_date is past/current/future.
-            #
-            # The standard current-date branch (qty_available) is too low
-            # for confirmed orders because their own move reservations
-            # reduce on-hand.  Using virtual_available + rental returns
-            # avoids this — the caller adds back reserved_by_this_order
-            # separately for confirmed orders.
-            rentable = product.with_context(
-                from_date=False, to_date=from_date,
-                warehouse_id=warehouse_id,
-            ).virtual_available
-            rentable += product._get_virtual_unavailable_qty_in_rent(
-                pivot_date=from_date,
-                ignored_soline_id=ignored_soline_id,
-                warehouse_id=warehouse_id,
-            )
-
-            # Subtract rental demand from other orders overlapping this period
+            wh = (self.env['stock.warehouse'].browse(warehouse_id)
+                  if warehouse_id else self.order_id.warehouse_id)
+            total = self._rental_physical_total(product, self.order_id, wh)
             unavailable = product._get_unavailable_qty(
                 from_date, to_date,
                 ignored_soline_id=ignored_soline_id,
                 warehouse_id=warehouse_id,
             )
-            # Deduct units tied up in open repairs (RAV-01); no-op without
-            # the repair module.
             in_repair = product._get_repair_unavailable_qty(
                 from_date, to_date, warehouse_id=warehouse_id,
             )
-            return max(rentable - unavailable - in_repair, 0.0)
+            return max(total - unavailable - in_repair, 0.0)
         else:
             # Non-rental product: standard stock availability
             return product.with_context(

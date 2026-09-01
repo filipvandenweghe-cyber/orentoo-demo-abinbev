@@ -1,5 +1,5 @@
 # Rental Availability — Repairs, Sets & Warehouse Breakdown
-*Functional & Technical Requirements, Goals & Tests — Backend / Sales (Rental) + Inventory (v8, for approval)*
+*Functional & Technical Requirements, Goals & Tests — Backend / Sales (Rental) + Inventory (v9, for approval)*
 
 | | |
 |---|---|
@@ -79,6 +79,20 @@
       credits scheduled returns). Consequence (accepted): "Available to this order" can
       exceed physically-free stock when units return within the window — correct, and
       why the two lenses are shown separately.
+
+13. **Availability formula replaced (v9).** "Available to this order" no longer uses the
+    old move-walk / own-demand add-back. It is now:
+    `Available = max(Total physical stock − Reserved by other orders − In Repair, 0)`,
+    where *Reserved by other orders* is the native period-aware peak-concurrent demand of
+    **other** confirmed rentals (excludes this line). Reason: the old code excluded
+    **done** pickup moves, so once an order was (partially) picked it lost its own-demand
+    add-back and looked *short*, while an un-picked competitor looked *fully available* —
+    the shortfall landed on the wrong order (real case: two orders wanting 4 from 7 →
+    picked S01532 showed Missing 1 while un-picked S01549 wrongly showed Missing 0). The
+    new formula is symmetric and correct: both competing orders show Available 3 / Missing
+    1 (honest — 8 demanded from 7), own demand is never subtracted from itself (it's not
+    an "other order"), and it no longer depends on pick/delivery state. Same formula is
+    used for set components. (Tested: T-14 competing orders.)
 
 # 1. Purpose & Business Context
 Rental staff need a **trustworthy "available for this period" figure** and a way to
