@@ -80,6 +80,35 @@ class TestSaleFlow(TransactionCase):
         # Configure company
         cls.env.company.lost_broken_fee_product_id = cls.fee_product
 
+        # ── Rental round-trip environment ────────────────────────────
+        # The tests that use ``in_rental_app=True`` (return-demand: over
+        # delivery, multi-step, back-order, over-pick) rely on Odoo creating
+        # the rental pickup + return pickings at confirmation.  Two things
+        # gate that and are NOT guaranteed on a freshly rebuilt DB:
+        #   1. the "Rental Transfers" setting
+        #      (``sale_stock_renting.group_rental_stock_picking``) must be on,
+        #      otherwise a rental order is tracked by qty only and creates NO
+        #      pickings at all;
+        #   2. the test company needs an at-customer rental location
+        #      (``company.rental_loc_id``); the default SF company ships this
+        #      value empty.
+        # Provision both so the suite is self-contained and deterministic.
+        rental_transfers = cls.env.ref(
+            'sale_stock_renting.group_rental_stock_picking',
+            raise_if_not_found=False)
+        if rental_transfers:
+            cls.env.user.group_ids = [(4, rental_transfers.id)]
+
+        if not cls.env.company.rental_loc_id:
+            customer_parent = cls.env['stock.location'].search(
+                [('usage', '=', 'customer')], limit=1)
+            cls.env.company.rental_loc_id = cls.env['stock.location'].create({
+                'name': 'Rental',
+                'usage': 'internal',
+                'location_id': customer_parent.id if customer_parent else False,
+                'company_id': cls.env.company.id,
+            })
+
         # Stock locations
         cls.stock_location = cls.env.ref('stock.stock_location_stock')
         cls.customer_location = cls.env.ref('stock.stock_location_customers')
