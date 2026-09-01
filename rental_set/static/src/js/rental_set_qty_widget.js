@@ -59,6 +59,7 @@ patch(qtyAtDateWidget, {
     fieldDependencies: [
         ...qtyAtDateWidget.fieldDependencies,
         { name: 'order_product_demand', type: 'float' },
+        { name: 'product_uom_qty', type: 'float' },
         { name: 'all_warehouse_available', type: 'float' },
         { name: 'all_warehouse_count', type: 'integer' },
         // Rental availability breakdown (RAV-05, RAV-13)
@@ -195,6 +196,13 @@ patch(QtyAtDatePopover.prototype, {
             addRow(_t('of which reserved for this order'), self,
                    { muted: true, indent: true });
         }
+
+        // Demand side: what this order asks for, and any shortfall.
+        const requested = data.order_product_demand || data.product_uom_qty || 0;
+        const missing = Math.max(requested - avail, 0);
+        addRow(_t('Requested by this order'), requested, { top: true });
+        addRow(_t('Missing for this order'), missing,
+               { strong: missing > 0, danger: missing > 0 });
 
         // Full physical partition at pickup — always sums back to Total.
         const onhand = data.rental_onhand_json || [];
