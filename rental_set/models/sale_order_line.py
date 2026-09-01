@@ -225,8 +225,9 @@ class SaleOrderLine(models.Model):
         string='Total Stock',
         compute='_compute_rental_breakdown',
         digits='Product Unit of Measure',
-        help='Total units owned by the warehouse pool = Available for Rent '
-             '+ Reserved by other orders + In Repair.',
+        help='Real units owned right now = current on-hand across the '
+             "warehouse's internal locations plus the internal rental "
+             '(at customer) location. Conserved and stable.',
     )
     rental_onhand_json = fields.Json(
         string='On-hand by Location',
@@ -525,39 +526,37 @@ class SaleOrderLine(models.Model):
             line.rental_reserved_other = reserved_other
             line.rental_in_repair = in_repair
             # free_qty_today is already repair-aware (see forecast) and is
-            # the net "available to this order" figure.
+            # the time-based "available to this order" figure.
             line.rental_pickable = line.free_qty_today
-            # Every owned unit is either available to us, held by another
-            # order, or in repair — so Total = Available + Others + Repair.
-            # Computed this way it is warehouse-scoped and always reconciles
-            # exactly with the figure shown to the user.
-            total = line.free_qty_today + reserved_other + in_repair
+
+            # Physical stock is a SEPARATE, point-in-time lens (Option A):
+            # Total stock = real units owned = current on-hand across all the
+            # warehouse's internal locations PLUS the internal rental
+            # ("at customer") location.  It is conserved — picking just moves
+            # a unit from Stock to At customer, Total unchanged — so it is a
+            # stable anchor and the partition always sums to it (no phantom).
+            # It is intentionally NOT derived from the time-based forecast.
+            partition, total = self._rental_stock_partition(
+                product, order, wh, in_repair)
             line.rental_total_stock = total
+            line.rental_onhand_json = partition or False
 
-            # Physical location partition of Total — CURRENT on-hand per
-            # location (real quants, always ≥ 0).  Every owned unit is placed
-            # somewhere, so the buckets sum to Total.  We deliberately do NOT
-            # forecast per-location to pickup: applying pending staging/pick
-            # moves (and partial reservations) produces phantom/negative
-            # per-location figures.  Period-awareness lives in "Available for
-            # Rent"; this list answers "where is the stock physically now".
-            # (RAV-14)
-            line.rental_onhand_json = self._rental_stock_partition(
-                product, order, wh, total, in_repair) or False
+    def _rental_stock_partition(self, product, order, wh, in_repair):
+        """Return ``(buckets, total)`` — the current physical distribution of
+        this product and its real total owned.
 
-    def _rental_stock_partition(self, product, order, wh, total, in_repair):
-        """Return a partition of ``total`` across physical buckets by CURRENT
-        on-hand: warehouse internal locations (Input/QC/Stock…), At customer,
-        In repair, and a small reconciling bucket so the list sums to Total.
-        (RAV-14)
+        Buckets cover the warehouse internal locations (Input/QC/Stock…),
+        **At customer** (the internal rental location) and **In repair**
+        (carved out of the stock it physically sits in).  ``total`` is the sum
+        of current on-hand across those locations, so the buckets always sum
+        to Total with no reconciling remainder.  (RAV-14, Option A)
         """
         rounding = product.uom_id.rounding or 0.01
-        buckets = []
         wh_locs = self.env['stock.location']
         if wh and wh.view_location_id:
             wh_locs = self.env['stock.location'].search([
                 ('id', 'child_of', wh.view_location_id.id),
-                ('usage', '=', 'internal'),
+                ('usage', 'in', ('internal', 'transit')),
             ])
         rental_loc = order.company_id.rental_loc_id
         loc_ids = list(wh_locs.ids)
@@ -572,10 +571,13 @@ class SaleOrderLine(models.Model):
         ):
             onhand[loc.id] = qty
 
-        # In repair is carved out of the warehouse stock it physically sits
-        # in, so it is shown once and does not inflate the location count.
+        # Total owned = every unit sitting in one of these internal locations.
+        total = sum(onhand.values())
+
+        buckets = []
+        # In repair is carved out of the warehouse stock it physically sits in
+        # so it shows as its own bucket without inflating the location count.
         repair_left = in_repair
-        shown = 0.0
         for loc in wh_locs:
             qty = onhand.get(loc.id, 0.0)
             carve = min(max(qty, 0.0), repair_left)
@@ -583,26 +585,17 @@ class SaleOrderLine(models.Model):
             repair_left -= carve
             if float_compare(qty, 0.0, precision_rounding=rounding) > 0:
                 buckets.append({'location': loc.display_name, 'qty': qty})
-                shown += qty
 
         if float_compare(in_repair, 0.0, precision_rounding=rounding) > 0:
             buckets.append({'location': _('In repair'), 'qty': in_repair})
-            shown += in_repair
 
         if rental_loc:
             at_customer = onhand.get(rental_loc.id, 0.0)
             if float_compare(at_customer, 0.0, precision_rounding=rounding) > 0:
                 buckets.append({'location': _('At customer'),
                                 'qty': at_customer})
-                shown += at_customer
 
-        # Reconcile any small remainder (e.g. transit locations, or native
-        # forecast padding) so the list still sums to Total.
-        residual = total - shown
-        if float_compare(abs(residual), 0.0, precision_rounding=rounding) > 0:
-            buckets.append({'location': _('Other / in transit'),
-                            'qty': residual})
-        return buckets
+        return buckets, total
 
     # -- Set composition permission check ----------------------------------------
 

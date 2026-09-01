@@ -182,17 +182,17 @@ class TestRentalAvailability(TransactionCase):
         line.invalidate_recordset([
             'free_qty_today', 'rental_pickable', 'rental_reserved_self',
             'rental_reserved_other', 'rental_in_repair', 'rental_total_stock'])
-        # Available for Rent equals the headline availability figure.
+        # Available to this order equals the headline (time-based) figure.
         self.assertAlmostEqual(line.rental_pickable, line.free_qty_today,
                                places=2)
         # This order reserved its 4 units.
         self.assertAlmostEqual(line.rental_reserved_self, 4.0, places=2)
-        # Accounting identity: Total = Available + Others + Repair.
+        # Option A: Total stock is the real physical count = current owned.
+        # 10 units, none out yet (moves reserve but don't leave) → Total 10.
         self.assertAlmostEqual(
-            line.rental_total_stock,
-            line.rental_pickable + line.rental_reserved_other
-            + line.rental_in_repair, places=2)
-        # Location partition is a full partition of Total (sums back to it).
+            line.rental_total_stock, 10.0, places=2,
+            msg="Total stock must equal real physical on-hand (Option A)")
+        # The location partition is a full partition of that physical Total.
         line.invalidate_recordset(['rental_onhand_json'])
         partition = line.rental_onhand_json or []
         self.assertAlmostEqual(

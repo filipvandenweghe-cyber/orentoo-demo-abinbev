@@ -1,5 +1,5 @@
 # Rental Availability — Repairs, Sets & Warehouse Breakdown
-*Functional & Technical Requirements, Goals & Tests — Backend / Sales (Rental) + Inventory (v7, for approval)*
+*Functional & Technical Requirements, Goals & Tests — Backend / Sales (Rental) + Inventory (v8, for approval)*
 
 | | |
 |---|---|
@@ -64,6 +64,21 @@
     stays in "Available for Rent". This is a *physical-presence* lens (a unit can sit at
     Stock yet be reserved by another order), distinct from the availability math; both
     anchor to the same Total.
+
+12. **Option A implemented — two independent lenses (v8).** The single accounting flow
+    (`Total − Reserved − Repair = Available`) is dropped. A rental line's pop-up now has
+    two sections that do **not** net to each other:
+    - **For this rental** (time-based): Reserved by other orders, Available to this order
+      (of which reserved for this order), Requested by this order, Missing for this order.
+    - **Physical stock (right now)** (point-in-time): **Total stock** = real units owned =
+      current on-hand across the warehouse's internal locations **plus** the internal
+      rental (at customer) location; then the per-location partition (which sums to
+      Total). Total is **conserved and stable** — picking a unit just moves it from Stock
+      to "At customer", Total unchanged. This kills the earlier "Total jumped by the
+      amount picked" artifact (the old Total was back-derived from the forecast, which
+      credits scheduled returns). Consequence (accepted): "Available to this order" can
+      exceed physically-free stock when units return within the window — correct, and
+      why the two lenses are shown separately.
 
 # 1. Purpose & Business Context
 Rental staff need a **trustworthy "available for this period" figure** and a way to
