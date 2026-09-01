@@ -216,7 +216,7 @@ class SaleOrderLine(models.Model):
         digits='Product Unit of Measure',
     )
     rental_pickable = fields.Float(
-        string='Available for Rent',
+        string='Available to this order',
         compute='_compute_rental_breakdown',
         digits='Product Unit of Measure',
         help='Net quantity available to this order at the picking warehouse.',
