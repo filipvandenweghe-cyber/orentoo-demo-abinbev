@@ -1365,16 +1365,36 @@ class TestSaleFlow(TransactionCase):
 
     # ── S03270: Backorder keeps full return demand ───────────────────
 
-    def test_32_backorder_keeps_full_return_demand(self):
-        """R22/S03270: return demand includes pending backorder qty.
+    def test_32_backorder_return_follows_delivery(self):
+        """Option B: the return expects back only what has gone OUT.
 
-        Scenario: order 3 Printers, deliver 2 with backorder for 1.
-        The return must expect 3 back (2 delivered + 1 pending), not 2.
-        Only when the backorder is cancelled should the return reduce to 2.
+        Scenario: order 3, deliver 2 with a backorder for 1.  A *pending*
+        backorder is not at the customer yet, so the return expects 2 (not 3).
+        When the backorder is shipped, the return grows to 3.
         """
-        order = self._create_rental_order([
-            {'product': self.rental_product, 'qty': 3, 'price': 10.0},
-        ])
+        prod = self.env['product.product'].create({
+            'name': 'BO Rental', 'type': 'consu', 'is_storable': True,
+            'rent_ok': True, 'list_price': 10.0,
+        })
+        wh = self.env['stock.warehouse'].search(
+            [('company_id', '=', self.env.company.id)], limit=1)
+        wh.write({'delivery_steps': 'ship_only'})
+        self.env['stock.quant'].with_context(inventory_mode=True).create({
+            'product_id': prod.id, 'location_id': wh.lot_stock_id.id,
+            'inventory_quantity': 20,
+        }).action_apply_inventory()
+
+        now = fields.Datetime.now()
+        order = self.env['sale.order'].with_context(in_rental_app=True).create({
+            'partner_id': self.partner.id,
+            'warehouse_id': wh.id,
+            'rental_start_date': now,
+            'rental_return_date': now + timedelta(days=7),
+            'order_line': [(0, 0, {
+                'product_id': prod.id, 'product_uom_qty': 3, 'price_unit': 10.0,
+            })],
+        })
+        order.action_confirm()
 
         out_picking = order.picking_ids.filtered(
             lambda p: not p.return_id and p.state != 'done'
@@ -1383,23 +1403,18 @@ class TestSaleFlow(TransactionCase):
 
         # Deliver 2 of 3 WITH backorder
         for move in out_picking.move_ids:
-            if move.product_id == self.rental_product:
+            if move.product_id == prod:
                 move.quantity = 2
+                move.picked = True
 
         res = out_picking.with_context(
             skip_lost_broken_check=True,
         ).button_validate()
-
-        # Process backorder wizard if returned
         if isinstance(res, dict) and res.get('res_model') == 'stock.backorder.confirmation':
-            backorder_wiz = self.env['stock.backorder.confirmation'].with_context(
-                **res.get('context', {}),
-            ).create({})
-            backorder_wiz.process()
+            self.env['stock.backorder.confirmation'].with_context(
+                **res.get('context', {})).create({}).process()
 
         self.assertEqual(out_picking.state, 'done')
-
-        # Verify backorder exists
         backorder = order.picking_ids.filtered(
             lambda p: not p.return_id
             and p.state not in ('done', 'cancel')
@@ -1407,34 +1422,29 @@ class TestSaleFlow(TransactionCase):
         )
         self.assertTrue(backorder, "Backorder must exist for remaining 1")
 
-        # Return picking must expect 3 (2 delivered + 1 pending)
-        return_picking = order.picking_ids.filtered(
-            lambda p: p.return_id and p.state not in ('done', 'cancel')
-        )
-        if return_picking:
-            return_move = return_picking.move_ids.filtered(
-                lambda m: m.product_id == self.rental_product
-                and m.state != 'cancel'
-            )
-            self.assertEqual(
-                return_move.product_uom_qty, 3,
-                "Return must expect 3 back (2 delivered + 1 backorder pending)",
-            )
+        def active_return_qty():
+            return_picking = order.picking_ids.filtered(
+                lambda p: p.return_id and p.state not in ('done', 'cancel'))
+            return sum(return_picking.move_ids.filtered(
+                lambda m: m.product_id == prod
+                and m.state != 'cancel').mapped('product_uom_qty'))
 
-            # Now cancel the backorder
-            backorder.action_cancel()
+        # Pending backorder is NOT yet at the customer -> return expects 2.
+        self.assertEqual(
+            active_return_qty(), 2,
+            "Pending backorder is not out yet -> return expects only 2")
 
-            # Return must now expect only 2 (backorder cancelled)
-            return_move.invalidate_recordset()
-            return_picking.invalidate_recordset()
-            active_return = return_picking.move_ids.filtered(
-                lambda m: m.product_id == self.rental_product
-                and m.state != 'cancel'
-            )
-            self.assertEqual(
-                active_return.product_uom_qty, 2,
-                "After backorder cancel, return must expect only 2 (actually delivered)",
-            )
+        # Ship the backorder (deliver the remaining 1) -> return grows to 3.
+        for move in backorder.move_ids:
+            if move.product_id == prod:
+                move.quantity = 1
+                move.picked = True
+        backorder.with_context(
+            skip_lost_broken_check=True, skip_backorder=True,
+        ).button_validate()
+        self.assertEqual(
+            active_return_qty(), 3,
+            "After the backorder ships, all 3 are out -> return expects 3")
 
     # ── Multi-step delivery must NOT inflate the return ──────────────
     def test_23_multistep_delivery_return_not_inflated(self):
