@@ -74,6 +74,19 @@ class TestRentalAvailability(TransactionCase):
         line.invalidate_recordset(['free_qty_today', 'virtual_available_at_date'])
         return line.free_qty_today
 
+    def _enable_rental_pickings(self):
+        """Turn on 'Rental pickings' so confirming a rental order creates the
+        real pickup/return transfers. `rental_reserved_self` is derived from
+        those outgoing moves, so the availability feature (and the CLAUDE
+        design note) assumes this feature is enabled. Fresh build DBs ship
+        with it OFF, so tests that check reservation splits must enable it."""
+        if self.env['res.groups']._is_feature_enabled(
+                'sale_stock_renting.group_rental_stock_picking'):
+            return
+        cfg = self.env['res.config.settings'].create(
+            {'group_rental_stock_picking': True})
+        cfg.set_values()
+
     # ── T-01 ─────────────────────────────────────────────────────────────
     def test_01_open_repair_reduces_availability(self):
         if not self.has_repair:
@@ -175,6 +188,7 @@ class TestRentalAvailability(TransactionCase):
 
     # ── T-08 ─────────────────────────────────────────────────────────────
     def test_08_breakdown_is_consistent(self):
+        self._enable_rental_pickings()
         self._set_stock(self.prod, 10)
         order = self._rental_order()
         line = self._line(order, self.prod, 4)
@@ -225,6 +239,7 @@ class TestRentalAvailability(TransactionCase):
 
     # ── T-12 ─────────────────────────────────────────────────────────────
     def test_12_reservation_split_shown(self):
+        self._enable_rental_pickings()
         self._set_stock(self.prod, 20)
         # Competing confirmed order over the same period.
         other = self._rental_order()

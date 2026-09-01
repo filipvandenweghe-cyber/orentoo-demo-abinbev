@@ -1,6 +1,6 @@
 {
     'name': 'Rental Sets',
-    'version': '19.0.1.19.0',
+    'version': '19.0.1.20.0',
     'summary': 'Extend products with Rental Set capabilities',
     'description': (
         'Rental Sets are normal Odoo products that can expand into hidden '
@@ -59,4 +59,6 @@
     'installable': True,
     'application': False,
     'auto_install': False,
+
+    'post_init_hook': '_enable_rental_pickings',
 }
