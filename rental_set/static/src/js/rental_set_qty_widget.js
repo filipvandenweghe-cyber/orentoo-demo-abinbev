@@ -189,7 +189,7 @@ patch(QtyAtDatePopover.prototype, {
         if (showRepair) {
             addRow(_t('In Repair'), repair, { sign: '−', danger: repair > 0 });
         }
-        addRow(_t('Available for Rent'), avail, { strong: true, top: true });
+        addRow(_t('Available to this order'), avail, { strong: true, top: true });
         // …of which already reserved for this order (subset of Available).
         if (self > 0) {
             addRow(_t('of which reserved for this order'), self,
