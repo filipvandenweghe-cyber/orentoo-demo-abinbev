@@ -25,14 +25,28 @@ class TestRentalSerialLog(TransactionCase):
         cls.Log = cls.env['rental.serial.log']
 
     # ── helpers ──────────────────────────────────────────────────────────
-    def _rental_order(self):
+    def _order(self, rental=True):
+        # In Odoo 19 ``stock.picking.sale_id`` is *computed* from
+        # ``move_ids.sale_line_id.order_id`` — it can no longer be written
+        # directly on the picking.  The order therefore needs a real order
+        # line for the serial-tracked crate so that the moves created in
+        # ``_line`` can point at it and the picking resolves its ``sale_id``.
         now = fields.Datetime.now()
-        return self.env['sale.order'].create({
+        vals = {
             'partner_id': self.partner.id,
-            'is_rental_order': True,
-            'rental_start_date': now,
-            'rental_return_date': now + timedelta(days=1),
-        })
+            'order_line': [(0, 0, {
+                'product_id': self.crate.id, 'product_uom_qty': 1})],
+        }
+        if rental:
+            vals.update({
+                'is_rental_order': True,
+                'rental_start_date': now,
+                'rental_return_date': now + timedelta(days=1),
+            })
+        return self.env['sale.order'].create(vals)
+
+    def _rental_order(self):
+        return self._order(rental=True)
 
     def _picking(self, order, code, return_of=False):
         if code == 'outgoing':
@@ -42,20 +56,28 @@ class TestRentalSerialLog(TransactionCase):
         vals = {
             'picking_type_id': pt.id,
             'location_id': src.id, 'location_dest_id': dst.id,
-            'sale_id': order.id,
         }
         if return_of:
             vals['return_id'] = return_of.id
         return self.env['stock.picking'].create(vals)
 
-    def _line(self, picking, product, qty, lot=False, package=False):
-        move = self.env['stock.move'].create({
-            'name': product.name, 'product_id': product.id,
+    def _line(self, picking, product, qty, lot=False, package=False,
+              order=None):
+        move_vals = {
+            'product_id': product.id,
             'product_uom_qty': qty, 'product_uom': product.uom_id.id,
             'picking_id': picking.id,
             'location_id': picking.location_id.id,
             'location_dest_id': picking.location_dest_id.id,
-        })
+        }
+        # ``sale_id`` on the picking is computed from its moves' sale lines
+        # (Odoo 19), so wire the move to the matching order line when given.
+        if order is not None:
+            sol = order.order_line.filtered(
+                lambda l: l.product_id == product)[:1]
+            if sol:
+                move_vals['sale_line_id'] = sol.id
+        move = self.env['stock.move'].create(move_vals)
         return self.env['stock.move.line'].create({
             'move_id': move.id, 'picking_id': picking.id,
             'product_id': product.id, 'quantity': qty,
@@ -71,7 +93,7 @@ class TestRentalSerialLog(TransactionCase):
         self.assertTrue(order.is_rental_order)
         pkg = self.env['stock.package'].create({'name': 'RSLPKG'})
         pick = self._picking(order, 'outgoing')
-        self._line(pick, self.crate, 1, lot=self.serial, package=pkg)
+        self._line(pick, self.crate, 1, lot=self.serial, package=pkg, order=order)
         self._line(pick, self.glas, 40, package=pkg)
 
         pick._rental_serial_log_record()
@@ -89,7 +111,7 @@ class TestRentalSerialLog(TransactionCase):
         order = self._rental_order()
         deliv = self._picking(order, 'outgoing')
         ret = self._picking(order, 'incoming', return_of=deliv)
-        self._line(ret, self.crate, 1, lot=self.serial)
+        self._line(ret, self.crate, 1, lot=self.serial, order=order)
 
         ret._rental_serial_log_record()
 
@@ -101,7 +123,7 @@ class TestRentalSerialLog(TransactionCase):
     def test_idempotent(self):
         order = self._rental_order()
         pick = self._picking(order, 'outgoing')
-        self._line(pick, self.crate, 1, lot=self.serial)
+        self._line(pick, self.crate, 1, lot=self.serial, order=order)
         pick._rental_serial_log_record()
         pick._rental_serial_log_record()
         self.assertEqual(self.Log.search_count([
@@ -119,9 +141,10 @@ class TestRentalSerialLog(TransactionCase):
         self.assertEqual(act['res_id'], pick.id)
 
     def test_non_rental_not_logged(self):
-        order = self.env['sale.order'].create({'partner_id': self.partner.id})
+        order = self._order(rental=False)
+        self.assertFalse(order.is_rental_order)
         pick = self._picking(order, 'outgoing')
-        self._line(pick, self.crate, 1, lot=self.serial)
+        self._line(pick, self.crate, 1, lot=self.serial, order=order)
         pick._rental_serial_log_record()
         self.assertFalse(self.Log.search([('lot_id', '=', self.serial.id)]))
 
