@@ -178,46 +178,40 @@ patch(QtyAtDatePopover.prototype, {
 
         const total = data.rental_total_stock || 0;
         const other = data.rental_reserved_other || 0;
-        const repair = data.rental_in_repair || 0;
         const avail = data.rental_pickable || 0;
         const self = data.rental_reserved_self || 0;
-        const showRepair = !!data.rental_repair_installed;
+        const requested = data.order_product_demand || data.product_uom_qty || 0;
+        const missing = Math.max(requested - avail, 0);
 
-        // Accounting flow:
-        //   Total stock − Reserved (others) − In Repair = Available for Rent
-        addRow(_t('Total stock'), total, { top: true });
-        addRow(_t('Reserved by other orders'), other, { sign: '−' });
-        if (showRepair) {
-            addRow(_t('In Repair'), repair, { sign: '−', danger: repair > 0 });
-        }
-        addRow(_t('Available to this order'), avail, { strong: true, top: true });
-        // …of which already reserved for this order (subset of Available).
+        const addHeader = (label) => {
+            const hdr = document.createElement('tr');
+            hdr.className = 'rental_set_breakdown border-top';
+            hdr.innerHTML = `<td colspan="2" class="text-muted small pt-1">${label}</td>`;
+            table.appendChild(hdr);
+        };
+
+        // ── Section 1: Availability (time-based; returns within the window
+        // are counted, so this can exceed the physically-free stock).
+        addHeader(_t('For this rental'));
+        addRow(_t('Reserved by other orders'), other, { muted: true });
+        addRow(_t('Available to this order'), avail, { strong: true });
         if (self > 0) {
             addRow(_t('of which reserved for this order'), self,
                    { muted: true, indent: true });
         }
-
-        // Demand side: what this order asks for, and any shortfall.
-        const requested = data.order_product_demand || data.product_uom_qty || 0;
-        const missing = Math.max(requested - avail, 0);
-        addRow(_t('Requested by this order'), requested, { top: true });
+        addRow(_t('Requested by this order'), requested);
         addRow(_t('Missing for this order'), missing,
                { strong: missing > 0, danger: missing > 0 });
 
-        // Full physical partition at pickup — always sums back to Total.
+        // ── Section 2: Physical stock (point-in-time; a stable, conserved
+        // Total that the location list always sums back to).
+        addHeader(_t('Physical stock (right now)'));
+        addRow(_t('Total stock'), total, { strong: true });
         const onhand = data.rental_onhand_json || [];
         if (Array.isArray(onhand) && onhand.length) {
-            const hdr = document.createElement('tr');
-            hdr.className = 'rental_set_breakdown border-top';
-            hdr.innerHTML = `<td colspan="2" class="text-muted small pt-1">${_t('Currently in stock, by location')}:</td>`;
-            table.appendChild(hdr);
-            let sum = 0;
             for (const entry of onhand) {
                 addRow(entry.location, entry.qty, { muted: true, indent: true });
-                sum += Number(entry.qty || 0);
             }
-            // Reconciliation line: this partition equals Total stock.
-            addRow(`= ${_t('Total stock')}`, sum, { muted: true });
         }
     },
 
