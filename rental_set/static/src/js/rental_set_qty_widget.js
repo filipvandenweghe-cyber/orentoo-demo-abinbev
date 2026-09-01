@@ -201,7 +201,7 @@ patch(QtyAtDatePopover.prototype, {
         if (Array.isArray(onhand) && onhand.length) {
             const hdr = document.createElement('tr');
             hdr.className = 'rental_set_breakdown border-top';
-            hdr.innerHTML = `<td colspan="2" class="text-muted small pt-1">${_t('Where these units are, at pickup')}:</td>`;
+            hdr.innerHTML = `<td colspan="2" class="text-muted small pt-1">${_t('Currently in stock, by location')}:</td>`;
             table.appendChild(hdr);
             let sum = 0;
             for (const entry of onhand) {

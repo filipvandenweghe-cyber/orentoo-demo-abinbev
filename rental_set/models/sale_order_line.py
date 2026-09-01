@@ -534,46 +534,22 @@ class SaleOrderLine(models.Model):
             total = line.free_qty_today + reserved_other + in_repair
             line.rental_total_stock = total
 
-            # Full location partition of Total at pickup time — every owned
-            # unit is placed somewhere, so the buckets always sum to Total
-            # (stable anchor; only the distribution shifts).  (RAV-14)
-            pickup = line.reservation_begin or from_date
+            # Physical location partition of Total — CURRENT on-hand per
+            # location (real quants, always ≥ 0).  Every owned unit is placed
+            # somewhere, so the buckets sum to Total.  We deliberately do NOT
+            # forecast per-location to pickup: applying pending staging/pick
+            # moves (and partial reservations) produces phantom/negative
+            # per-location figures.  Period-awareness lives in "Available for
+            # Rent"; this list answers "where is the stock physically now".
+            # (RAV-14)
             line.rental_onhand_json = self._rental_stock_partition(
-                product, order, wh, pickup, total, in_repair) or False
+                product, order, wh, total, in_repair) or False
 
-    def _rental_forecast_by_location(self, product, location_ids, pickup):
-        """Forecast on-hand per location at ``pickup`` =
-        current on-hand + incoming(≤pickup) − outgoing(≤pickup)."""
-        result = {lid: 0.0 for lid in location_ids}
-        for loc, qty in self.env['stock.quant']._read_group(
-            [('product_id', '=', product.id),
-             ('location_id', 'in', location_ids)],
-            ['location_id'], ['quantity:sum'],
-        ):
-            result[loc.id] = qty
-        move_dom = [
-            ('product_id', '=', product.id),
-            ('state', 'not in', ('done', 'cancel')),
-            ('date', '<=', pickup),
-        ]
-        for loc, qty in self.env['stock.move']._read_group(
-            move_dom + [('location_dest_id', 'in', location_ids)],
-            ['location_dest_id'], ['product_uom_qty:sum'],
-        ):
-            result[loc.id] = result.get(loc.id, 0.0) + qty
-        for loc, qty in self.env['stock.move']._read_group(
-            move_dom + [('location_id', 'in', location_ids)],
-            ['location_id'], ['product_uom_qty:sum'],
-        ):
-            result[loc.id] = result.get(loc.id, 0.0) - qty
-        return result
-
-    def _rental_stock_partition(self, product, order, wh, pickup, total,
-                                in_repair):
-        """Return a full partition of ``total`` across physical buckets at
-        ``pickup``: warehouse internal locations (Input/QC/Stock…), At
-        customer, In repair, and a reconciling In transit / elsewhere bucket
-        so the list always sums exactly to Total.  (RAV-14)
+    def _rental_stock_partition(self, product, order, wh, total, in_repair):
+        """Return a partition of ``total`` across physical buckets by CURRENT
+        on-hand: warehouse internal locations (Input/QC/Stock…), At customer,
+        In repair, and a small reconciling bucket so the list sums to Total.
+        (RAV-14)
         """
         rounding = product.uom_id.rounding or 0.01
         buckets = []
@@ -588,16 +564,20 @@ class SaleOrderLine(models.Model):
         if rental_loc:
             loc_ids.append(rental_loc.id)
 
-        forecast = self._rental_forecast_by_location(product, loc_ids, pickup)
+        onhand = {}
+        for loc, qty in self.env['stock.quant']._read_group(
+            [('product_id', '=', product.id),
+             ('location_id', 'in', loc_ids)],
+            ['location_id'], ['quantity:sum'],
+        ):
+            onhand[loc.id] = qty
 
         # In repair is carved out of the warehouse stock it physically sits
         # in, so it is shown once and does not inflate the location count.
         repair_left = in_repair
         shown = 0.0
         for loc in wh_locs:
-            qty = forecast.get(loc.id, 0.0)
-            # Take repair units out of this bucket first (they usually sit in
-            # the main stock location).
+            qty = onhand.get(loc.id, 0.0)
             carve = min(max(qty, 0.0), repair_left)
             qty -= carve
             repair_left -= carve
@@ -610,17 +590,17 @@ class SaleOrderLine(models.Model):
             shown += in_repair
 
         if rental_loc:
-            at_customer = forecast.get(rental_loc.id, 0.0)
+            at_customer = onhand.get(rental_loc.id, 0.0)
             if float_compare(at_customer, 0.0, precision_rounding=rounding) > 0:
                 buckets.append({'location': _('At customer'),
                                 'qty': at_customer})
                 shown += at_customer
 
-        # Reconcile: anything unaccounted (in transit / other warehouses)
-        # keeps the partition summing exactly to Total.
+        # Reconcile any small remainder (e.g. transit locations, or native
+        # forecast padding) so the list still sums to Total.
         residual = total - shown
         if float_compare(abs(residual), 0.0, precision_rounding=rounding) > 0:
-            buckets.append({'location': _('In transit / elsewhere'),
+            buckets.append({'location': _('Other / in transit'),
                             'qty': residual})
         return buckets
 
