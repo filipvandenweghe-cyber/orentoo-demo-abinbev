@@ -239,6 +239,26 @@ class TestRentalAvailability(TransactionCase):
         self.assertAlmostEqual(line.rental_reserved_self, 3.0, places=2)
         self.assertGreaterEqual(line.rental_reserved_other, 5.0 - 0.01)
 
+    # ── T-14 ─────────────────────────────────────────────────────────────
+    def test_14_competing_orders_share_shortfall(self):
+        # 7 units, two confirmed orders each want 4 over overlapping windows.
+        # Each can only get 7 − 4(other) = 3 → both short by 1 (Option A).
+        self._set_stock(self.prod, 7)
+        a = self._rental_order(start_offset=0, days=2)
+        la = self._line(a, self.prod, 4)
+        a.action_confirm()
+        b = self._rental_order(start_offset=0, days=2)
+        lb = self._line(b, self.prod, 4)
+        b.action_confirm()
+        self.assertAlmostEqual(self._avail(la), 3, places=2)
+        self.assertAlmostEqual(self._avail(lb), 3, places=2)
+        # An order's own demand is never subtracted from itself: with no
+        # competitor it would see all 7.
+        c = self._rental_order(start_offset=100, days=2)
+        lc = self._line(c, self.prod, 4)
+        c.action_confirm()
+        self.assertAlmostEqual(self._avail(lc), 7, places=2)
+
     # ── T-13 ─────────────────────────────────────────────────────────────
     def test_13_other_order_returning_in_time_not_counted(self):
         self._set_stock(self.prod, 10)
