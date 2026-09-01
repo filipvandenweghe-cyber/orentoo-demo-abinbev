@@ -287,7 +287,18 @@ class SaleFlowSyncService(models.AbstractModel):
             if fl.state == 'cancelled':
                 continue
             pid = fl.product_id.id
-            expected_map[pid] = expected_map.get(pid, 0) + fl.current_qty
+            # Delivered-to-customer: use the SALE LINE's qty_delivered, which
+            # native computes from the final customer-facing leg only — so it
+            # is reliable mid multi-step (0 until the ship step is done),
+            # unlike flow_line.delivered_qty which is only deduped once the
+            # final step completes.
+            delivered = fl.sale_line_id.qty_delivered if fl.sale_line_id else 0.0
+            # Expect back everything that will be at the customer: the ordered
+            # (current) quantity, but NEVER less than what was actually
+            # delivered — this handles over-delivery (e.g. 7 picked on a
+            # 5-qty line must still all come back).  current_qty keeps it
+            # stable across multi-step legs (no per-leg inflation).
+            expected_map[pid] = expected_map.get(pid, 0) + max(fl.current_qty, delivered)
 
         for picking in return_pickings:
             active_moves = picking.move_ids.filtered(lambda m: m.state != 'cancel')

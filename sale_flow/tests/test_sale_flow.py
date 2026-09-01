@@ -1501,3 +1501,49 @@ class TestSaleFlow(TransactionCase):
         fl = order.flow_line_ids.filtered(
             lambda f: f.product_id == prod)[:1]
         self.assertEqual(fl.delivered_qty, 4, "all 4 delivered at the end")
+
+    # ── Over-delivery: return must match what was actually delivered ──
+    def test_24_over_delivery_return_matches_delivered(self):
+        """If more is delivered than ordered (over-pick), the return must
+        expect back the delivered qty, not the ordered qty (S01788)."""
+        prod = self.env['product.product'].create({
+            'name': 'OD Rental', 'type': 'consu', 'is_storable': True,
+            'rent_ok': True, 'list_price': 10.0,
+        })
+        wh = self.env['stock.warehouse'].search(
+            [('company_id', '=', self.env.company.id)], limit=1)
+        wh.write({'delivery_steps': 'ship_only'})
+        self.env['stock.quant'].with_context(inventory_mode=True).create({
+            'product_id': prod.id,
+            'location_id': wh.lot_stock_id.id,
+            'inventory_quantity': 20,
+        }).action_apply_inventory()
+
+        now = fields.Datetime.now()
+        order = self.env['sale.order'].with_context(in_rental_app=True).create({
+            'partner_id': self.partner.id,
+            'warehouse_id': wh.id,
+            'rental_start_date': now,
+            'rental_return_date': now + timedelta(days=7),
+            'order_line': [(0, 0, {
+                'product_id': prod.id, 'product_uom_qty': 5, 'price_unit': 10.0,
+            })],
+        })
+        order.action_confirm()
+
+        out = order.picking_ids.filtered(
+            lambda p: not p.return_id and p.state not in ('done', 'cancel'))[:1]
+        for m in out.move_ids.filtered(lambda m: m.product_id == prod):
+            m.quantity = 7   # over-deliver (7 on a 5-qty line)
+            m.picked = True
+        out.with_context(
+            skip_backorder=True, skip_lost_broken_check=True,
+        ).button_validate()
+
+        rp = order.picking_ids.filtered(
+            lambda p: p.return_id and p.state not in ('done', 'cancel'))
+        rmove = rp.move_ids.filtered(
+            lambda m: m.product_id == prod and m.state != 'cancel')
+        self.assertEqual(
+            sum(rmove.mapped('product_uom_qty')), 7,
+            "return must expect back the 7 actually delivered, not ordered 5")
