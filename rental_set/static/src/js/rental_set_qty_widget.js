@@ -10,6 +10,7 @@ import {
     qtyAtDateWidget,
 } from "@sale_stock/widgets/qty_at_date_widget";
 import { patch } from "@web/core/utils/patch";
+import { useService } from "@web/core/utils/hooks";
 import { _t } from "@web/core/l10n/translation";
 
 /*
@@ -70,6 +71,7 @@ patch(qtyAtDateWidget, {
         { name: 'rental_total_stock', type: 'float' },
         { name: 'rental_repair_installed', type: 'boolean' },
         { name: 'rental_onhand_json', type: 'json' },
+        { name: 'rental_show_stock_locations', type: 'boolean' },
     ],
 });
 
@@ -81,10 +83,12 @@ patch(qtyAtDateWidget, {
 patch(QtyAtDatePopover.prototype, {
     setup() {
         super.setup();
+        this.orm = useService("orm");
         onMounted(() => {
             this._injectForecastButton();
             this._injectRentalBreakdown();
             this._injectOrderDemand();
+            this._injectWarehouseAvailability();
         });
     },
 
@@ -204,14 +208,78 @@ patch(QtyAtDatePopover.prototype, {
                { strong: missing > 0, danger: missing > 0 });
 
         // ── Section 2: Physical stock (point-in-time; a stable, conserved
-        // Total that the location list always sums back to).
-        addHeader(_t('Physical stock (right now)'));
-        addRow(_t('Total stock'), total, { strong: true });
-        const onhand = data.rental_onhand_json || [];
-        if (Array.isArray(onhand) && onhand.length) {
-            for (const entry of onhand) {
-                addRow(entry.location, entry.qty, { muted: true, indent: true });
+        // Total that the location list always sums back to).  Off by default
+        // — enabled via the Rental setting for troubleshooting.
+        if (data.rental_show_stock_locations) {
+            addHeader(_t('Physical stock (right now)'));
+            addRow(_t('Total stock'), total, { strong: true });
+            const onhand = data.rental_onhand_json || [];
+            if (Array.isArray(onhand) && onhand.length) {
+                for (const entry of onhand) {
+                    addRow(entry.location, entry.qty,
+                           { muted: true, indent: true });
+                }
             }
+        }
+    },
+
+    /*
+     * Lazily fetch and show this product's availability per warehouse of the
+     * company (only fetched when the pop-up opens).  Hidden for single-
+     * warehouse companies, sets and non-rental lines (see the backend
+     * get_rental_warehouse_availability).  Informational only.
+     */
+    async _injectWarehouseAvailability() {
+        const data = this.props.record?.data;
+        if (!data?.product_id) return;
+        if (!data.is_rental || !data.return_date || !data.start_date) return;
+        if (data.is_set) return;
+        const resId = this.props.record.resId;
+        if (!resId) return;
+
+        let rows = [];
+        try {
+            rows = await this.orm.call(
+                "sale.order.line", "get_rental_warehouse_availability",
+                [resId],
+            );
+        } catch {
+            return;
+        }
+        if (!rows || !rows.length) return;
+
+        const popovers = document.querySelectorAll('.o_popover');
+        if (!popovers.length) return;
+        const popoverEl = popovers[popovers.length - 1];
+        if (!popoverEl) return;
+        if (popoverEl.querySelector('.rental_set_wh_avail')) return;
+        const table = popoverEl.querySelector('table tbody');
+        if (!table) return;
+
+        const uom = data.product_uom_id && data.product_uom_id[1]
+            ? data.product_uom_id[1] : '';
+        const fmt = (v) => {
+            const n = Number(v || 0);
+            return Number.isInteger(n) ? String(n) : n.toFixed(2);
+        };
+
+        const hdr = document.createElement('tr');
+        hdr.className = 'rental_set_wh_avail border-top';
+        hdr.innerHTML = `<td colspan="2" class="text-muted small pt-1">`
+            + `${_t('Availability by warehouse')}</td>`;
+        table.appendChild(hdr);
+
+        for (const r of rows) {
+            const row = document.createElement('tr');
+            row.className = 'rental_set_wh_avail';
+            const tag = r.is_current
+                ? ` <span class="text-muted">(${_t('this order')})</span>`
+                : '';
+            row.innerHTML = `
+                <td class="ps-3">${r.name}${tag}</td>
+                <td class="text-end"><b>${fmt(r.available)}</b> ${uom}</td>
+            `;
+            table.appendChild(row);
         }
     },
 

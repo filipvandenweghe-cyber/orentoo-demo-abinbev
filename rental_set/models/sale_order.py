@@ -9,6 +9,7 @@ class SaleOrder(models.Model):
         'order_line.is_rental', 'order_line.product_uom_qty',
         'order_line.qty_delivered', 'order_line.qty_returned',
         'order_line.is_set',
+        'order_line.move_ids', 'order_line.move_ids.state',
         'picking_ids.state', 'picking_ids.picking_type_code',
     )
     def _compute_has_action_lines(self):
@@ -25,6 +26,10 @@ class SaleOrder(models.Model):
            nothing left to pick up — WITHOUT changing the ordered quantity
            (we must keep what the client asked for, and the warehouse may
            still adjust set contents).
+
+        3) Units scrapped as lost/broken are no longer expected back, so they
+           count towards "returned" — an order whose outstanding units were
+           all returned OR written off is fully returned.
         """
         super()._compute_has_action_lines()
         for order in self:
@@ -38,8 +43,12 @@ class SaleOrder(models.Model):
             )
             order.has_pickable_lines = any(
                 sol.qty_delivered < sol.product_uom_qty for sol in lines)
+            # (3) delivered − returned − scrapped(lost/broken) still > 0
+            #     means units are genuinely still out at the customer.
             order.has_returnable_lines = any(
-                sol.qty_returned < sol.qty_delivered for sol in lines)
+                sol.qty_returned + sol._rental_scrapped_qty()
+                < sol.qty_delivered
+                for sol in lines)
 
             # (2) Pickup is driven by the customer-facing OUTGOING delivery
             #     only.  Internal steps are ignored — both outbound Pick/Pack
@@ -53,6 +62,24 @@ class SaleOrder(models.Model):
             if outgoing and not outgoing.filtered(
                     lambda p: p.state not in ('done', 'cancel')):
                 order.has_pickable_lines = False
+
+    @api.depends(
+        'rental_start_date', 'rental_return_date', 'state',
+        'order_line.is_rental', 'order_line.product_uom_qty',
+        'order_line.qty_delivered', 'order_line.qty_returned',
+        'order_line.move_ids', 'order_line.move_ids.state',
+    )
+    def _compute_rental_status(self):
+        """Extend the native dependencies so the STORED rental status
+        refreshes when units are scrapped as lost/broken.
+
+        Native ``_compute_rental_status`` only depends on delivered/returned
+        quantities, but a lost/broken scrap changes neither — it adds a scrap
+        move.  Without this, an order whose outstanding units were all written
+        off would stay stuck on "Picked-up".  The scrap-aware
+        ``has_returnable_lines`` (see above) then flips it to "Returned".
+        """
+        super()._compute_rental_status()
 
     def copy(self, default=None):
         """Skip set expansion when duplicating an order.

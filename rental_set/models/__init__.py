@@ -1,4 +1,6 @@
 from . import account_move
+from . import res_company
+from . import res_config_settings
 from . import product_product
 from . import rental_set_component
 from . import product_template

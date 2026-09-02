@@ -1,2 +1,4 @@
 from . import test_rental_set
 from . import test_rental_availability
+from . import test_rental_availability_warehouse
+from . import test_rental_reservation_short_delivery
