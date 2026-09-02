@@ -327,8 +327,7 @@ class TestSaleFlow(TransactionCase):
             'delivered_qty': 4,
             'returned_qty': 2,
             'missing_qty': 2,
-            'lost_qty': 2,
-            'broken_qty': 0,
+            'lost_charged_qty': 2,
             'broken_lost_unit_price': 80.0,
         })
 
@@ -366,8 +365,7 @@ class TestSaleFlow(TransactionCase):
             'delivered_qty': 2,
             'returned_qty': 0,
             'missing_qty': 2,
-            'lost_qty': 2,
-            'broken_qty': 0,
+            'lost_charged_qty': 2,
             'broken_lost_unit_price': 80.0,
         })
         wizard.action_confirm()
@@ -401,8 +399,7 @@ class TestSaleFlow(TransactionCase):
             'delivered_qty': 2,
             'returned_qty': 0,
             'missing_qty': 2,
-            'lost_qty': 1,
-            'broken_qty': 0,
+            'lost_charged_qty': 1,
             'broken_lost_unit_price': 0.0,
         })
         wizard.action_confirm()
@@ -431,8 +428,8 @@ class TestSaleFlow(TransactionCase):
             'delivered_qty': 2,
             'returned_qty': 0,
             'missing_qty': 2,
-            'lost_qty': 1,
-            'broken_qty': 1,
+            'lost_charged_qty': 1,
+            'fully_broken_qty': 1,
             'broken_lost_unit_price': 80.0,
         })
         wizard.action_confirm()
@@ -1103,8 +1100,9 @@ class TestSaleFlow(TransactionCase):
         wiz_line = wizard.line_ids[0]
 
         self.assertEqual(wiz_line.missing_qty, 2)
-        self.assertEqual(wiz_line.lost_qty, 0, "Default lost must be 0")
-        self.assertEqual(wiz_line.broken_qty, 0, "Default broken must be 0")
+        self.assertEqual(wiz_line.fully_broken_qty, 0, "Default broken must be 0")
+        self.assertEqual(wiz_line.lost_charged_qty, 0, "Default lost charged 0")
+        self.assertEqual(wiz_line.lost_uncharged_qty, 0, "Default lost free 0")
 
     def test_27_lost_broken_cannot_exceed_missing(self):
         """Lost + broken cannot exceed missing quantity."""
@@ -1126,8 +1124,8 @@ class TestSaleFlow(TransactionCase):
             'delivered_qty': 4,
             'returned_qty': 2,
             'missing_qty': 2,
-            'lost_qty': 2,
-            'broken_qty': 1,  # total = 3 > missing = 2
+            'lost_charged_qty': 2,
+            'fully_broken_qty': 1,  # total = 3 > missing = 2
             'broken_lost_unit_price': 50.0,
         })
 
@@ -1210,8 +1208,7 @@ class TestSaleFlow(TransactionCase):
             'delivered_qty': fl.delivered_qty,
             'returned_qty': fl.returned_qty,
             'missing_qty': 2,
-            'lost_qty': 1,
-            'broken_qty': 0,
+            'lost_charged_qty': 1,
             'broken_lost_unit_price': 50.0,
         })
         wizard.action_confirm()
@@ -1240,11 +1237,77 @@ class TestSaleFlow(TransactionCase):
         self.assertEqual(charge_fls.current_qty, 1)
         self.assertAlmostEqual(charge_fls.unit_price_effective, 50.0)
 
-        # No broken fee (broken_qty=0)
+        # No broken fee (fully_broken_qty=0)
         broken_fls = order.flow_line_ids.filtered(
             lambda f: f.is_charge_only and f.commercial_policy == 'broken_charge'
         )
-        self.assertFalse(broken_fls, "No broken fee — broken_qty was 0")
+        self.assertFalse(broken_fls, "No broken fee — fully_broken_qty was 0")
+
+    def test_29_wizard_returns_to_picking(self):
+        """Confirm/Cancel navigate back to the return picking (not a blank
+        screen), since the wizard is reached through the backorder flow."""
+        order = self._create_rental_order([
+            {'product': self.rental_product, 'qty': 2, 'price': 10.0},
+        ])
+        picking = order.picking_ids[:1]
+        self.assertTrue(picking, "order should have a picking")
+
+        wizard = self.env['sale.flow.lost.broken.wizard'].create({
+            'picking_id': picking.id,
+            'sale_order_id': order.id,
+        })
+        action = wizard.action_cancel()
+        self.assertEqual(action.get('res_model'), 'stock.picking')
+        self.assertEqual(action.get('res_id'), picking.id)
+
+        # Without a picking (e.g. programmatic use) it just closes.
+        wizard2 = self.env['sale.flow.lost.broken.wizard'].create({
+            'sale_order_id': order.id,
+        })
+        self.assertEqual(
+            wizard2.action_cancel().get('type'),
+            'ir.actions.act_window_close')
+
+    def test_30_charge_uses_service_no_delivery(self):
+        """A charged loss must invoice through a SERVICE fee product — never
+        the physical product — so it spawns no delivery / reservation."""
+        order = self._create_rental_order([
+            {'product': self.rental_product, 'qty': 2, 'price': 10.0},
+        ])
+        fl = order.flow_line_ids.filtered(
+            lambda f: f.product_id == self.rental_product)[:1]
+        fl.write({'delivered_qty': 2, 'returned_qty': 0})
+        pickings_before = set(order.picking_ids.ids)
+
+        wizard = self.env['sale.flow.lost.broken.wizard'].create({
+            'sale_order_id': order.id,
+        })
+        self.env['sale.flow.lost.broken.wizard.line'].create({
+            'wizard_id': wizard.id,
+            'flow_line_id': fl.id,
+            'product_id': self.rental_product.id,
+            'delivered_qty': 2,
+            'returned_qty': 0,
+            'missing_qty': 2,
+            'lost_charged_qty': 1,
+            'broken_lost_unit_price': 50.0,
+        })
+        wizard.action_confirm()
+
+        charge_sols = order.order_line.filtered(
+            lambda l: l.name and 'Fee' in l.name)
+        self.assertTrue(charge_sols, "a charge line must be created")
+        self.assertTrue(
+            all(l.product_id.type == 'service' for l in charge_sols),
+            "charge must use a service fee product")
+        self.assertFalse(
+            any(l.product_id == self.rental_product for l in charge_sols),
+            "charge must NOT use the physical rental product")
+        new_out = order.picking_ids.filtered(
+            lambda p: p.id not in pickings_before
+            and p.picking_type_code == 'outgoing')
+        self.assertFalse(
+            new_out, "charge must not spawn an outgoing delivery")
 
     # ══════════════════════════════════════════════════════════════════
     # Additional corner-case tests from live testing

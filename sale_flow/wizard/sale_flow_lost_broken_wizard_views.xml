@@ -10,22 +10,30 @@
                     <field name="picking_id" readonly="1"/>
                     <field name="sale_order_id" readonly="1"/>
                 </group>
+                <div class="text-muted mb-2">
+                    Classify the missing quantities. Every classified unit is
+                    scrapped from the rental location; the charged buckets also
+                    add a fee to the invoice. Anything left unclassified stays
+                    on the backorder for a later return.
+                </div>
                 <field name="line_ids">
-                    <list editable="bottom">
+                    <list editable="bottom" create="false" delete="false">
                         <field name="product_id" readonly="1"/>
                         <field name="delivered_qty" readonly="1"/>
                         <field name="returned_qty" readonly="1"/>
                         <field name="missing_qty" readonly="1"/>
-                        <field name="lost_qty"/>
-                        <field name="broken_qty"/>
+                        <field name="fully_broken_qty"/>
+                        <field name="lost_charged_qty"/>
+                        <field name="lost_uncharged_qty"/>
+                        <field name="still_expected_qty" readonly="1"/>
                         <field name="broken_lost_unit_price"/>
                     </list>
                 </field>
                 <footer>
                     <button name="action_confirm" type="object"
                             string="Confirm" class="btn-primary"/>
-                    <button string="Cancel" class="btn-secondary"
-                            special="cancel"/>
+                    <button name="action_cancel" type="object"
+                            string="Cancel" class="btn-secondary"/>
                 </footer>
             </form>
         </field>

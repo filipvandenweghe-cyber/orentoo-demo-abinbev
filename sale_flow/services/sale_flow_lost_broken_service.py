@@ -24,76 +24,134 @@ class SaleFlowLostBrokenService(models.AbstractModel):
     def _process_lost_broken(self, wizard):
         """Process lost/broken wizard results.
 
-        For each wizard line:
-          1. Update the flow line with lost/broken quantities.
-          2. Create charge-only sale order lines (invoiceable, no delivery).
-          3. Create charge flow lines with red warning.
+        For each wizard line and each of the three buckets:
+          1. Update the flow line's broken/lost quantities.
+          2. **Scrap** the units from the rental (at-customer) location — all
+             three buckets are terminal losses, so the units leave stock.
+          3. For the *charged* buckets, add a fee line to the invoice.
+
+        Repairable-broken items are handled by the standard repair flow and
+        are not part of this wizard.
         """
         order = wizard.sale_order_id
-        fee_product = order.company_id.lost_broken_fee_product_id
+        prec = self.env['decimal.precision'].precision_get(
+            'Product Unit of Measure')
 
         for wiz_line in wizard.line_ids:
             flow_line = wiz_line.flow_line_id
-            prec = self.env['decimal.precision'].precision_get('Product Unit of Measure')
+            product = wiz_line.product_id
+            sale_line = flow_line.sale_line_id
+            fully_broken = wiz_line.fully_broken_qty or 0.0
+            lost_charged = wiz_line.lost_charged_qty or 0.0
+            lost_uncharged = wiz_line.lost_uncharged_qty or 0.0
+            lost_total = lost_charged + lost_uncharged
 
-            # Update operational quantities on the original flow line
+            # 1. Update operational quantities on the original flow line.
             vals = {
                 'last_flow_update_at': fields.Datetime.now(),
                 'last_flow_update_by_id': self.env.uid,
             }
-            if float_compare(wiz_line.lost_qty, 0, precision_digits=prec) > 0:
-                vals['lost_qty'] = flow_line.lost_qty + wiz_line.lost_qty
-            if float_compare(wiz_line.broken_qty, 0, precision_digits=prec) > 0:
-                vals['broken_qty'] = flow_line.broken_qty + wiz_line.broken_qty
+            if float_compare(fully_broken, 0, precision_digits=prec) > 0:
+                vals['broken_qty'] = flow_line.broken_qty + fully_broken
+            if float_compare(lost_total, 0, precision_digits=prec) > 0:
+                vals['lost_qty'] = flow_line.lost_qty + lost_total
 
             flow_line.with_context(skip_sale_flow_sync=True).write(vals)
             flow_line._update_state()
             flow_line._compute_warning_level()
 
-            # Create charge lines for lost items
-            if float_compare(wiz_line.lost_qty, 0, precision_digits=prec) > 0:
-                self._create_charge_line(
-                    order, flow_line, fee_product,
-                    qty=wiz_line.lost_qty,
-                    price=wiz_line.broken_lost_unit_price,
-                    charge_type='lost',
-                    product=wiz_line.product_id,
-                )
+            # 2. Scrap every classified unit from the rental location.
+            self._scrap_from_rental(
+                order, product, fully_broken + lost_total, sale_line)
 
-            # Create charge lines for broken items
-            if float_compare(wiz_line.broken_qty, 0, precision_digits=prec) > 0:
+            # 3. Charge the customer for the charged buckets only.
+            if float_compare(fully_broken, 0, precision_digits=prec) > 0:
                 self._create_charge_line(
-                    order, flow_line, fee_product,
-                    qty=wiz_line.broken_qty,
+                    order, flow_line,
+                    qty=fully_broken,
                     price=wiz_line.broken_lost_unit_price,
                     charge_type='broken',
-                    product=wiz_line.product_id,
+                    product=product,
                 )
+            if float_compare(lost_charged, 0, precision_digits=prec) > 0:
+                self._create_charge_line(
+                    order, flow_line,
+                    qty=lost_charged,
+                    price=wiz_line.broken_lost_unit_price,
+                    charge_type='lost',
+                    product=product,
+                )
+            # lost_uncharged: scrapped above, no fee line.
 
-                # Route broken items to repair location
-                self._route_broken_to_repair(wiz_line, wizard.picking_id)
+    def _scrap_from_rental(self, order, product, qty, sale_line):
+        """Scrap ``qty`` of ``product`` from the rental (at-customer)
+        location to the company scrap location.
 
-    def _create_charge_line(self, order, origin_flow_line, fee_product,
+        The scrap move is linked to the rental sale line (``sale_line_id``)
+        so rental availability attributes it to the right warehouse and
+        releases the unit (see rental_set ``_rental_at_customer_qty`` and
+        ``_rental_effective_reserved_qty``).
+        """
+        prec = self.env['decimal.precision'].precision_get(
+            'Product Unit of Measure')
+        if float_compare(qty, 0, precision_digits=prec) <= 0:
+            return
+        rental_loc = order.company_id.rental_loc_id
+        if not rental_loc:
+            return
+        scrap = self.env['stock.scrap'].create({
+            'product_id': product.id,
+            'product_uom_id': product.uom_id.id,
+            'scrap_qty': qty,
+            'location_id': rental_loc.id,
+            'company_id': order.company_id.id,
+            'origin': order.name,
+        })
+        scrap.do_scrap()
+        if sale_line:
+            scrap.move_ids.write({'sale_line_id': sale_line.id})
+
+    def _get_fee_product(self, company):
+        """Return the SERVICE product used for lost/broken charge lines.
+
+        A lost/broken charge is a pure invoice fee, never a delivery, so this
+        is always a *service* product (no stock move, no reservation) — the
+        one configured on the company, or the shared default.  It must NEVER
+        be the physical rented product: charging through a storable/rental
+        good would spawn a delivery and re-reserve the very item that was
+        lost/broken.
+        """
+        fee = company.lost_broken_fee_product_id
+        if fee:
+            return fee
+        default = self.env.ref(
+            'sale_flow.product_lost_broken_fee', raise_if_not_found=False)
+        if default:
+            return default
+        # Safety net if the data record is somehow absent.
+        return self.env['product.product'].create({
+            'name': 'Lost/Broken Fee',
+            'type': 'service',
+            'rent_ok': False,
+        })
+
+    def _create_charge_line(self, order, origin_flow_line,
                             qty, price, charge_type, product):
         """Create a charge-only sale order line and flow line.
 
         Business rules:
-          * Use the lost_broken_fee_product_id for tax/accounting.
-          * Description mentions the actual product.
+          * Charge through a SERVICE fee product (never the physical product,
+            which would create a delivery) — description names the product.
           * Charge-only: skip_delivery=True, is_charge_only=True.
           * Always create even if price is 0.
           * Red warning level by default.
         """
         label = _('Lost') if charge_type == 'lost' else _('Broken')
         actual_name = product.display_name
-        description = _('%(label)s/%(label2)s Fee — %(product)s',
-                        label=label, label2=_('Broken') if charge_type == 'lost' else _('Lost'),
-                        product=actual_name)
-        # Simplified: just "Lost Fee — Product" or "Broken Fee — Product"
         description = f"{label} Fee — {actual_name}"
 
-        # Use fee product if available, otherwise actual product
-        line_product = fee_product or product
+        # Always a service fee product — never the physical (deliverable) one.
+        line_product = self._get_fee_product(order.company_id)
 
         # Create the charge sale order line
         sol = self.env['sale.order.line'].with_context(
@@ -136,53 +194,3 @@ class SaleFlowLostBrokenService(models.AbstractModel):
             'last_flow_update_at': fields.Datetime.now(),
             'last_flow_update_by_id': self.env.uid,
         })
-
-    def _route_broken_to_repair(self, wiz_line, picking):
-        """Route broken items to repair location if Repairs app is installed.
-
-        If the Repairs app is installed, broken returned items should
-        go to a repair location.  If not installed, use a configurable
-        fallback location or preserve standard return behavior.
-        """
-        if not picking:
-            return
-
-        # Check if repair module is installed
-        repair_installed = self.env['ir.module.module'].sudo().search([
-            ('name', '=', 'repair'),
-            ('state', '=', 'installed'),
-        ], limit=1)
-
-        if repair_installed:
-            # Find repair location (virtual location)
-            repair_location = self.env['stock.location'].search([
-                ('usage', '=', 'production'),
-                ('repair_location', '=', True),
-            ], limit=1)
-            if not repair_location:
-                repair_location = self.env['stock.location'].search([
-                    ('usage', '=', 'production'),
-                    ('name', 'ilike', 'repair'),
-                ], limit=1)
-
-            if repair_location:
-                # Log a note about routing broken items
-                picking.message_post(
-                    body=_(
-                        'Broken item "%(product)s" (%(qty)s) should be routed '
-                        'to repair location: %(location)s',
-                        product=wiz_line.product_id.display_name,
-                        qty=wiz_line.broken_qty,
-                        location=repair_location.display_name,
-                    ),
-                )
-        else:
-            # No repair module: log a warning
-            picking.message_post(
-                body=_(
-                    'Broken item "%(product)s" (%(qty)s) returned. '
-                    'Repairs module not installed — item follows standard return flow.',
-                    product=wiz_line.product_id.display_name,
-                    qty=wiz_line.broken_qty,
-                ),
-            )

@@ -1,4 +1,5 @@
-from odoo import fields, models
+from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
 
 
 class ResCompany(models.Model):
@@ -25,3 +26,17 @@ class ResCompany(models.Model):
             'lost/broken product (e.g. "Lost/Broken Fee -- Speaker A").'
         ),
     )
+
+    @api.constrains('lost_broken_fee_product_id')
+    def _check_lost_broken_fee_is_service(self):
+        """A fee is an invoice line, never a delivery — so the fee product
+        must be a service (a storable/rental product would spawn a delivery
+        and re-reserve the lost item)."""
+        for company in self:
+            product = company.lost_broken_fee_product_id
+            if product and product.type != 'service':
+                raise ValidationError(_(
+                    'The Lost/Broken Fee product (%(product)s) must be a '
+                    'service product — a fee must not create a delivery.',
+                    product=product.display_name,
+                ))

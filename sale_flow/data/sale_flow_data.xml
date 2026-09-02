@@ -1,6 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Placeholder for future data records (e.g. default sequences, actions).
-         Currently empty — the module relies on user configuration for the
-         lost_broken_fee_product_id via Settings > Rental. -->
+    <!-- Default lost/broken fee product.
+
+         A lost/broken charge is a pure invoice fee, NOT a physical delivery,
+         so it must be a *service* product (no stock move, no reservation).
+         This shared default guarantees the charge never falls back to the
+         physical rented product (which would spawn a delivery and re-reserve
+         the very item that was lost/broken).  Tenants may override it per
+         company via Settings > lost_broken_fee_product_id. -->
+    <record id="product_lost_broken_fee" model="product.product">
+        <field name="name">Lost/Broken Fee</field>
+        <field name="type">service</field>
+        <field name="sale_ok" eval="True"/>
+        <field name="purchase_ok" eval="False"/>
+        <field name="rent_ok" eval="False"/>
+        <field name="invoice_policy">order</field>
+        <field name="list_price">0.0</field>
+        <field name="description_sale">Charge for a lost or broken rental item.</field>
+    </record>
 </odoo>
