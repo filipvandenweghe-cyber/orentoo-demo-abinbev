@@ -297,7 +297,10 @@ class RentalDossier(models.Model):
     def _compute_registration_count(self):
         """Count event registrations linked to this dossier."""
         for dossier in self:
-            if 'event.registration' in self.env:
+            # New (in-memory) dossiers have a NewId and no persisted
+            # registrations yet — skip the search to avoid a domain
+            # against a NewId value.
+            if 'event.registration' in self.env and isinstance(dossier.id, int):
                 dossier.registration_count = self.env[
                     'event.registration'
                 ].search_count([
