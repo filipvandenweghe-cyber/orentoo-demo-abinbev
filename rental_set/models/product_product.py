@@ -107,7 +107,7 @@ class ProductProduct(models.Model):
 
     def _rental_available_qty(self, from_date, to_date=False, warehouse=False,
                               ignored_soline_id=False, company=False):
-        """Canonical rental availability for a period (Option A):
+        """Canonical rental availability for a period:
 
             Available = max(Total physical stock
                             - reserved by OTHER orders (period-aware)
@@ -120,10 +120,24 @@ class ProductProduct(models.Model):
         (kiosk / website / POS via ``mcrf_service``), so operational
         availability and any downstream check always agree.
 
-        Reserved-by-others uses the native ``_get_unavailable_qty``, which
-        returns the *peak* concurrent reservation across the window (early
-        pickups/returns included) — so the result is the worst-case
-        availability for the **complete** interval, not just its endpoints.
+        **Total physical stock** is the conserved quantity the warehouse owns
+        right now (on-hand in its own locations + units still out at a customer
+        that shipped from it).  It is stable across the pick/pack/ship steps, so
+        multi-step staging never inflates availability.
+
+        **Reserved by others** follows the warehouse's real **operations**, not
+        the order's declared dates: a rental commits its units from its first
+        outbound (pickup) date until its first **inbound (return) operation**
+        date.  So a unit still out at a customer whose return operation is
+        scheduled *after* the requested window stays reserved — even when the
+        order's declared ``return_date`` has already passed (see the regression
+        test / order S00338, where the return receipt is scheduled 09-11 while
+        the order says 09-05).  This is what native Odoo Rental's warehouse
+        forecast expresses via the pickings' move dates; here we express the
+        same thing over the conserved total via ``_get_unavailable_qty``, whose
+        return timing is grounded on the operation (see
+        ``sale.order.line._rental_effective_return_date`` /
+        ``_get_active_rental_lines`` / ``_get_rented_quantities``).
 
         :param from_date: start of the rental period (Datetime)
         :param to_date: end of the rental period (Datetime); defaults to
@@ -155,6 +169,58 @@ class ProductProduct(models.Model):
             from_date, to_date, warehouse_id=wh_id,
         )
         return max(total - reserved_other - in_repair, 0.0)
+
+    def _get_active_rental_lines(self, from_date, to_date,
+                                 ignored_soline_id=False, warehouse_id=False,
+                                 **kwargs):
+        """Extend native to also catch rentals whose committed interval
+        overlaps ``[from_date, to_date]`` when measured by the warehouse's real
+        **operations** rather than the order's declared dates.
+
+        Native ``_get_active_rental_lines`` keys on the declared
+        ``reservation_begin`` / ``return_date``, so it drops two symmetric
+        cases:
+
+        * a unit still physically OUT whose **return operation** is scheduled
+          after ``from_date`` even though the declared ``return_date`` is
+          earlier — the return receipt was rescheduled (real case S00338);
+        * a unit whose **pickup operation** is scheduled before ``to_date``
+          even though the declared ``reservation_begin`` is later — the
+          delivery picking is scheduled 09-07 for a rental that only starts
+          09-08 (real case S00708).
+
+        Both are units the warehouse has really committed over the window, so
+        they must keep counting as reserved.  We add back any confirmed rental
+        line whose effective interval ``[eff_pickup, eff_return]`` overlaps the
+        window and let ``_get_rented_quantities`` place the +/- on the
+        operation dates (see ``sale.order.line._rental_effective_pickup_date``
+        / ``_rental_effective_return_date``).
+        """
+        lines = super()._get_active_rental_lines(
+            from_date, to_date, ignored_soline_id=ignored_soline_id,
+            warehouse_id=warehouse_id, **kwargs)
+        to_date = to_date or from_date
+        domain = [
+            ('is_rental', '=', True),
+            ('product_id', '=', self.id),
+            ('state', '=', 'sale'),
+        ]
+        if ignored_soline_id:
+            domain.append(('id', '!=', ignored_soline_id))
+        if warehouse_id:
+            domain.append(('order_id.warehouse_id', '=', warehouse_id))
+        candidates = self.env['sale.order.line'].search(domain) - lines
+
+        def _overlaps(line):
+            eff_pickup = line._rental_effective_pickup_date() \
+                or line.reservation_begin
+            eff_return = line._rental_effective_return_date() \
+                or line.return_date
+            if not eff_pickup or not eff_return:
+                return False
+            return eff_return > from_date and eff_pickup <= to_date
+
+        return lines | candidates.filtered(_overlaps)
 
     def _get_repair_unavailable_qty(self, from_date, to_date=False,
                                     warehouse_id=False, lot_id=False):

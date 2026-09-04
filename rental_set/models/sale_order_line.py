@@ -498,11 +498,110 @@ class SaleOrderLine(models.Model):
             and m.location_id == rental_loc
         )
 
+    def _rental_effective_return_date(self):
+        """Datetime by which this line's units are actually expected back in
+        the warehouse — the scheduled date of the **first inbound (return)
+        operation** that leaves the customer/rental location, when such a
+        pending operation exists; otherwise the order's declared
+        ``return_date``.
+
+        Grounding the return on the operation (not the declared date) is what
+        keeps availability honest when a return is rescheduled: a unit out at a
+        customer whose return receipt is scheduled *after* the order's stated
+        return_date stays unavailable until that receipt actually brings it
+        back (real case S00338: order says 09-05, return receipt scheduled
+        09-11).  An overdue pending return (scheduled in the past but not yet
+        done) still holds the units, so the date is floored at ``now``.
+
+        Transfers-OFF-safe: with rental pickings disabled there are no return
+        moves, so it falls back to the declared ``return_date`` (native
+        behaviour).
+        """
+        self.ensure_one()
+        declared = self.return_date
+        if not self.is_rental or not self._are_rental_pickings_enabled():
+            return declared
+        rental_loc = self.company_id.rental_loc_id
+        if not rental_loc:
+            return declared
+        # First inbound leg of the return = the move leaving the rental
+        # (at-customer) location back into the warehouse.
+        pending_returns = self.move_ids.filtered(
+            lambda m: m.state not in ('done', 'cancel')
+            and m.location_id == rental_loc)
+        if not pending_returns:
+            return declared
+        op_date = min(pending_returns.mapped('date'))
+        if not op_date:
+            return declared
+        # Overdue but not done → units still out at least until now.
+        now = fields.Datetime.now()
+        return op_date if op_date >= now else now
+
+    def _rental_effective_pickup_date(self):
+        """Datetime from which this line's units are actually committed at the
+        warehouse — the scheduled date of the **first outbound (pickup /
+        delivery) operation** that pulls the goods toward the customer, when it
+        is earlier than the order's declared ``reservation_begin``; otherwise
+        the declared ``reservation_begin``.
+
+        Grounding the pickup on the operation (not the declared date) keeps
+        availability honest when a delivery picking is scheduled before the
+        rental formally starts: the units physically leave stock on the picking
+        date and are no longer rentable to others from then on — even when the
+        order's declared start is later (real case S00708: rental starts 09-08
+        but the delivery picking is scheduled 09-07).
+
+        Symmetric to ``_rental_effective_return_date``: the return anchors on
+        the first leg that *leaves* the rental location; the pickup anchors on
+        the first leg that *heads out* of the warehouse toward it.  We take the
+        earlier of the operation date and the declared start, so an
+        early-scheduled picking commits the unit sooner while a normal or late
+        picking never releases it before the declared start.
+
+        Transfers-OFF-safe: with rental pickings disabled there are no outbound
+        moves, so it falls back to the declared ``reservation_begin`` (native
+        behaviour).
+        """
+        self.ensure_one()
+        declared = self.reservation_begin
+        if not self.is_rental or not self._are_rental_pickings_enabled():
+            return declared
+        rental_loc = self.company_id.rental_loc_id
+        if not rental_loc:
+            return declared
+        # Outbound (pickup/delivery) legs head OUT of the warehouse toward the
+        # customer.  Exclude the return legs — the first leaves the rental
+        # location (``location_id == rental_loc``) and the receipt is an
+        # incoming-type picking — so only the delivery chain is considered.
+        # Anchoring on the earliest such leg matches the return side, which
+        # anchors on the first leg leaving the customer (not the final putaway).
+        pending_pickup = self.move_ids.filtered(
+            lambda m: m.state not in ('done', 'cancel')
+            and m.picking_id.picking_type_code != 'incoming'
+            and m.location_id != rental_loc)
+        if not pending_pickup:
+            return declared
+        op_date = min(pending_pickup.mapped('date'))
+        if not op_date:
+            return declared
+        if not declared:
+            return op_date
+        return min(op_date, declared)
+
     def _get_rented_quantities(self, mandatory_dates):
         """Override of ``sale_stock_renting``: reserve each line's EFFECTIVE
         committed quantity instead of the raw ordered quantity, so a rental
         whose delivery is closed short (no backorder) releases the un-shipped
-        remainder to other orders on the same warehouse.
+        remainder to other orders on the same warehouse; commit the units from
+        the **pickup operation** date rather than the order's declared
+        ``reservation_begin`` (see ``_rental_effective_pickup_date``), so a unit
+        whose delivery picking is scheduled before the rental formally starts is
+        already unavailable to others; and release the commitment on the
+        **return operation** date rather than the order's declared
+        ``return_date`` (see ``_rental_effective_return_date``), so a unit still
+        out at a customer whose return is scheduled later stays reserved until
+        it is physically back.
 
         Identical to native otherwise — the early pickup / early return
         timing adjustments are unchanged.  (See
@@ -515,17 +614,21 @@ class SaleOrderLine(models.Model):
         now = fields.Datetime.now()
         for so_line in self.filtered('is_rental'):
             effective = so_line._rental_effective_reserved_qty()
-            rented_quantities[so_line.reservation_begin] += effective
-            rented_quantities[so_line.return_date] -= effective
+            eff_pickup = so_line._rental_effective_pickup_date() \
+                or so_line.reservation_begin
+            eff_return = so_line._rental_effective_return_date() \
+                or so_line.return_date
+            rented_quantities[eff_pickup] += effective
+            rented_quantities[eff_return] -= effective
             # Early pickups: units already out before the expected pickup.
-            if so_line.reservation_begin > now and so_line.qty_delivered > 0:
+            if eff_pickup > now and so_line.qty_delivered > 0:
                 rented_quantities[now] += so_line.qty_delivered
-                rented_quantities[so_line.reservation_begin] -= \
+                rented_quantities[eff_pickup] -= \
                     so_line.qty_delivered
             # Early returns: units already back before the expected return.
-            if so_line.return_date > now and so_line.qty_returned > 0:
+            if eff_return > now and so_line.qty_returned > 0:
                 rented_quantities[now] -= so_line.qty_returned
-                rented_quantities[so_line.return_date] += so_line.qty_returned
+                rented_quantities[eff_return] += so_line.qty_returned
         key_dates = sorted(
             set(rented_quantities.keys()) | set(mandatory_dates))
         return rented_quantities, key_dates
