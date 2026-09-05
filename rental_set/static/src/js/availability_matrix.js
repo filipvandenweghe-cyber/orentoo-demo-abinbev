@@ -36,7 +36,7 @@ export class AvailabilityMatrix extends Component {
                 companyIds: [],
                 warehouseIds: [],
                 start: null,
-                interval: "30min",
+                interval: "day",
             },
             data: { columns: [], rows: [], cells: {} },
         });
