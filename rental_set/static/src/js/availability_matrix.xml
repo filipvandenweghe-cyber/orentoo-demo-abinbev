@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="rental_set.AvailabilityMatrix">
+        <div class="o_rental_availability o_action h-100 d-flex flex-column">
+            <!-- Toolbar -->
+            <div class="o_ra_toolbar p-2 border-bottom">
+                <!-- Scope filters: fixed grid, tags wrap INSIDE each cell so
+                     neighbours never shift as selections grow. -->
+                <div class="o_ra_filters">
+                    <div class="o_ra_filter">
+                        <label class="small text-muted mb-1">Categories</label>
+                        <MultiRecordSelector resModel="'product.category'"
+                            resIds="state.filters.categoryIds"
+                            update="(ids) => this.onFilterUpdate('categoryIds', ids)"
+                            placeholder="'Categories…'"/>
+                    </div>
+                    <div class="o_ra_filter">
+                        <label class="small text-muted mb-1">Products</label>
+                        <MultiRecordSelector resModel="'product.product'"
+                            resIds="state.filters.productIds"
+                            domain="productDomain"
+                            update="(ids) => this.onFilterUpdate('productIds', ids)"
+                            placeholder="'Search products…'"/>
+                    </div>
+                    <div class="o_ra_filter">
+                        <label class="small text-muted mb-1">Companies</label>
+                        <MultiRecordSelector resModel="'res.company'"
+                            resIds="state.filters.companyIds"
+                            update="(ids) => this.onFilterUpdate('companyIds', ids)"
+                            placeholder="'Companies…'"/>
+                    </div>
+                    <div class="o_ra_filter">
+                        <label class="small text-muted mb-1">Warehouses</label>
+                        <MultiRecordSelector resModel="'stock.warehouse'"
+                            resIds="state.filters.warehouseIds"
+                            domain="warehouseDomain"
+                            update="(ids) => this.onFilterUpdate('warehouseIds', ids)"
+                            placeholder="'Warehouses…'"/>
+                    </div>
+                </div>
+                <!-- Compact controls + navigation -->
+                <div class="o_ra_controls d-flex flex-wrap align-items-end gap-2 mt-2">
+                    <div class="d-flex flex-column">
+                        <label class="small text-muted mb-1">Start</label>
+                        <input t-if="state.filters.interval === 'day'"
+                               type="date" class="form-control form-control-sm o_ra_date"
+                               t-att-value="startDateValue" t-on-change="onDateChange"/>
+                        <input t-else="" type="datetime-local"
+                               class="form-control form-control-sm o_ra_date"
+                               t-att-value="startDateTimeValue" t-on-change="onDateChange"/>
+                    </div>
+                    <div class="d-flex flex-column">
+                        <label class="small text-muted mb-1">Interval</label>
+                        <select class="form-select form-select-sm o_ra_ctl" t-on-change="onIntervalChange">
+                            <option value="30min" t-att-selected="state.filters.interval === '30min'">30 minutes</option>
+                            <option value="hour" t-att-selected="state.filters.interval === 'hour'">1 hour</option>
+                            <option value="day" t-att-selected="state.filters.interval === 'day'">1 day</option>
+                        </select>
+                    </div>
+                    <div class="d-flex flex-column">
+                        <label class="small text-muted mb-1">Display</label>
+                        <select class="form-select form-select-sm o_ra_ctl" t-on-change="onDisplayChange">
+                            <option value="available" t-att-selected="state.displayMode === 'available'">Available</option>
+                            <option value="ratio" t-att-selected="state.displayMode === 'ratio'">Available / Capacity</option>
+                            <option value="utilisation" t-att-selected="state.displayMode === 'utilisation'">Utilisation %</option>
+                        </select>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-secondary" t-on-click="onPrev" title="Previous">
+                            <i class="fa fa-chevron-left"/>
+                        </button>
+                        <button class="btn btn-sm btn-primary" t-on-click="onNow">
+                            <t t-esc="state.filters.interval === 'day' ? 'Today' : 'Now'"/>
+                        </button>
+                        <button class="btn btn-sm btn-secondary" t-on-click="onNext" title="Next">
+                            <i class="fa fa-chevron-right"/>
+                        </button>
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary" t-on-click="load">
+                        <i class="fa fa-refresh me-1"/>Apply
+                    </button>
+                </div>
+            </div>
+
+            <!-- Matrix -->
+            <div class="o_ra_scroll flex-grow-1 overflow-auto position-relative">
+                <t t-if="state.loading">
+                    <div class="o_ra_loading text-center text-muted p-4">
+                        <i class="fa fa-spinner fa-spin me-2"/>Loading…
+                    </div>
+                </t>
+                <t t-elif="!state.data.rows.length">
+                    <div class="text-center text-muted p-4">
+                        No products in scope. Pick a category or product and click Apply.
+                    </div>
+                </t>
+                <t t-else="">
+                    <table class="o_ra_table mb-0">
+                        <thead>
+                            <tr>
+                                <th class="o_ra_sticky o_ra_ident">Product · Company · Warehouse</th>
+                                <t t-foreach="state.data.columns" t-as="col" t-key="col_index">
+                                    <th class="o_ra_col text-center" t-att-title="col.start">
+                                        <t t-esc="col.label"/>
+                                    </th>
+                                </t>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="state.data.rows" t-as="row" t-key="row.key">
+                                <t t-if="isNewCategory(row, row_index)">
+                                    <tr class="o_ra_group o_ra_group_category">
+                                        <th class="o_ra_sticky o_ra_ident o_ra_group_cat"
+                                            t-esc="row.category"/>
+                                        <th class="o_ra_group_fill"
+                                            t-att-colspan="state.data.columns.length"/>
+                                    </tr>
+                                </t>
+                                <t t-if="isNewProduct(row, row_index)">
+                                    <tr class="o_ra_group o_ra_group_product">
+                                        <th class="o_ra_sticky o_ra_ident o_ra_group_prod text-truncate"
+                                            t-esc="row.product_name"/>
+                                        <th class="o_ra_group_fill"
+                                            t-att-colspan="state.data.columns.length"/>
+                                    </tr>
+                                </t>
+                                <tr>
+                                    <td class="o_ra_sticky o_ra_ident">
+                                        <div class="o_ra_whrow text-truncate">
+                                            <span t-if="showCompany(row, row_index)" class="o_ra_comp">
+                                                <t t-esc="row.company_name"/> · </span>
+                                            <span class="o_ra_wh" t-esc="row.warehouse_name"/>
+                                        </div>
+                                    </td>
+                                    <t t-foreach="state.data.columns" t-as="col" t-key="col_index">
+                                        <td class="o_ra_cell text-center"
+                                            t-att-class="cellClass(row, col_index)"
+                                            t-on-click="() => this.onCellClick(row, col_index)">
+                                            <t t-esc="cellText(row, col_index)"/>
+                                        </td>
+                                    </t>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </t>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="rental_set.AvailabilityCellDialog">
+        <Dialog title="'Availability detail'" size="'lg'">
+            <div class="o_ra_detail">
+                <table class="table table-sm mb-3">
+                    <tbody>
+                        <tr><th>Product</th><td t-esc="props.detail.product_name"/></tr>
+                        <tr><th>Company</th><td t-esc="props.detail.company_name"/></tr>
+                        <tr><th>Warehouse</th><td t-esc="props.detail.warehouse_name"/></tr>
+                        <tr><th>Period</th>
+                            <td><t t-esc="props.detail.period.from"/> → <t t-esc="props.detail.period.to"/></td></tr>
+                        <tr><th>Operational Available</th>
+                            <td t-esc="props.detail.available"/></tr>
+                        <tr><th>Capacity</th><td t-esc="props.detail.capacity"/></tr>
+                        <tr><th>Utilisation</th>
+                            <td><t t-if="props.detail.utilisation === null">N/A</t>
+                                <t t-else=""><t t-esc="props.detail.utilisation"/>%</t></td></tr>
+                    </tbody>
+                </table>
+
+                <h6>Rental / Sales Orders affecting availability</h6>
+                <table class="table table-sm table-striped mb-3" t-if="props.detail.orders.length">
+                    <thead><tr><th>Order</th><th>Customer</th><th>Start</th><th>End</th><th class="text-end">Qty</th></tr></thead>
+                    <tbody>
+                        <t t-foreach="props.detail.orders" t-as="o" t-key="o_index">
+                            <tr>
+                                <td t-esc="o.order_name"/>
+                                <td t-esc="o.partner"/>
+                                <td t-esc="o.start"/>
+                                <td t-esc="o.end"/>
+                                <td class="text-end" t-esc="o.qty"/>
+                            </tr>
+                        </t>
+                    </tbody>
+                </table>
+                <p class="text-muted" t-if="!props.detail.orders.length">No orders affect this interval.</p>
+
+                <h6>Repairs affecting availability</h6>
+                <table class="table table-sm table-striped mb-3" t-if="props.detail.repairs.length">
+                    <thead><tr><th>Repair</th><th>Status</th><th>Scheduled</th><th class="text-end">Qty</th></tr></thead>
+                    <tbody>
+                        <t t-foreach="props.detail.repairs" t-as="r" t-key="r_index">
+                            <tr>
+                                <td t-esc="r.name"/>
+                                <td t-esc="r.state"/>
+                                <td t-esc="r.schedule"/>
+                                <td class="text-end" t-esc="r.qty"/>
+                            </tr>
+                        </t>
+                    </tbody>
+                </table>
+                <p class="text-muted" t-if="!props.detail.repairs.length">No repairs affect this interval.</p>
+
+                <h6>Availability elsewhere</h6>
+                <div class="row">
+                    <div class="col-6">
+                        <div class="small text-muted mb-1">Same company (internal transfer)</div>
+                        <table class="table table-sm" t-if="props.detail.elsewhere.same_company.length">
+                            <tbody>
+                                <t t-foreach="props.detail.elsewhere.same_company" t-as="e" t-key="e_index">
+                                    <tr><td t-esc="e.warehouse_name"/><td class="text-end" t-esc="e.available"/></tr>
+                                </t>
+                            </tbody>
+                        </table>
+                        <p class="text-muted small" t-if="!props.detail.elsewhere.same_company.length">—</p>
+                    </div>
+                    <div class="col-6">
+                        <div class="small text-muted mb-1">Other company (intercompany)</div>
+                        <table class="table table-sm" t-if="props.detail.elsewhere.other_company.length">
+                            <tbody>
+                                <t t-foreach="props.detail.elsewhere.other_company" t-as="e" t-key="e_index">
+                                    <tr>
+                                        <td><t t-esc="e.company_name"/> / <t t-esc="e.warehouse_name"/></td>
+                                        <td class="text-end" t-esc="e.available"/>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                        <p class="text-muted small" t-if="!props.detail.elsewhere.other_company.length">—</p>
+                    </div>
+                </div>
+            </div>
+        </Dialog>
+    </t>
+
+</templates>

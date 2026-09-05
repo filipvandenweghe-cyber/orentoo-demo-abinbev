@@ -1,0 +1,158 @@
+.o_rental_availability {
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+
+    .o_ra_toolbar {
+        background-color: var(--bs-body-bg);
+    }
+
+    // Fixed grid: columns are sized to the window and stay put; a selector
+    // that gains tags grows in HEIGHT (tags wrap inside its own cell), it never
+    // pushes its neighbours sideways or onto the next row.
+    .o_ra_filters {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        gap: 0.5rem 1rem;
+        align-items: start;
+    }
+
+    .o_ra_filter {
+        display: flex;
+        flex-direction: column;
+        min-width: 0; // allow the grid cell to shrink instead of overflowing
+
+        .o_multi_record_selector {
+            width: 100%;
+            min-height: 32px;
+            flex-wrap: wrap; // chips wrap within the fixed cell width
+        }
+    }
+
+    .o_ra_ctl {
+        min-width: 130px;
+    }
+    .o_ra_date {
+        min-width: 180px;
+    }
+
+    .o_ra_scroll {
+        background-color: var(--bs-body-bg);
+    }
+
+    .o_ra_table {
+        border-collapse: separate;
+        border-spacing: 0;
+        white-space: nowrap;
+        width: max-content;
+        color: var(--bs-body-color);
+
+        // NOTE: we deliberately do NOT use Bootstrap's `.table` class here.
+        // `.table` forces `background-color: var(--bs-table-bg)` (transparent)
+        // onto every cell, which makes the sticky column / header see-through
+        // (scrolled numbers bleed through).  We own the borders/padding and
+        // paint fully OPAQUE backgrounds instead.  Header shading is a grey
+        // overlay on a solid base so it works in light & dark.
+        $tint-strong: linear-gradient(0deg, rgba(128, 128, 128, 0.22),
+                                            rgba(128, 128, 128, 0.22));
+        $tint-soft: linear-gradient(0deg, rgba(128, 128, 128, 0.12),
+                                          rgba(128, 128, 128, 0.12));
+
+        th, td {
+            border-right: 1px solid var(--bs-border-color);
+            border-bottom: 1px solid var(--bs-border-color);
+            padding: 0.25rem 0.5rem;
+            vertical-align: middle;
+        }
+
+        thead th {
+            position: sticky;
+            top: 0;
+            z-index: 3;
+            background-color: var(--bs-body-bg);
+            background-image: $tint-strong;
+            color: var(--bs-emphasis-color);
+            font-weight: 600;
+        }
+
+        // Single combined identity column stays put while the time grid scrolls.
+        // Opaque base so horizontally-scrolled cells never bleed under it.
+        .o_ra_sticky {
+            position: sticky;
+            left: 0;
+            background-color: var(--bs-body-bg);
+            z-index: 2;
+        }
+        // Top-left corner: sticky BOTH ways → must sit above everything.
+        thead .o_ra_sticky {
+            z-index: 5;
+            background-color: var(--bs-body-bg);
+            background-image: $tint-strong;
+        }
+        .o_ra_ident {
+            min-width: 260px;
+            max-width: 340px;
+        }
+
+        // Category group header row (top tier).  Sticky-left cell stays at
+        // z-index 2 so it scrolls UNDER the column header (z-index 3), never
+        // over it — but its own row is fully opaque.
+        tr.o_ra_group_category {
+            th {
+                background-color: var(--bs-body-bg);
+                background-image: $tint-strong;
+            }
+            .o_ra_group_cat {
+                color: var(--bs-emphasis-color);
+                font-weight: 700;
+                z-index: 2;
+            }
+        }
+
+        // Product sub-header row (middle tier).
+        tr.o_ra_group_product {
+            th {
+                background-color: var(--bs-body-bg);
+                background-image: $tint-soft;
+            }
+            .o_ra_group_prod {
+                color: var(--bs-emphasis-color);
+                font-weight: 600;
+                padding-left: 1rem;
+                z-index: 2;
+            }
+        }
+
+        // Warehouse rows (leaf tier) — the whole row is opaque, and the leaf
+        // number cells get an explicit solid background so nothing shows
+        // through the sticky identity column when scrolling horizontally.
+        tbody td {
+            background-color: var(--bs-body-bg);
+        }
+        .o_ra_whrow {
+            padding-left: 2rem;
+            color: var(--bs-secondary-color);
+            .o_ra_comp { color: var(--bs-secondary-color); }
+        }
+
+        .o_ra_col {
+            min-width: 56px;
+            text-align: center;
+        }
+
+        .o_ra_cell {
+            cursor: pointer;
+            min-width: 56px;
+
+            &:hover {
+                outline: 2px solid var(--bs-primary);
+                outline-offset: -2px;
+            }
+        }
+
+        // Colour semantics (theme-aware): normal = capacity remains,
+        // orange = fully committed, red = overcommitted.
+        .o_ra_normal { color: var(--bs-body-color); }
+        .o_ra_zero { color: var(--bs-warning); font-weight: 600; }
+        .o_ra_neg { color: var(--bs-danger); font-weight: 700; }
+    }
+}
