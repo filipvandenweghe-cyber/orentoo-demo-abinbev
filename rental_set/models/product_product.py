@@ -106,7 +106,8 @@ class ProductProduct(models.Model):
         return delivered - returned
 
     def _rental_available_qty(self, from_date, to_date=False, warehouse=False,
-                              ignored_soline_id=False, company=False):
+                              ignored_soline_id=False, company=False,
+                              clamp=True):
         """Canonical rental availability for a period:
 
             Available = max(Total physical stock
@@ -148,6 +149,13 @@ class ProductProduct(models.Model):
             every order (the right choice for a fresh availability question)
         :param company: res.company owning the rental location; defaults to
             the warehouse company, then the current company
+        :param clamp: when ``True`` (default, and what every existing caller
+            gets) the result is floored at 0 via ``max(..., 0)`` — the
+            operational "you cannot rent negative units" figure.  When
+            ``False`` the SAME canonical calculation is returned *before* that
+            floor, so a reporting layer can see a signed (possibly negative)
+            over-/under-commitment.  ``clamp`` changes nothing but the final
+            floor — the terms above are untouched.
         """
         self.ensure_one()
         to_date = to_date or from_date
@@ -180,10 +188,8 @@ class ProductProduct(models.Model):
         transfer_in = self._get_transfer_in_qty(
             from_date, to_date, warehouse=warehouse,
         )
-        return max(
-            total - reserved_other - in_repair - transfer_out + transfer_in,
-            0.0,
-        )
+        signed = total - reserved_other - in_repair - transfer_out + transfer_in
+        return max(signed, 0.0) if clamp else signed
 
     def _get_active_rental_lines(self, from_date, to_date,
                                  ignored_soline_id=False, warehouse_id=False,
@@ -261,8 +267,20 @@ class ProductProduct(models.Model):
             return 0.0
         if not from_date:
             return 0.0
-        to_date = to_date or from_date
+        repairs = self._rental_open_repairs(warehouse_id, lot_id)
+        return self._rental_repair_sum(repairs, from_date, to_date)
 
+    def _rental_open_repairs(self, warehouse_id=False, lot_id=False):
+        """Interval-INDEPENDENT search of this product's **open** repairs
+        (``state ∉ done/cancel``), optionally scoped to a warehouse's locations
+        or a lot.  Split out from ``_get_repair_unavailable_qty`` so the scalar
+        engine and the batch reporting layer share ONE search + ONE overlap
+        summation (``_rental_repair_sum``) — no divergent repair logic.
+        Returns an empty recordset when ``repair`` is not installed.
+        """
+        self.ensure_one()
+        if 'repair.order' not in self.env:
+            return self.env['stock.move'].browse()  # empty, iterable
         domain = [
             ('product_id', '=', self.id),
             ('state', 'not in', ('done', 'cancel')),
@@ -275,8 +293,16 @@ class ProductProduct(models.Model):
                 domain.append(
                     ('location_id', 'child_of', wh.view_location_id.id)
                 )
-        repairs = self.env['repair.order'].sudo().search(domain)
+        return self.env['repair.order'].sudo().search(domain)
 
+    def _rental_repair_sum(self, repairs, from_date, to_date=False):
+        """Sum ``product_qty`` of the given open repairs whose unavailability
+        window ``[create_date, schedule_date]`` (floored at ``now`` when the
+        schedule date is overdue) overlaps ``[from_date, to_date]``.  Identical
+        arithmetic to the original inline loop, so scalar and batch agree."""
+        if not from_date:
+            return 0.0
+        to_date = to_date or from_date
         now = fields.Datetime.now()
         total = 0.0
         for repair in repairs:
@@ -352,59 +378,89 @@ class ProductProduct(models.Model):
     def _rental_transfer_qty(self, from_date, to_date, warehouse, direction):
         """Shared engine for the transfer OUT / IN terms.  ``direction`` is
         ``'out'`` (relocations leaving this warehouse, dated by ``to_date``) or
-        ``'in'`` (relocations arriving, dated by ``from_date``)."""
+        ``'in'`` (relocations arriving, dated by ``from_date``).
+
+        Split into an interval-INDEPENDENT search (``_rental_transfer_moves``)
+        and an interval-DEPENDENT summation (``_rental_transfer_sum``) so the
+        scalar engine and the batch reporting layer share ONE implementation —
+        the batch caches the moveset once and re-sums it per column, and the
+        two can never diverge because they run the same summation."""
         self.ensure_one()
         if not (warehouse and warehouse.view_location_id) or not from_date:
             return 0.0
-        to_date = to_date or from_date
-        inside = self.env['stock.location'].search([
-            ('id', 'child_of', warehouse.view_location_id.id),
-            ('usage', 'in', ('internal', 'transit')),
-        ])
-        if not inside:
+        moves = self._rental_transfer_moves(warehouse, direction)
+        if not moves:
             return 0.0
         # Rental (at-customer) locations across every company — their moves are
         # rental pickups/returns, handled by the reserved term, never here.
         rental_loc_ids = self.env['res.company'].sudo().search(
             []).rental_loc_id.ids
+        return self._rental_transfer_sum(
+            moves, from_date, to_date, direction, rental_loc_ids)
+
+    def _rental_transfer_moves(self, warehouse, direction):
+        """Interval-INDEPENDENT search of confirmed (not done/cancel)
+        relocations crossing this warehouse's view-tree boundary in
+        ``direction`` — everything EXCEPT the move-date bound, which is applied
+        per interval by ``_rental_transfer_sum``.  Cache this once per
+        ``(product, warehouse, direction)`` to batch many intervals cheaply."""
+        self.ensure_one()
         Move = self.env['stock.move']
+        if not (warehouse and warehouse.view_location_id):
+            return Move.browse()
+        inside = self.env['stock.location'].search([
+            ('id', 'child_of', warehouse.view_location_id.id),
+            ('usage', 'in', ('internal', 'transit')),
+        ])
+        if not inside:
+            return Move.browse()
         if direction == 'out':
             # Relocations LEAVING this warehouse toward another internal/transit
-            # location, deducted if they depart by the end of the window.  A
-            # departure of owned stock always reduces the source (never gated —
-            # ignoring it would over-promise units that are leaving).
-            moves = Move.search([
+            # location (a departure of owned stock).
+            return Move.search([
                 ('product_id', '=', self.id),
                 ('state', 'not in', ('done', 'cancel')),
                 ('location_id', 'in', inside.ids),
                 ('location_dest_id', 'not in', inside.ids),
                 ('location_dest_id.usage', 'in', ('internal', 'transit')),
-                ('date', '<=', to_date),
             ])
-            total = 0.0
-            for move in moves:
-                if move.location_dest_id.id in rental_loc_ids:
-                    continue
-                total += move.product_uom_qty
-            return total
-
         # direction == 'in': everything arriving into this warehouse from
-        # OUTSIDE, credited if guaranteed present before the window opens.  Its
-        # operational contribution depends on the source and the operation
-        # type's policy (``stock.picking.type.rental_incoming_policy``):
-        #   * a relocation of OWNED stock (source internal/transit) counts
-        #     operationally by default — unless its type is set to 'ignore';
-        #   * external / produced supply (PO, MO, intercompany) counts only when
-        #     its operation type is explicitly set to 'operational'.
-        moves = Move.search([
+        # OUTSIDE.
+        return Move.search([
             ('product_id', '=', self.id),
             ('state', 'not in', ('done', 'cancel')),
             ('location_dest_id', 'in', inside.ids),
             ('location_id', 'not in', inside.ids),
-            ('date', '<=', from_date),
         ])
+
+    def _rental_transfer_sum(self, moves, from_date, to_date, direction,
+                             rental_loc_ids):
+        """Apply the interval date bound + rental-location / policy exclusions
+        to a prefetched ``moves`` recordset.  Same arithmetic the original
+        per-call loop used, so ``_rental_transfer_qty`` and the batch produce
+        identical numbers.
+
+        * ``out`` — deducted when it departs at or before ``to_date`` (a unit
+          leaving anywhere inside the window is unavailable for the complete
+          interval); rental pickups (dest = rental location) are excluded.
+        * ``in`` — credited only when guaranteed present before ``from_date``;
+          rental returns excluded; the operation type's
+          ``rental_incoming_policy`` decides whether external/produced supply
+          counts (relocations of owned stock count by default unless
+          ``ignore``).
+        """
+        to_date = to_date or from_date
         total = 0.0
+        if direction == 'out':
+            for move in moves:
+                if move.date and move.date <= to_date \
+                        and move.location_dest_id.id not in rental_loc_ids:
+                    total += move.product_uom_qty
+            return total
+        # direction == 'in'
         for move in moves:
+            if not (move.date and move.date <= from_date):
+                continue
             if move.location_id.id in rental_loc_ids:
                 continue  # rental return — reserved term handles it
             policy = move.picking_type_id.rental_incoming_policy or 'projected'
@@ -414,3 +470,108 @@ class ProductProduct(models.Model):
             if policy == 'operational' or is_relocation:
                 total += move.product_uom_qty
         return total
+
+    # ── Reservation step-function (batch reuse of the native peak) ──────────
+    def _rental_reserved_stepfn(self, from_date, to_date, warehouse_id=False,
+                                ignored_soline_id=False):
+        """Build the interval-INDEPENDENT reservation step-function ONCE for the
+        whole report window ``[from_date, to_date]``.
+
+        Returns ``(rented_quantities, key_dates)`` exactly as native
+        ``sale.order.line._get_rented_quantities`` does — a ``defaultdict`` of
+        date→signed-delta (pickup +, return −) and the sorted key dates.  Any
+        sub-column's peak is then read with ``_reserved_peak`` and equals the
+        native ``_get_unavailable_qty`` for that sub-column (the window's active
+        lines are a superset of any sub-column's, and the extra lines net to
+        zero inside the sub-column — see the equality tests).
+        """
+        self.ensure_one()
+        lines = self._get_active_rental_lines(
+            from_date, to_date,
+            ignored_soline_id=ignored_soline_id, warehouse_id=warehouse_id)
+        return lines._get_rented_quantities([from_date, to_date])
+
+    def _reserved_peak(self, rented_quantities, base_key_dates,
+                       from_date, to_date):
+        """Peak concurrent reserved quantity over ``[from_date, to_date]`` —
+        a faithful mirror of native ``product.product._get_unavailable_qty``'s
+        cumulative-max loop, with ``from_date``/``to_date`` added as mandatory
+        boundary dates (the same role native's ``mandatory_dates`` play)."""
+        to_date = to_date or from_date
+        key_dates = sorted(set(base_key_dates) | {from_date, to_date})
+        cumulative = 0.0
+        max_unavailable = 0.0
+        for key_date in key_dates:
+            if key_date > to_date:
+                break
+            cumulative += rented_quantities.get(key_date, 0.0)
+            if key_date >= from_date:
+                max_unavailable = max(cumulative, max_unavailable)
+        return max_unavailable
+
+    # ── Batch availability (reuses every scalar primitive; never a 2nd engine)
+    def _rental_available_batch(self, columns, warehouse=False, company=False,
+                                ignored_soline_id=False, clamp=True):
+        """Batch of ``_rental_available_qty`` over ``self`` (many products) and
+        many time ``columns`` for ONE ``(warehouse, company)``.
+
+        ``columns`` is a list of ``(from_date, to_date)`` datetime pairs.
+        Returns ``{product_id: [{'available', 'capacity'}, ... per column]}``
+        where ``available`` respects ``clamp`` (signed when ``clamp=False``)
+        and ``capacity = physical_total − transfer_out + transfer_in``.
+
+        Reuses the SAME primitives the scalar engine uses — physical total,
+        the reservation step-function, and the repair / transfer search+sum
+        helpers — so each cell is provably equal to
+        ``_rental_available_qty(from, to, warehouse, company, clamp=…)``.  No
+        second availability formula lives here; this is purely a batching /
+        caching orchestration.  (See ``test_rental_availability_batch``.)
+        """
+        if not columns:
+            return {p.id: [] for p in self}
+        win_start = min(c[0] for c in columns)
+        win_end = max((c[1] or c[0]) for c in columns)
+        wh_id = warehouse.id if warehouse else False
+        rental_loc_ids = self.env['res.company'].sudo().search(
+            []).rental_loc_id.ids
+        repair_installed = 'repair.order' in self.env
+        Move = self.env['stock.move']
+
+        result = {}
+        for product in self:
+            # Interval-independent, computed once per product.
+            total = product._rental_physical_total(
+                warehouse=warehouse, company=company)
+            rentable = product.rent_ok and hasattr(product, '_get_unavailable_qty')
+            if rentable:
+                rented, base_keys = product._rental_reserved_stepfn(
+                    win_start, win_end, warehouse_id=wh_id,
+                    ignored_soline_id=ignored_soline_id)
+            else:
+                rented, base_keys = {}, []
+            out_moves = (product._rental_transfer_moves(warehouse, 'out')
+                         if warehouse else Move.browse())
+            in_moves = (product._rental_transfer_moves(warehouse, 'in')
+                        if warehouse else Move.browse())
+            repairs = (product._rental_open_repairs(wh_id)
+                       if repair_installed else Move.browse())
+
+            cells = []
+            for (from_date, to_date) in columns:
+                to_date = to_date or from_date
+                reserved = (product._reserved_peak(
+                    rented, base_keys, from_date, to_date) if rentable else 0.0)
+                in_repair = product._rental_repair_sum(
+                    repairs, from_date, to_date)
+                t_out = product._rental_transfer_sum(
+                    out_moves, from_date, to_date, 'out', rental_loc_ids)
+                t_in = product._rental_transfer_sum(
+                    in_moves, from_date, to_date, 'in', rental_loc_ids)
+                capacity = total - t_out + t_in
+                signed = capacity - reserved - in_repair
+                cells.append({
+                    'available': signed if not clamp else max(signed, 0.0),
+                    'capacity': capacity,
+                })
+            result[product.id] = cells
+        return result

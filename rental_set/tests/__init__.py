@@ -4,3 +4,4 @@ from . import test_rental_availability_warehouse
 from . import test_rental_reservation_short_delivery
 from . import test_rental_return_operation_date
 from . import test_rental_transfer_grounding
+from . import test_rental_availability_batch
