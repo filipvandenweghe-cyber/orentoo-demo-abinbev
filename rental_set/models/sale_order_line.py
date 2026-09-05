@@ -3,7 +3,7 @@ from collections import defaultdict
 
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
-from odoo.tools import float_compare, float_is_zero
+from odoo.tools import float_compare
 
 
 # Hard ceiling on nesting depth -- protects against accidental infinite loops
@@ -1006,32 +1006,16 @@ class SaleOrderLine(models.Model):
                 if other_lines:
                     other_lines.write(vals)
 
-                # For components, ignore price_unit change and keep it at 0
+                # For components, ignore price_unit change and keep it at 0.
                 comp_vals = {k: v for k, v in vals.items()
                              if k not in ('price_unit', 'technical_price_unit')}
                 comp_vals['price_unit'] = 0.0
                 comp_vals['technical_price_unit'] = 0.0
                 super(SaleOrderLine, set_components).write(comp_vals)
 
-                # Only notify on a genuine attempt to set a NON-ZERO component
-                # price. A write echoing price_unit = 0 (the sale order form
-                # re-sends the stored field on every save) is a no-op on lines
-                # that are already 0, and must not spam the chatter.
-                precision = self.env['decimal.precision'].precision_get(
-                    'Product Price',
-                )
-                attempted = vals.get('price_unit') or 0.0
-                if not float_is_zero(attempted, precision_digits=precision):
-                    orders = set_components.mapped('order_id')
-                    for order in orders:
-                        order.message_post(
-                            body=_(
-                                "A component price change was ignored: component "
-                                "lines in a Rental Set do not carry a price. The "
-                                "set price is defined on the parent set line only."
-                            ),
-                            message_type='notification',
-                        )
+                # The price change is silently ignored (component lines in a
+                # Rental Set never carry a price — the set price lives on the
+                # parent line only).  No chatter notification is posted.
                 return True
 
         # Capture set-parent lines before mutation
