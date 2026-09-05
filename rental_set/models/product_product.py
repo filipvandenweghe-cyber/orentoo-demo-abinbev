@@ -1,4 +1,5 @@
 import math
+from collections import defaultdict
 
 from odoo import api, fields, models
 
@@ -601,6 +602,14 @@ class ProductProduct(models.Model):
         ``_rental_available_qty(from, to, warehouse, company, clamp=…)``.  No
         second availability formula lives here; this is purely a batching /
         caching orchestration.  (See ``test_rental_availability_batch``.)
+
+        Everything that does NOT vary per product (the warehouse's internal
+        location set, the on-hand quants, the at-customer moves, the transfer
+        moves, the open repairs) is fetched ONCE for the whole product set with
+        a single batched query per data type and then bucketed by product — so
+        the query count is O(warehouses) rather than O(products × warehouses).
+        The per-column arithmetic still runs through the identical sum helpers,
+        so the numbers are unchanged (equality tests guard this).
         """
         if not columns:
             return {p.id: [] for p in self}
@@ -611,12 +620,77 @@ class ProductProduct(models.Model):
             []).rental_loc_id.ids
         repair_installed = 'repair.order' in self.env
         Move = self.env['stock.move']
+        ids = self.ids
+
+        # ── per-WAREHOUSE prefetch (once for all products) ──────────────────
+        inside = self.env['stock.location']
+        if warehouse and warehouse.view_location_id:
+            inside = self.env['stock.location'].search([
+                ('id', 'child_of', warehouse.view_location_id.id),
+                ('usage', 'in', ('internal', 'transit'))])
+        inside_ids = inside.ids
+
+        # On-hand across the warehouse's own locations — one read_group.
+        onhand = {}
+        if inside_ids:
+            for prod, qty in self.env['stock.quant']._read_group(
+                    [('product_id', 'in', ids),
+                     ('location_id', 'in', inside_ids)],
+                    ['product_id'], ['quantity:sum']):
+                onhand[prod.id] = qty
+
+        # Net at-customer (done moves to/from the rental location, this wh) —
+        # two read_groups for the whole product set.
+        at_customer = defaultdict(float)
+        rental_loc = company.rental_loc_id if company else False
+        if rental_loc and warehouse:
+            base = [('product_id', 'in', ids), ('state', '=', 'done'),
+                    ('sale_line_id.order_id.warehouse_id', '=', warehouse.id)]
+            for prod, qty in Move._read_group(
+                    base + [('location_dest_id', '=', rental_loc.id)],
+                    ['product_id'], ['quantity:sum']):
+                at_customer[prod.id] += qty
+            for prod, qty in Move._read_group(
+                    base + [('location_id', '=', rental_loc.id)],
+                    ['product_id'], ['quantity:sum']):
+                at_customer[prod.id] -= qty
+
+        # Transfer moves (out / in) — one search each, bucketed by product.
+        out_ids, in_ids = defaultdict(list), defaultdict(list)
+        if inside_ids:
+            for m in Move.search([
+                    ('product_id', 'in', ids),
+                    ('state', 'not in', ('done', 'cancel')),
+                    ('location_id', 'in', inside_ids),
+                    ('location_dest_id', 'not in', inside_ids),
+                    ('location_dest_id.usage', 'in', ('internal', 'transit'))]):
+                out_ids[m.product_id.id].append(m.id)
+            for m in Move.search([
+                    ('product_id', 'in', ids),
+                    ('state', 'not in', ('done', 'cancel')),
+                    ('location_dest_id', 'in', inside_ids),
+                    ('location_id', 'not in', inside_ids)]):
+                in_ids[m.product_id.id].append(m.id)
+
+        # Open repairs — one search, bucketed by product.
+        repair_ids = defaultdict(list)
+        if repair_installed and warehouse and warehouse.view_location_id:
+            for r in self.env['repair.order'].sudo().search([
+                    ('product_id', 'in', ids),
+                    ('state', 'not in', ('done', 'cancel')),
+                    ('location_id', 'child_of', warehouse.view_location_id.id)]):
+                repair_ids[r.product_id.id].append(r.id)
+        RepairSudo = (self.env['repair.order'].sudo()
+                      if repair_installed else None)
 
         result = {}
         for product in self:
-            # Interval-independent, computed once per product.
-            total = product._rental_physical_total(
-                warehouse=warehouse, company=company)
+            # Interval-independent, from the prefetched buckets.
+            if inside_ids:
+                total = onhand.get(product.id, 0.0) + at_customer.get(product.id, 0.0)
+            else:
+                total = product._rental_physical_total(
+                    warehouse=warehouse, company=company)
             rentable = product.rent_ok and hasattr(product, '_get_unavailable_qty')
             if rentable:
                 rented, base_keys = product._rental_reserved_stepfn(
@@ -624,12 +698,10 @@ class ProductProduct(models.Model):
                     ignored_soline_id=ignored_soline_id)
             else:
                 rented, base_keys = {}, []
-            out_moves = (product._rental_transfer_moves(warehouse, 'out')
-                         if warehouse else Move.browse())
-            in_moves = (product._rental_transfer_moves(warehouse, 'in')
-                        if warehouse else Move.browse())
-            repairs = (product._rental_open_repairs(wh_id)
-                       if repair_installed else Move.browse())
+            out_moves = Move.browse(out_ids.get(product.id))
+            in_moves = Move.browse(in_ids.get(product.id))
+            repairs = (RepairSudo.browse(repair_ids.get(product.id))
+                       if RepairSudo is not None else Move.browse())
 
             cells = []
             for (from_date, to_date) in columns:
