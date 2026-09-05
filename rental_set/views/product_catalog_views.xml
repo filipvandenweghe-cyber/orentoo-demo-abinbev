@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Add a "Rental available" line to the product catalog card (next to the
+         standard Available / On Hand), showing rental availability for the
+         current order's rental period.  Inherits the stock catalog kanban so it
+         sits right under the on-hand line. -->
+    <record id="product_view_kanban_catalog_rental" model="ir.ui.view">
+        <field name="name">product.view.kanban.catalog.rental.availability</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="stock.product_view_kanban_catalog"/>
+        <field name="arch" type="xml">
+            <field name="free_qty" position="after">
+                <field name="rent_ok"/>
+                <field name="rental_avail_catalog"/>
+            </field>
+            <div name="o_kanban_qty_available_and_on_hand" position="after">
+                <div t-if="record.rent_ok.raw_value and context.get('start_date')"
+                     name="o_kanban_rental_availability">
+                    <span class="fw-bold" t-out="record.rental_avail_catalog.raw_value"/>
+                    <span class="text-muted small"> Rental available</span>
+                </div>
+            </div>
+        </field>
+    </record>
+</odoo>

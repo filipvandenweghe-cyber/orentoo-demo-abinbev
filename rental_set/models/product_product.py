@@ -1,4 +1,4 @@
-from odoo import fields, models
+from odoo import api, fields, models
 
 
 class ProductProduct(models.Model):
@@ -7,6 +7,40 @@ class ProductProduct(models.Model):
     # The set component listing is no longer appended to the sale
     # description.  Standard Odoo logic applies: the quotation line
     # uses the description_sale defined on the product's Sales tab.
+
+    rental_avail_catalog = fields.Float(
+        string="Rental Availability",
+        compute="_compute_rental_avail_catalog",
+        digits='Product Unit',
+        help="Rental units still available for the current order's rental "
+             "period (its warehouse & company), shown on the product catalog "
+             "card.  Uses the canonical rental availability engine.")
+
+    @api.depends_context('start_date', 'end_date', 'rental_catalog_wh',
+                         'rental_catalog_company', 'allowed_company_ids')
+    def _compute_rental_avail_catalog(self):
+        """Rental availability for the order's period, for the catalog card.
+
+        The rental dates are placed in the catalog context by ``sale_renting``
+        (``start_date`` / ``end_date``); the order's warehouse & company are
+        added by ``sale.order._get_action_add_from_catalog_extra_context`` in
+        this module.  Values arrive JSON-serialised (dates as strings), so they
+        are parsed back before hitting the canonical engine.
+        """
+        ctx = self.env.context
+        start = fields.Datetime.to_datetime(ctx.get('start_date'))
+        end = fields.Datetime.to_datetime(ctx.get('end_date')) or start
+        wh_id = ctx.get('rental_catalog_wh')
+        warehouse = self.env['stock.warehouse'].browse(wh_id) if wh_id else False
+        comp_id = ctx.get('rental_catalog_company')
+        company = self.env['res.company'].browse(comp_id) if comp_id \
+            else self.env.company
+        for product in self:
+            if start and product.rent_ok and product.is_storable:
+                product.rental_avail_catalog = product._rental_available_qty(
+                    start, end, warehouse=warehouse, company=company)
+            else:
+                product.rental_avail_catalog = 0.0
 
     def _rental_physical_total(self, warehouse=False, company=False):
         """Real units this warehouse owns right now — warehouse-local:

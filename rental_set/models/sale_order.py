@@ -149,3 +149,17 @@ class SaleOrder(models.Model):
         return lines.filtered(
             lambda l: not l.is_set_component or l.visible_to_customer
         )
+
+    def _get_action_add_from_catalog_extra_context(self):
+        """Expose this order's warehouse & company to the product catalog so the
+        card can show rental availability for the order's period (rental dates
+        are already added to the context by ``sale_renting``).  Read by
+        ``product.product._compute_rental_avail_catalog``.
+        """
+        ctx = super()._get_action_add_from_catalog_extra_context()
+        if getattr(self, 'is_rental_order', False):
+            ctx.update(
+                rental_catalog_wh=self.warehouse_id.id,
+                rental_catalog_company=self.company_id.id,
+            )
+        return ctx
