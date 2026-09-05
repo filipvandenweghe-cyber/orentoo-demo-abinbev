@@ -168,7 +168,22 @@ class ProductProduct(models.Model):
         in_repair = self._get_repair_unavailable_qty(
             from_date, to_date, warehouse_id=wh_id,
         )
-        return max(total - reserved_other - in_repair, 0.0)
+        # Ground confirmed (not-yet-done) interwarehouse / intercompany
+        # transfers on their scheduled operation dates.  A relocation OUT of
+        # this warehouse reduces it from the departure operation; a relocation
+        # IN raises it once the units are guaranteed present for the whole
+        # interval.  Both follow the real stock moves (route-based resupply or
+        # a manual internal transfer alike), never the order's headers.
+        transfer_out = self._get_transfer_out_qty(
+            from_date, to_date, warehouse=warehouse,
+        )
+        transfer_in = self._get_transfer_in_qty(
+            from_date, to_date, warehouse=warehouse,
+        )
+        return max(
+            total - reserved_other - in_repair - transfer_out + transfer_in,
+            0.0,
+        )
 
     def _get_active_rental_lines(self, from_date, to_date,
                                  ignored_soline_id=False, warehouse_id=False,
@@ -275,4 +290,127 @@ class ProductProduct(models.Model):
             # Overlap with the requested rental period.
             if start <= to_date and end >= from_date:
                 total += repair.product_qty or 0.0
+        return total
+
+    def _get_transfer_out_qty(self, from_date, to_date=False, warehouse=False):
+        """Units committed to LEAVE this warehouse before/within the window via
+        a confirmed (not-yet-done) relocation to another warehouse/company —
+        grounded on the transfer move's scheduled date.
+
+        A relocation is any stock move that crosses this warehouse's view-tree
+        boundary into another INTERNAL/TRANSIT location (same-company
+        interwarehouse, or — through a transit location — intercompany).  It is
+        deducted when it departs at or before ``to_date``: a unit leaving at
+        any point inside the window is not available for the COMPLETE interval
+        (worst case at the end of the window).
+
+        The units are still physically on-hand right now (the move is not done,
+        so the conserved physical total still counts them here); this term is
+        what makes availability follow the scheduled OUTBOUND operation instead
+        of waiting for the move to complete.  It is move-based, so it fires the
+        same for a route-driven resupply and a manual internal transfer.
+
+        Excludes:
+        * done/cancelled moves — already reflected in the physical total;
+        * moves whose destination stays INSIDE this warehouse — internal
+          staging, not a departure;
+        * moves to a customer / supplier location — sales and vendor returns,
+          not relocations of owned stock;
+        * moves touching a rental (at-customer) location — rental pickups are
+          handled by the reserved term.  The exclusion is by LOCATION (not by
+          ``sale_line.is_rental``), so a resupply transfer that merely FEEDS a
+          rental still counts as the relocation it is.
+        """
+        return self._rental_transfer_qty(
+            from_date, to_date, warehouse, direction='out')
+
+    def _get_transfer_in_qty(self, from_date, to_date=False, warehouse=False):
+        """Units scheduled to ARRIVE into this warehouse via a confirmed
+        (not-yet-done) relocation from another warehouse/company — grounded on
+        the transfer move's scheduled date.
+
+        Credited only when the arrival is at or before ``from_date``: a unit
+        must be present for the WHOLE interval to be rentable for the complete
+        column, so an arrival mid-window does not yet raise the operational
+        figure (conservative).
+
+        What actually counts is governed per operation type by
+        ``stock.picking.type.rental_incoming_policy``:
+
+        * **relocations of OWNED stock** (source internal/transit — an
+          interwarehouse / intercompany transfer) count operationally by
+          default, because the group already owns the units; set the type to
+          ``ignore`` to opt out;
+        * **external / produced supply** (a Purchase Order from a supplier, a
+          Manufacturing Order, intercompany supply) counts **only** when its
+          operation type is set to ``operational`` — the safe default keeps
+          uncertain incoming supply out of the booking gate.
+        """
+        return self._rental_transfer_qty(
+            from_date, to_date, warehouse, direction='in')
+
+    def _rental_transfer_qty(self, from_date, to_date, warehouse, direction):
+        """Shared engine for the transfer OUT / IN terms.  ``direction`` is
+        ``'out'`` (relocations leaving this warehouse, dated by ``to_date``) or
+        ``'in'`` (relocations arriving, dated by ``from_date``)."""
+        self.ensure_one()
+        if not (warehouse and warehouse.view_location_id) or not from_date:
+            return 0.0
+        to_date = to_date or from_date
+        inside = self.env['stock.location'].search([
+            ('id', 'child_of', warehouse.view_location_id.id),
+            ('usage', 'in', ('internal', 'transit')),
+        ])
+        if not inside:
+            return 0.0
+        # Rental (at-customer) locations across every company — their moves are
+        # rental pickups/returns, handled by the reserved term, never here.
+        rental_loc_ids = self.env['res.company'].sudo().search(
+            []).rental_loc_id.ids
+        Move = self.env['stock.move']
+        if direction == 'out':
+            # Relocations LEAVING this warehouse toward another internal/transit
+            # location, deducted if they depart by the end of the window.  A
+            # departure of owned stock always reduces the source (never gated —
+            # ignoring it would over-promise units that are leaving).
+            moves = Move.search([
+                ('product_id', '=', self.id),
+                ('state', 'not in', ('done', 'cancel')),
+                ('location_id', 'in', inside.ids),
+                ('location_dest_id', 'not in', inside.ids),
+                ('location_dest_id.usage', 'in', ('internal', 'transit')),
+                ('date', '<=', to_date),
+            ])
+            total = 0.0
+            for move in moves:
+                if move.location_dest_id.id in rental_loc_ids:
+                    continue
+                total += move.product_uom_qty
+            return total
+
+        # direction == 'in': everything arriving into this warehouse from
+        # OUTSIDE, credited if guaranteed present before the window opens.  Its
+        # operational contribution depends on the source and the operation
+        # type's policy (``stock.picking.type.rental_incoming_policy``):
+        #   * a relocation of OWNED stock (source internal/transit) counts
+        #     operationally by default — unless its type is set to 'ignore';
+        #   * external / produced supply (PO, MO, intercompany) counts only when
+        #     its operation type is explicitly set to 'operational'.
+        moves = Move.search([
+            ('product_id', '=', self.id),
+            ('state', 'not in', ('done', 'cancel')),
+            ('location_dest_id', 'in', inside.ids),
+            ('location_id', 'not in', inside.ids),
+            ('date', '<=', from_date),
+        ])
+        total = 0.0
+        for move in moves:
+            if move.location_id.id in rental_loc_ids:
+                continue  # rental return — reserved term handles it
+            policy = move.picking_type_id.rental_incoming_policy or 'projected'
+            if policy == 'ignore':
+                continue
+            is_relocation = move.location_id.usage in ('internal', 'transit')
+            if policy == 'operational' or is_relocation:
+                total += move.product_uom_qty
         return total

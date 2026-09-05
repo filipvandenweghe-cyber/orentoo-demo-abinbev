@@ -1,6 +1,6 @@
 {
     'name': 'Rental Sets',
-    'version': '19.0.1.29.0',
+    'version': '19.0.1.31.0',
     'summary': 'Extend products with Rental Set capabilities',
     'description': (
         'Rental Sets are normal Odoo products that can expand into hidden '
@@ -31,6 +31,7 @@
         'views/product_template_views.xml',
         'views/sale_order_views.xml',
         'views/stock_picking_views.xml',
+        'views/stock_picking_type_views.xml',
 
         # Wizards
         'views/rental_set_add_component_wizard.xml',
