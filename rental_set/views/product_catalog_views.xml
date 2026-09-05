@@ -14,7 +14,8 @@
                 <field name="rental_avail_catalog"/>
             </field>
             <div name="o_kanban_qty_available_and_on_hand" position="after">
-                <div t-if="record.rent_ok.raw_value and context.get('start_date')"
+                <div t-if="record.rent_ok.raw_value"
+                     invisible="not context.get('start_date')"
                      name="o_kanban_rental_availability">
                     <span class="fw-bold" t-out="record.rental_avail_catalog.raw_value"/>
                     <span class="text-muted small"> Rental available</span>
