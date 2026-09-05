@@ -71,6 +71,19 @@ class TestRentalReturnOperationDate(TransactionCase):
         picking.button_validate()
         return picking
 
+    def _return_full(self, order, qty):
+        """Validate the inbound (return) rental picking fully — units back."""
+        picking = order.picking_ids.filtered(
+            lambda p: p.picking_type_code == 'incoming'
+            and p.state not in ('done', 'cancel'))
+        picking.ensure_one()
+        picking.action_assign()
+        move = picking.move_ids.filtered(lambda m: m.product_id == self.prod)
+        move.move_line_ids[:1].quantity = qty
+        move.picked = True
+        picking.button_validate()
+        return picking
+
     def _avail(self, f_off, t_off, ignored=False):
         now = fields.Datetime.now()
         return self.prod._rental_available_qty(
@@ -177,6 +190,32 @@ class TestRentalReturnOperationDate(TransactionCase):
         self.assertAlmostEqual(
             self._avail(2, 3), 10.0, places=2,
             msg="Return on schedule → units back → 10 available")
+
+    def test_completed_early_return_frees_units_for_overlapping_window(self):
+        """S00705 case: a rental returned EARLY (before its declared return
+        date) must free its units immediately — a later window that the
+        *declared* return date would still overlap must see everything back."""
+        self._set_stock(10)
+        order = self._order(start_offset=0, days=1)  # declared return = day 1
+        line = self._line(order, 6)
+        order.action_confirm()
+        self._deliver_full(order, 6)
+        # Return the 6 NOW (day ~0), well before the declared day-1 return.
+        self._return_full(order, 6)
+        self.assertAlmostEqual(line.qty_returned, 6.0, places=2)
+
+        # The effective return is the actual operation (~now), not the declared
+        # day-1 date.
+        now = fields.Datetime.now()
+        self.assertLess(
+            line._rental_effective_return_date(), now + timedelta(hours=1),
+            msg="completed return must ground on the actual operation date")
+
+        # A window on days 0.5-1.5 — which the DECLARED return (day 1) overlaps
+        # — must still see all 10, because the units physically came back.
+        self.assertAlmostEqual(
+            self._avail(0.5, 1.5), 10.0, places=2,
+            msg="early-completed return frees units for the overlapping window")
 
     def _move_done(self, wh, src, dst, qty, sale_line=False):
         """Create and validate a done stock move src→dst (simulates one leg

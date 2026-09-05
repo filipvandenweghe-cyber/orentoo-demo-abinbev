@@ -506,12 +506,18 @@ class SaleOrderLine(models.Model):
         ``return_date``.
 
         Grounding the return on the operation (not the declared date) is what
-        keeps availability honest when a return is rescheduled: a unit out at a
-        customer whose return receipt is scheduled *after* the order's stated
-        return_date stays unavailable until that receipt actually brings it
-        back (real case S00338: order says 09-05, return receipt scheduled
-        09-11).  An overdue pending return (scheduled in the past but not yet
-        done) still holds the units, so the date is floored at ``now``.
+        keeps availability honest, both ways:
+
+        * a unit out at a customer whose return receipt is scheduled *after*
+          the order's stated return_date stays unavailable until that receipt
+          actually brings it back (real case S00338: order says 09-05, return
+          receipt scheduled 09-11).  An overdue pending return (scheduled in
+          the past but not yet done) still holds the units, so the pending date
+          is floored at ``now``.
+        * a unit whose return has already **completed** is released on the
+          ACTUAL return operation date, even when that is *earlier* than the
+          declared return_date (real case S00705: returned 09-03 while the
+          order still says 09-04, so a later window must not treat it as out).
 
         Transfers-OFF-safe: with rental pickings disabled there are no return
         moves, so it falls back to the declared ``return_date`` (native
@@ -524,19 +530,29 @@ class SaleOrderLine(models.Model):
         rental_loc = self.company_id.rental_loc_id
         if not rental_loc:
             return declared
-        # First inbound leg of the return = the move leaving the rental
-        # (at-customer) location back into the warehouse.
-        pending_returns = self.move_ids.filtered(
-            lambda m: m.state not in ('done', 'cancel')
-            and m.location_id == rental_loc)
-        if not pending_returns:
+        # Return legs = moves leaving the rental (at-customer) location back
+        # into the warehouse.
+        return_moves = self.move_ids.filtered(
+            lambda m: m.state != 'cancel' and m.location_id == rental_loc)
+        pending = return_moves.filtered(lambda m: m.state != 'done')
+        if pending:
+            op_date = min(pending.mapped('date'))
+            if op_date:
+                # Overdue but not done → units still out at least until now.
+                now = fields.Datetime.now()
+                return op_date if op_date >= now else now
             return declared
-        op_date = min(pending_returns.mapped('date'))
-        if not op_date:
-            return declared
-        # Overdue but not done → units still out at least until now.
-        now = fields.Datetime.now()
-        return op_date if op_date >= now else now
+        done = return_moves.filtered(lambda m: m.state == 'done')
+        if done:
+            # Units are physically back: release on the ACTUAL return operation
+            # date, even when it is earlier than the declared return_date (real
+            # case S00705 — returned a day before its declared date, so it must
+            # not stay reserved for a later window that the declared date would
+            # still overlap).
+            op_date = max(done.mapped('date'))
+            if op_date:
+                return op_date
+        return declared
 
     def _rental_effective_pickup_date(self):
         """Datetime from which this line's units are actually committed at the
