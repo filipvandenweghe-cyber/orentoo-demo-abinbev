@@ -1,3 +1,5 @@
+import math
+
 from odoo import api, fields, models
 
 
@@ -36,11 +38,50 @@ class ProductProduct(models.Model):
         company = self.env['res.company'].browse(comp_id) if comp_id \
             else self.env.company
         for product in self:
-            if start and product.rent_ok and product.is_storable:
+            tmpl = product.product_tmpl_id
+            if not start:
+                product.rental_avail_catalog = 0.0
+            elif tmpl.is_rental_set and tmpl.set_component_ids:
+                # A set owns no stock — its availability is how many COMPLETE
+                # sets the components allow (same rule as set_availability, but
+                # period-aware via the canonical engine).
+                product.rental_avail_catalog = product._rental_set_avail_for_period(
+                    start, end, warehouse, company)
+            elif product.rent_ok and product.is_storable:
                 product.rental_avail_catalog = product._rental_available_qty(
                     start, end, warehouse=warehouse, company=company)
             else:
                 product.rental_avail_catalog = 0.0
+
+    def _rental_set_avail_for_period(self, start, end, warehouse, company):
+        """How many COMPLETE sets are rentable for ``[start, end]`` =
+        ``floor(min over leaf components of component_avail / qty-per-set)``.
+
+        Reuses the set's leaf-flattening
+        (``product.template._collect_leaf_components_for_availability``) and the
+        canonical ``_rental_available_qty`` per component — no separate
+        availability logic.  Non-storable components are limitless and never
+        constrain the set.
+        """
+        self.ensure_one()
+        tmpl = self.product_tmpl_id
+        leaves = []
+        tmpl._collect_leaf_components_for_availability(tmpl, 1.0, leaves)
+        demand = {}
+        for comp, qty in leaves:
+            if not comp.is_storable or not qty:
+                continue  # non-storable = limitless
+            data = demand.setdefault(comp.id, {'product': comp, 'qty': 0.0})
+            data['qty'] += qty
+        if not demand:
+            return 0.0
+        min_sets = float('inf')
+        for data in demand.values():
+            avail = data['product']._rental_available_qty(
+                start, end, warehouse=warehouse, company=company)
+            min_sets = min(min_sets, avail / data['qty'])
+        return float(max(math.floor(min_sets), 0)) \
+            if min_sets != float('inf') else 0.0
 
     def _rental_physical_total(self, warehouse=False, company=False):
         """Real units this warehouse owns right now — warehouse-local:
