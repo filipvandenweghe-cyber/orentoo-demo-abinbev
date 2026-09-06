@@ -9,7 +9,26 @@ import { MultiRecordSelector } from "@web/core/record_selectors/multi_record_sel
 const MODEL = "rental.availability.report";
 
 /** Drill-down dialog for a single cell. */
-export class AvailabilityCellDialog extends Component {}
+export class AvailabilityCellDialog extends Component {
+    setup() {
+        this.action = useService("action");
+    }
+
+    /** Open the sale/rental order form for a contributing order. */
+    openOrder(orderId) {
+        if (!orderId) {
+            return;
+        }
+        this.props.close();
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            res_model: "sale.order",
+            res_id: orderId,
+            views: [[false, "form"]],
+            target: "current",
+        });
+    }
+}
 AvailabilityCellDialog.template = "rental_set.AvailabilityCellDialog";
 AvailabilityCellDialog.components = { Dialog };
 AvailabilityCellDialog.props = { detail: Object, close: Function };

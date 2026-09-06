@@ -43,6 +43,7 @@
                         <MultiRecordSelector resModel="'sale.order'"
                             resIds="state.filters.orderIds"
                             domain="[['is_rental_order', '=', true]]"
+                            context="{ 'rental_avail_order_label': 1 }"
                             update="(ids) => this.onFilterUpdate('orderIds', ids)"
                             placeholder="'Order numbers…'"/>
                     </div>
@@ -190,7 +191,10 @@
                     <tbody>
                         <t t-foreach="props.detail.orders" t-as="o" t-key="o_index">
                             <tr>
-                                <td t-esc="o.order_name"/>
+                                <td>
+                                    <a href="#" t-on-click.prevent="() => this.openOrder(o.order_id)"
+                                       t-esc="o.order_name"/>
+                                </td>
                                 <td t-esc="o.partner"/>
                                 <td t-esc="o.start"/>
                                 <td t-esc="o.end"/>

@@ -1,8 +1,46 @@
-from odoo import api, models
+from odoo import api, fields, models
 
 
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
+
+    @api.depends('partner_id', 'rental_start_date', 'rental_return_date')
+    @api.depends_context('rental_avail_order_label', 'sale_show_partner_name')
+    def _compute_display_name(self):
+        """Enrich the order label with customer + date(s) when the Availability
+        Report's Orders search asks for it (``rental_avail_order_label`` in the
+        context).  Every other context falls back to standard behaviour, so the
+        order name is unchanged everywhere else.
+        """
+        if not self.env.context.get('rental_avail_order_label'):
+            return super()._compute_display_name()
+        for order in self:
+            parts = [order.name or '']
+            partner = order.partner_id.name or order.partner_id.display_name
+            if partner:
+                parts.append(partner)
+            dates = order._rental_avail_label_dates()
+            if dates:
+                parts.append(dates)
+            order.display_name = ' · '.join(p for p in parts if p)
+
+    def _rental_avail_label_dates(self):
+        """Human date span for the order label — rental start→return for rental
+        orders (in the user timezone), else the order date."""
+        self.ensure_one()
+        if getattr(self, 'is_rental_order', False) and self.rental_start_date:
+            start = fields.Datetime.context_timestamp(
+                self, self.rental_start_date)
+            span = start.strftime('%d %b %Y')
+            if self.rental_return_date:
+                end = fields.Datetime.context_timestamp(
+                    self, self.rental_return_date)
+                span = '%s → %s' % (span, end.strftime('%d %b %Y'))
+            return span
+        if self.date_order:
+            return fields.Datetime.context_timestamp(
+                self, self.date_order).strftime('%d %b %Y')
+        return ''
 
     @api.depends(
         'is_rental_order', 'state',
