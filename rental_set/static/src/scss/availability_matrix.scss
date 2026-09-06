@@ -150,9 +150,21 @@
         }
 
         // Colour semantics (theme-aware): normal = capacity remains,
-        // orange = fully committed, red = overcommitted.
+        // orange = fully committed, red = overcommitted.  Fallback hex is
+        // supplied in case the Bootstrap CSS variable resolves empty in a
+        // given theme, and a faint cell tint (painted over the opaque body-bg
+        // base so scrolling stays clean) makes the state unmistakable.
         .o_ra_normal { color: var(--bs-body-color); }
-        .o_ra_zero { color: var(--bs-warning); font-weight: 600; }
-        .o_ra_neg { color: var(--bs-danger); font-weight: 700; }
+        .o_ra_zero { color: var(--bs-warning, #e6a23c); font-weight: 600; }
+        .o_ra_neg { color: var(--bs-danger, #e74c3c); font-weight: 700; }
+
+        tbody td.o_ra_zero {
+            background-image: linear-gradient(0deg, rgba(230, 162, 60, 0.16),
+                                                    rgba(230, 162, 60, 0.16));
+        }
+        tbody td.o_ra_neg {
+            background-image: linear-gradient(0deg, rgba(231, 76, 60, 0.18),
+                                                    rgba(231, 76, 60, 0.18));
+        }
     }
 }

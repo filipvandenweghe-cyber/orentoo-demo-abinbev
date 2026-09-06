@@ -151,8 +151,7 @@
                                         </div>
                                     </td>
                                     <t t-foreach="state.data.columns" t-as="col" t-key="col_index">
-                                        <td class="o_ra_cell text-center"
-                                            t-att-class="cellClass(row, col_index)"
+                                        <td t-attf-class="o_ra_cell text-center {{ cellClass(row, col_index) }}"
                                             t-on-click="() => this.onCellClick(row, col_index)">
                                             <t t-esc="cellText(row, col_index)"/>
                                         </td>
