@@ -38,6 +38,14 @@
                             update="(ids) => this.onFilterUpdate('warehouseIds', ids)"
                             placeholder="'Warehouses…'"/>
                     </div>
+                    <div class="o_ra_filter">
+                        <label class="small text-muted mb-1">Orders</label>
+                        <MultiRecordSelector resModel="'sale.order'"
+                            resIds="state.filters.orderIds"
+                            domain="[['is_rental_order', '=', true]]"
+                            update="(ids) => this.onFilterUpdate('orderIds', ids)"
+                            placeholder="'Order numbers…'"/>
+                    </div>
                 </div>
                 <!-- Compact controls + navigation -->
                 <div class="o_ra_controls d-flex flex-wrap align-items-end gap-2 mt-2">
@@ -80,6 +88,15 @@
                     <button class="btn btn-sm btn-outline-primary" t-on-click="load">
                         <i class="fa fa-refresh me-1"/>Apply
                     </button>
+                    <div class="form-check ms-2 mb-1">
+                        <input type="checkbox" class="form-check-input"
+                               id="o_ra_only_unavailable"
+                               t-att-checked="state.filters.onlyUnavailable"
+                               t-on-change="onOnlyUnavailableChange"/>
+                        <label class="form-check-label small" for="o_ra_only_unavailable">
+                            Only show unavailability
+                        </label>
+                    </div>
                 </div>
             </div>
 

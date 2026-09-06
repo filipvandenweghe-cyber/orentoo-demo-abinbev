@@ -35,6 +35,8 @@ export class AvailabilityMatrix extends Component {
                 productIds: [],
                 companyIds: [],
                 warehouseIds: [],
+                orderIds: [],
+                onlyUnavailable: false,
                 start: null,
                 interval: "day",
             },
@@ -78,6 +80,11 @@ export class AvailabilityMatrix extends Component {
         this.state.displayMode = ev.target.value;
     }
 
+    onOnlyUnavailableChange(ev) {
+        this.state.filters.onlyUnavailable = ev.target.checked;
+        this.load();
+    }
+
     // ── start date/time picker ──────────────────────────────────────────
     /** "YYYY-MM-DD" for the day-interval <input type="date">. */
     get startDateValue() {
@@ -114,6 +121,8 @@ export class AvailabilityMatrix extends Component {
                     product_ids: this.state.filters.productIds,
                     company_ids: this.state.filters.companyIds,
                     warehouse_ids: this.state.filters.warehouseIds,
+                    order_ids: this.state.filters.orderIds,
+                    only_unavailable: this.state.filters.onlyUnavailable,
                     start: this.state.filters.start,
                     interval: this.state.filters.interval,
                 },

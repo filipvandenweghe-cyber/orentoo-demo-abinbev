@@ -96,19 +96,25 @@ class RentalAvailabilityReport(models.AbstractModel):
 
     # ── scope resolution ───────────────────────────────────────────────────
     def _resolve_products(self, options):
-        """Category (recursive) ∪ explicit products, storable, **Sets
-        excluded** (only physical / component products are shown).
+        """Category (recursive) ∪ explicit products ∪ products on the selected
+        orders, storable, **Sets excluded** (only physical / component products
+        are shown).
 
-        The report requires an explicit scope: with neither a category nor a
-        product selected it returns nothing (the client shows a "pick a product
+        The report requires an explicit scope: with no category, product or
+        order selected it returns nothing (the client shows a "pick a product
         or category" hint).  This keeps the matrix actively-scoped and avoids
         dumping the whole catalogue.
+
+        Orders contribute the products on their lines — which already include
+        the expanded set component lines, so a set on an order naturally brings
+        in its physical components.
         """
         Product = self.env['product.product']
         base = [('is_storable', '=', True)]
         cat_ids = options.get('category_ids') or []
         prod_ids = options.get('product_ids') or []
-        if not cat_ids and not prod_ids:
+        order_ids = options.get('order_ids') or []
+        if not cat_ids and not prod_ids and not order_ids:
             return Product.browse()
 
         products = Product.browse()
@@ -118,6 +124,13 @@ class RentalAvailabilityReport(models.AbstractModel):
             products |= Product.search(base + [('categ_id', 'in', cats.ids)])
         if prod_ids:
             products |= Product.search(base + [('id', 'in', prod_ids)])
+        if order_ids:
+            orders = self.env['sale.order'].browse(order_ids).exists()
+            line_product_ids = orders.order_line.filtered(
+                lambda l: not l.display_type).product_id.ids
+            if line_product_ids:
+                products |= Product.search(
+                    base + [('id', 'in', line_product_ids)])
         # Sets never appear as report rows — act on their physical components.
         return products.filtered(lambda p: not p.is_rental_set)
 
@@ -174,6 +187,17 @@ class RentalAvailabilityReport(models.AbstractModel):
                 for pid, cell_list in batch.items():
                     avail[(pid, company.id, wh.id)] = cell_list
 
+        # "Only unavailability": keep a product only when AT LEAST ONE of its
+        # cells (any company / warehouse / interval) is overbooked
+        # (signed available < 0), then show ALL of that product's rows so the
+        # full cross-warehouse / cross-company picture is visible.
+        only_unavailable = options.get('only_unavailable')
+        bad_products = set()
+        if only_unavailable:
+            for (pid, _cid, _wid), cell_list in avail.items():
+                if any(cell['available'] < 0 for cell in cell_list):
+                    bad_products.add(pid)
+
         # Hierarchy: Product Category → Product → Company → Warehouse.
         def _cat_label(p):
             return p.categ_id.complete_name or p.categ_id.name or 'Uncategorized'
@@ -182,6 +206,8 @@ class RentalAvailabilityReport(models.AbstractModel):
             lambda p: (_cat_label(p), p.display_name, p.id))
         rows, cells = [], {}
         for product in products_sorted:
+            if only_unavailable and product.id not in bad_products:
+                continue
             for company in companies:
                 for wh in wh_by_company.get(
                         company.id, self.env['stock.warehouse']):
