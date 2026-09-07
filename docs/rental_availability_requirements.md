@@ -279,3 +279,74 @@ behaviour will be updated to the corrected expectation, documented in the commit
 - Any change to native padding/preparation-time logic.
 - Cleaning/QC as an explicit rentability gate beyond pop-up visibility (a return-route
   location step, tracked separately).
+
+---
+
+# 9. Addendum — Hired-in (Rental Purchase) equipment
+
+*Added 2026-09-07 alongside the `rental_purchase` module. These terms are **soft-gated**:
+they only apply when `rental_purchase` (and `purchase_stock`) are installed, checked via
+field existence on `stock.move`. With those modules absent the engine is unchanged.*
+
+## 9.1 Goal
+Equipment **hired from a supplier** (see `docs/rental_purchase_requirements.md`) is received
+into our warehouse **supplier-owned** and returned at the end of the hire. During the hire it
+must appear as **temporarily rentable**; after the return date availability must fall back to
+baseline — a clean bump, with **our own stock never hidden**.
+
+## 9.2 Terms (both legs "operational")
+The canonical formula is unchanged:
+
+```
+available = physical_total − reserved_by_others − in_repair − transfer_out + transfer_in
+```
+
+Two soft extensions, applied in `product.product._rental_transfer_sum`:
+
+- **RAV-P01 — supply credited operationally.** An **incoming** move that is a Rental Purchase
+  supply (`move.purchase_line_id.order_id.is_rental_purchase`) is credited in `transfer_in`
+  from its **arrival date** (= rental start) **regardless** of the picking type's
+  `rental_incoming_policy`. Rationale: hired supply is trusted because it is *paired* with a
+  scheduled supplier return. Normal purchases are unchanged (still governed by their policy).
+- **RAV-P02 — return counted as a departure.** A Rental Purchase **return** (identified in the
+  transfer-out moveset by `move.rental_purchase_order_id`, destination = supplier location) is
+  counted in `transfer_out` from its **scheduled return date**, even while still `waiting` on
+  the receipt. The earlier "wait until received" guard was **removed** — it is no longer needed
+  because the paired arrival is credited in the same breath (RAV-P01), so the two net out and
+  own stock is never subtracted phantom-wise.
+
+Both the scalar engine (`_rental_transfer_moves` / `_get_transfer_*_qty`) and the batch
+reporting engine (`_rental_available_batch`) include the Rental Purchase return in the
+transfer-out moveset and share the single `_rental_transfer_sum`, so report and pop-up agree.
+
+## 9.3 Net behaviour (why it is symmetric and safe)
+For a hire of N units received into warehouse W over `[start, return]`, with `own` = our own
+on-hand of the product at W:
+
+| window | transfer_in | transfer_out | availability |
+|---|---|---|---|
+| before `start` | 0 (arrival not yet present) | 0 | `own` |
+| during `[start, return)` | +N | 0 | `own + N` |
+| after `return` | +N (open) / 0 (once received=physical) | −N | `own` |
+
+Consistent **before and after** the receipt is validated: once the receipt is done the units
+move from the operational `transfer_in` credit into `physical_total`, while `transfer_out`
+keeps subtracting the (reconciled) return demand — the number never jumps at validation.
+
+## 9.4 Reconciliation coupling
+The report reads the return move's `product_uom_qty`. The `rental_purchase` module reconciles
+that demand to **`received + still-pending − returned`** (see RP-40), so:
+- **received less, no back-order** → smaller departure → the bump shrinks to what arrived;
+- **back-order pending** → departure stays full (units still coming);
+- **over-receipt** → departure grows.
+
+## 9.5 Not changed
+Standard rental delivery/return (sales side), the reserved-by-others term, repair, at-customer
+attribution, and native forecast are all untouched. The receipt credit is gated on
+`is_rental_purchase`; the transfer-out change only affects supplier-bound Rental Purchase
+returns.
+
+## 9.6 Open items (see rental_purchase §16)
+Re-renting hired-in gear past its return date (over-commitment signal), owner-agnostic
+physical base, multi-step reception chaining, effective-vs-declared return date — tracked in
+`docs/rental_purchase_requirements.md`.
