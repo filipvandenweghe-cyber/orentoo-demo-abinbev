@@ -24,8 +24,11 @@ full rationale per feature. Read this first.
 - An Odoo.sh **rebuild** rebuilds container+DB from git; it does not touch git history.
 
 ## Warehouses / locations (dev)
-- **PRO** ("Pro-Designed.com", company Pro-Designed.com): 3-step reception & delivery
-  (`pick_pack_ship`). Input/QC/Stock/Packing/Output are internal children of the PRO view.
+- **PRO** ("Pro-Designed.com", company Pro-Designed.com): **1-step delivery** (`ship_only`) +
+  **3-step reception** (`three_steps`, Rental→Input→QC→Stock). Input/QC/Stock are the internal
+  children of the PRO view — there is **no Packing/Output** location, so `pick_pack_ship`
+  delivery is not valid here (setting it produces a broken chain). Rental pickup =
+  Stock→Rental; return = Rental→Input→QC→Stock.
 - **WH** ("My Company (San Francisco)"): 1-step (`ship_only`).
 - **Rental "at customer" location** = `company.rental_loc_id` (displayed "Customers/Rental"),
   `usage='internal'` (so rented goods still count as company stock) but **outside** the
