@@ -6,12 +6,19 @@
 | **Project** | Orentoo — Odoo 19.0 (Odoo.sh) |
 | **Scope** | Generic Crew Planning extension (availability, invitations, work declaration) |
 | **Core principle** | Customise the workflow **around** Odoo; standard objects stay the operational source of truth |
-| **Status** | Analysis only — awaiting review before any development |
-| **Date** | 2026-09-07 |
+| **Status** | Analysis approved in principle — revised (rev. 2); awaiting go-ahead before development |
+| **Date** | 2026-09-07 (rev. 2) |
 
 > Terminology is neutral (**Crew Member / Crew / Crew Portal / Availability Request**), never
 > "freelancer". Every crew member is an `hr.employee`; a crew member may have **only portal
 > access or none**.
+
+> **Revision 2** folds in seven corrections: (1) Availability Mode (Standard vs Explicit),
+> (2) audit model renamed to `crew.availability.log` with an explicit operational-vs-knowledge
+> split, (3) transient candidate selection (no persistent `selected` invitation state),
+> (4) request state vs staffing separated (coverage ≠ fulfilled), (5) a **mandatory** rolling
+> explicit-availability horizon, (6) approved Work Declarations are immutable with an explicit
+> Reopen/adjustment workflow, (7) validated standard findings preserved.
 
 ---
 
@@ -48,26 +55,27 @@ crew planning is a clean additive vertical. The only shared touch-points are `sa
 | Req | Requirement | Classification |
 |---|---|---|
 | §2 | Standard = source of truth | Standard (constraint) |
-| §3 | Unavailable-by-default + positive availability | Small extension — service mapping declarations to `resource.calendar.leaves` (see D) |
+| §3 | Availability Mode (Standard vs Explicit); positive availability | Small extension — mode field + service mapping declarations to `resource.calendar.leaves` (see D) |
+| §3b | **Mandatory** rolling explicit-availability horizon | Custom, **mandatory** scheduled mechanism (see D.4) |
 | §4A/B/C | Request from Project / Task / Period | Custom (request model) + prefill from standard |
 | §4D | Crew self-service availability | Custom portal page → same leaves engine |
 | §4E | Planner enters availability | Small extension — button on employee → leaves service |
-| §5 | Audit log of availability changes | Custom (lightweight log model) |
+| §5 | Audit log of availability changes | Custom (`crew.availability.log`, audit only) |
 | §6 | Don't re-ask known periods; available/partial/declined | Custom (log drives targeting; engine stays authoritative) |
 | §7 | Validity rules + "can no longer work" | Small extension + custom workflow (replace portal self-unassign) |
-| §8 | Candidate selection by skill/level/role | Standard + config (skills domains) wrapped in a wizard |
-| §9 | Invitation waves | Custom (invitation model + wave tracking) |
-| §10 | Request overview + KPIs | Custom (views on request/invitation) |
+| §8 | Candidate selection by skill/level/role | Standard + config (skills domains) wrapped in a **transient** wizard |
+| §9 | Invitation waves | Custom (invitation model + wave tracking; invitation created only on Invite) |
+| §10 | Request overview + KPIs (coverage vs staffing) | Custom (views on request/invitation) |
 | §11 | Email + WhatsApp invitations, reminders | Standard (mail + whatsapp) + custom orchestration |
 | §12 | Assignment = `planning.slot`; scheduling = confirmation | Standard planning; small notification wording tweak |
 | §13–15 | Project→Task→Slot→Timesheet→SOL | Standard (reuse whole chain) |
-| §16 | Work Declaration layer → Timesheet | Custom (thin model) + standard timesheet write |
+| §16 | Work Declaration layer → Timesheet (immutable after approval) | Custom (thin model) + standard timesheet write |
 | §17 | Crew Portal | Custom controllers/pages reusing standard data |
 | §18 | Portal security | Standard (`ir.rule` + controllers + tokens) |
 
 **Net:** ~70% standard/config; the custom part is the *workflow shell* (requests, invitations,
-availability log, work declaration, portal) — the "customise around Odoo, not the engines"
-principle.
+availability knowledge log, work declaration, portal) — the "customise around Odoo, not the
+engines" principle.
 
 # C. Proposed architecture
 
@@ -77,123 +85,218 @@ principle.
 `whatsapp.template`/`composer`, `portal.mixin`.
 
 **Extended (thin `_inherit`):**
-- `hr.employee` — crew flags (`is_crew`, crew type), "enter availability" action (portal
-  `employee_token` already exists).
-- `planning.slot` — "report I can't work" action + link to work declarations; **task_id reused,
-  not added.**
+- `hr.employee` — crew flags (`is_crew`, crew type) and **`crew_availability_mode`**
+  (`standard` / `explicit`, see D.1); "enter availability" action (portal `employee_token`
+  already exists).
+- `planning.slot` — "report I can't work" action + link to work declarations; optional
+  `crew_request_id` for precise staffing counts; **task_id reused, not added.**
 - `resource.resource` — helper delegating to the leaves service.
 - `sale.order.line` / `project.task` — only if needed for prefill (likely nothing).
 
 **New custom models:** `crew.availability.request`, `crew.availability.invitation`,
-`crew.availability` (log/declaration), `crew.work.declaration`.
+**`crew.availability.log`** (audit/declaration — renamed from `crew.availability`),
+`crew.work.declaration`.
 
-**Wizards:** candidate-selection/invite; "enter availability on behalf"; "report can't work".
+**Wizards (transient):** candidate-selection/invite (persists nothing — an invitation is only
+created on *Invite Selected*); "enter availability on behalf"; "report can't work".
 
 **Controllers / portal pages (`crew_portal`):** `/my/availability`, `/my/planning`,
 `/my/hours`, `/my/profile` (phased) — crew-namespaced to avoid the existing `/my/timesheets`
 and `/my/tasks` routes.
 
-**Scheduled actions:** invitation reminder cron; optional close-expired-requests; optional
-nightly log ↔ leaves consistency check.
+**Scheduled actions:**
+- **Mandatory:** *explicit-availability horizon roll + idempotent consistency repair* (D.4).
+- invitation reminder cron; optional close-expired-requests.
 
 # D. Availability technical design (single source of truth)
 
-**Chosen mechanism (the only viable standard one):** a **broad shared "Crew" `resource.calendar`**
-(generous / 24×7 attendance) + **per-resource `resource.calendar.leaves`** for everything
-else. Positive availability = **absence** of a leave inside the broad attendance.
+## D.1 Availability Mode
 
-Alternatives, all investigated and rejected:
-- *No calendar* → "fully flexible" → **always available** (wrong default).
-- *Empty-attendance calendar* → never available, but leaves only **subtract** and attendances
-  are **weekly-recurring** — **no native way to add a single-date availability.** Dead end.
-- *`time_type='other'` leaves* do not **add** availability where no attendance exists. Dead end.
-- Therefore **broad attendance + carve leaves** is the only standard route;
-  `_leave_intervals_batch` already filters by `resource_id` and merges overlaps.
+A neutral setting decides *how* a crew member's operational availability is maintained — not
+who they are (never "freelancer").
 
-**Semantics:**
-- **Unknown / not-yet-confirmed** = a standing "blanket" leave → engine sees *unavailable*, so
-  standard **Auto-Plan will not schedule** an unconfirmed crew member (critical for §2/§12).
-- **Available** = split/remove the leave to expose the window (a hole).
-- **Definitely unavailable** = a leave that persists, tagged with a *declined* reason.
+**Field:** `hr.employee.crew_availability_mode` — Selection
+`[('standard','Standard Working Schedule'), ('explicit','Explicit Availability')]`, default
+**`standard`**. It lives on `hr.employee` (a business/HR decision); the availability service
+reaches the engine via `employee.resource_id`.
 
-The engine cannot distinguish *unknown* vs *declined* (both are "leave"). That distinction lives
-in the **`crew.availability` log**, which drives §6 "don't re-ask" — **not** the engine. Effective
-availability stays 100% standard; the log is advisory/audit only.
+- **Standard Working Schedule** — normal Odoo behaviour: the resource's working
+  `resource.calendar` + normal Time Off leaves. Available by schedule unless on leave. This is
+  the mode for **internal employees who only use the Crew Portal** but are otherwise normally
+  scheduled. No blanket leave.
+- **Explicit Availability** — the broad-calendar + per-resource **blanket-unavailability**
+  leaves mechanism: unavailable unless a hole has been punched by an explicit declaration.
 
-**One idempotent service** `_apply_availability(resource, start, end, state, origin, refs)` owns
-all leave create/split/merge, so overlaps (§6) are handled in one place:
-- store **UTC**, compute in **resource.tz** (resource tz overrides calendar tz);
-- **DST**: `pytz.localize` fold/gap is the main sharp edge (standard raises on ambiguous times)
-  — documented and tested;
-- overlaps normalised to non-overlapping intervals before writing (interval algebra like
-  `odoo.tools.intervals`).
+**Staffing stays standard in both modes:** both modes express availability *only* through
+`resource.calendar` attendance + `resource.calendar.leaves`. `_work_intervals_batch`,
+`auto_plan_ids()`, `allocated_hours` and conflict detection read that identically and are
+**mode-agnostic**. The mode only selects which *leaves-maintenance policy* the crew service
+applies (do nothing vs maintain blanket coverage). Auto Plan and the candidate
+"available in window?" check never branch on mode.
 
-Planning `auto_plan_ids()`, `allocated_hours` and conflict detection all read
-`_work_intervals_batch`, so they respect these leaves automatically — **no parallel engine.**
-*Caveat:* a 24×7 base calendar makes `allocated_percentage` meaningless for utilisation
-reporting — acceptable for event crew (flagged).
+**Candidate selection consequence:** the wizard's "available in window" filter uses operational
+availability the same way for everyone — a `standard` crew member is available by working
+schedule; an `explicit` crew member is available only where registered (unknown windows are
+blanket-covered → not available). The *availability knowledge* log (D.3) is used separately to
+decide **whom to ask**, never whom the engine considers available.
+
+## D.2 Mechanism (Explicit mode)
+
+Broad shared "Crew" `resource.calendar` (generous / 24×7 attendance) + per-resource
+`resource.calendar.leaves`. Positive availability = **absence** of a leave inside the broad
+attendance. Alternatives rejected (all investigated): *no calendar* → always available (wrong
+default); *empty-attendance calendar* → leaves only subtract and attendances are weekly-recurring
+so single-date availability is impossible; *`time_type='other'` leaves* do not add availability
+where no attendance exists. Only **broad attendance + carve leaves** works with the standard
+engine (`_leave_intervals_batch` already filters by `resource_id` and merges overlaps).
+
+A single idempotent service `_apply_availability(resource, start, end, state, origin, refs)`
+owns all leave create/split/merge: store **UTC**, compute in **resource.tz** (resource tz
+overrides calendar tz), handle **DST** `pytz` fold/gap explicitly, normalise overlaps to
+non-overlapping intervals before writing. *Caveat:* a 24×7 base calendar makes
+`allocated_percentage` meaningless for utilisation reporting — acceptable for event crew
+(flagged).
+
+## D.3 Two clearly separated concepts
+
+- **Operational availability** = standard Odoo resource availability (`resource.calendar` +
+  `.leaves`). **Authoritative for staffing / Auto-Plan.** Nothing custom is consulted here.
+- **Availability knowledge / declaration** = **`crew.availability.log`** (renamed from
+  `crew.availability`). Pure audit: *what the crew member or planner explicitly communicated*,
+  used only to decide **whether to ask again** and to trace origin. It is written **from**
+  availability actions and records the leaves it produced, but is **never read by staffing** and
+  must never become a parallel availability engine.
+
+The engine cannot distinguish *unknown* vs *definitely-unavailable* (both are "leave"). That
+distinction lives in `crew.availability.log`, which drives §6 "don't re-ask" — not the engine.
+
+## D.4 Mandatory explicit-availability horizon
+
+Because `resource.calendar.leaves` have finite `date_from`/`date_to`, the blanket unavailability
+must be **actively kept rolling forward**, or an `explicit` crew member silently becomes
+available once coverage runs out. This is **mandatory**, not an optional consistency cron.
+
+- **Config (per company / `ir.config_parameter`), all numbers configurable:**
+  - `crew.unavailability_horizon_months` (e.g. **12**) — how far ahead blanket coverage is
+    guaranteed;
+  - `crew.availability_entry_horizon_months` (e.g. **6**) — separate *business rule* for how far
+    ahead a crew member may **enter** availability (§7 validity);
+  - hard invariant **`unavailability_horizon ≥ availability_entry_horizon`** (validated). Beyond
+    the entry horizon a crew member cannot have registered availability, yet blanket coverage
+    still extends further, so they can never leak into "available".
+- **On enabling Explicit mode:** create blanket unavailability `[now → today + horizon]`.
+- **Scheduled action (mandatory, daily):** for every `explicit` crew member, **idempotently
+  extend** blanket coverage to `today + horizon`, and **repair** consistency =
+  `blanket_unavailable − registered_available_holes − declared_unavailable`, re-normalising
+  overlaps/gaps so no accidental hole appears. Re-running changes nothing if already correct.
+- **Mode transitions:** `standard → explicit` seeds coverage; `explicit → standard` removes the
+  blanket leaves (normal schedule resumes). Both routed through the same service.
+- **Invariant:** an `explicit` resource is available **only** inside registered holes **and**
+  only within the covered horizon; the cron must always keep coverage ahead of the planning
+  window.
+
+Planning `auto_plan_ids()`, `allocated_hours` and conflict detection read `_work_intervals_batch`
+and respect these leaves automatically — **no parallel engine.**
 
 # E. Data model (custom)
 
 **`crew.availability.request`** — `name`, `request_type` (task/project/period), `project_id`,
 `task_id`, `date_start`, `date_end`, `role_id`, `skill_requirement_ids`, `headcount_needed`,
-`state`, `company_id`; KPI computes (invited / available / partial / unavailable / pending).
+`state` `[draft, open, closed, cancelled]`, `company_id`. **Computed, orthogonal indicators
+(not states):** `available_count` (available/partial responses), `availability_coverage`
+`[insufficient, sufficient]` (= `available_count ≥ headcount_needed`), `planned_headcount`
+(count of standard `planning.slot`s staffing this requirement — by `task_id` for task requests,
+or optional `slot.crew_request_id`), `staffing_display` = `planned_headcount / headcount_needed`.
+Coverage and Staffing are shown as **distinct** figures; a request is **never** "fulfilled" on
+availability alone.
 
-**`crew.availability.invitation`** — `request_id`, `employee_id`, `wave` (int), `channel`
-(email/whatsapp/both), `state` (selected/sent/reminded/responded/expired), `sent_on`,
-`last_reminder_on`, `response` (available/partial/unavailable/pending), `response_start`/
-`response_end` (partial), `mail_message_ids`. Uniqueness `(request_id, employee_id)` blocks
-duplicate invitations across waves.
+**`crew.availability.invitation`** — created **only** on "Invite Selected". `request_id`,
+`employee_id`, `wave` (int), `channel` (email/whatsapp/both), `state`
+`[sent, reminded, responded, expired, cancelled]` (**no persistent `selected`**), `sent_on`,
+`last_reminder_on`, `reminder_count`, `response` (available/partial/unavailable/pending),
+`response_start`/`response_end` (partial), `mail_message_ids`. Uniqueness
+**`(request_id, employee_id)`** blocks duplicate invitations across waves and re-inviting. A
+reminder mutates the existing record (`reminder_count`, `last_reminder_on`), never creating
+another.
 
-**`crew.availability`** (log/declaration) — `employee_id`/`resource_id`, `date_start`,
-`date_end`, `state` (available/unavailable), `origin` (self_portal/task_request/project_request/
-period_request/planner), `request_id`, `project_id`, `task_id`, `changed_by`, `create_date`,
-`previous_state`, `new_state`, `leave_ids`. Append-only for audit; "current" view derived.
+**`crew.availability.log`** (audit/declaration only) — `employee_id`/`resource_id`,
+`date_start`, `date_end`, `declared_state` (available/unavailable), `origin` (self_portal/
+task_request/project_request/period_request/planner), `request_id`, `project_id`, `task_id`,
+`changed_by`, timestamp, `previous_state`, `new_state`, `leave_ids` (the operational leaves it
+produced). Append-only; **never read by staffing**.
 
 **`crew.work.declaration`** — `slot_id` (unique), `employee_id`/`project_id`/`task_id`/
 `sale_line_id` (related from slot), `planned_start/end/duration` (from slot), `actual_start`,
 `actual_end`, `break_minutes`, `worked_hours` (computed), `comment`, `state`
-(draft/submitted/approved/rejected), `timesheet_id` (the created `account.analytic.line`, for
-idempotency).
+`[draft, submitted, approved, reopened, rejected]`, `locked` (bool, set on approval),
+`timesheet_id` (the created `account.analytic.line`, for idempotency),
+`timesheet_financially_locked` (computed — see F).
 
 **Skill requirement line** (embedded) — `skill_id`, `min_skill_level_id` (compared via
 `level_progress >=`).
 
+**Candidate-selection wizard** — `TransientModel` with transient lines; persists nothing.
+Candidate = matches criteria (computed on the fly); Selected = transient wizard line;
+Invitation = persisted only on *Invite Selected*; Reminder = communication on an existing
+invitation.
+
 # F. State machines
 
-- **Availability Request:** `draft → open → (partially_fulfilled) → fulfilled → closed`
-  (+ `cancelled`). Fulfilled when confirmed-available ≥ headcount.
-- **Invitation:** `selected → sent → reminded* → responded → expired`. Reminder is a transition
-  on an *existing* invitation, never a new record (§9/§11).
+- **Availability Request:** `draft → open → closed` (+ `cancelled`). **No "fulfilled".**
+  `availability_coverage` (insufficient/sufficient) and `planned_headcount` are computed,
+  orthogonal indicators — not states. Closing is explicit, never auto-triggered by coverage.
+- **Invitation:** `sent → reminded* → responded → expired` (+ `cancelled`). **No persistent
+  `selected`.** Reminder = transition on the existing record.
 - **Availability Response:** `pending → available | partial | unavailable`.
-- **Work Declaration:** `draft → submitted → approved (→ timesheet written)`; `→ rejected →
-  draft`. Approval is idempotent: create the timesheet if `timesheet_id` empty, else update it.
+- **Availability Knowledge (`crew.availability.log`):** append-only audit; not a staffing state
+  machine.
+- **Work Declaration (immutable after approval):**
+  - `draft ↔ submitted` — freely editable.
+  - `submitted → approved` — create/link the standard timesheet **exactly once** (guarded by
+    `timesheet_id`); set `locked = True`. **After approval, declaration edits do NOT touch the
+    timesheet.**
+  - `approved → reopened → draft` — an **explicit, permissioned** Reopen (planner/manager),
+    **only if** `timesheet_financially_locked` is False; it detaches/removes the draft timesheet
+    so a corrected declaration can re-approve cleanly.
+  - `approved` **+ financially locked** (timesheet's SOL already invoiced for these hours /
+    analytic line in a locked period / linked posted move) → **Reopen blocked**; correction goes
+    through an explicit **adjustment declaration** (a new compensating WD), never a silent edit.
+  - `submitted/draft → rejected → draft`.
+  - Preserved chain: **Work Declaration → approval → standard Timesheet → Task → Sales Order
+    Item.**
 
 # G. End-to-end workflows
 
 1. **Task-based invitation:** Task → "Request Availability" (prefills project/task/start/end/SOL)
-   → candidate wizard (skills/role) → select wave-1 → Invite (email/WA: *"availability only, not
-   scheduled"*) → responses become `crew.availability` (holes in leaves) → planner schedules →
-   `planning.slot` (task_id set) → publish notifies (*"you're scheduled…"*).
+   → transient candidate wizard (skills/role) → select wave-1 → **Invite Selected** (invitation
+   records created; email/WA: *"availability only, not scheduled"*) → responses become
+   `crew.availability.log` + operational holes in leaves → planner schedules → `planning.slot`
+   (task_id set) → publish notifies (*"you're scheduled…"*).
 2. **Project-based:** identical, prefilled from project period; task chosen later on the slot.
 3. **General period:** request with no project/task; pure availability harvesting.
 4. **Self-service:** crew opens `/my/availability`, marks available/unavailable → same service →
    log `origin=self_portal`.
 5. **Planner-entered:** button on employee/resource → same service → `origin=planner`.
 6. **Multi-wave:** wave-1 of 10 invited; reopen wizard → previously-invited **excluded** →
-   wave-2; reminders don't duplicate.
+   wave-2; reminders mutate existing invitations, never duplicate.
 7. **Planning notification:** standard `action_send`; reword template to "scheduled, tell us ASAP
    if you can't"; **no** second confirmation.
 8. **Work Declaration → Timesheet → SOL:** slot → crew confirms/edits actuals in `/my/hours` →
    submit → planner approves → write `account.analytic.line(task_id, unit_amount, employee_id)`
-   → standard `_timesheet_determine_sale_line()` sets `so_line` from `task.sale_line_id` →
-   `qty_delivered` on the correct SOL for billing. **No manual project/task/SOL reselection.**
+   **once**, lock the declaration → standard `_timesheet_determine_sale_line()` sets `so_line`
+   from `task.sale_line_id` → `qty_delivered` on the correct SOL. Corrections use Reopen
+   (unlocked) or an adjustment WD (financially locked). **No manual project/task/SOL reselection;
+   no silent re-billing.**
 
 # H. Risks & edge cases
 
 - **Overlapping/partial availability** — resolved to non-overlapping intervals in the single
   leaves service; partial responses punch a hole only for the offered sub-window.
 - **DST/timezones** — store UTC, compute in resource tz; `pytz` fold/gap is the main sharp edge.
+- **Coverage lapse (Explicit mode)** — mitigated by the **mandatory** horizon cron + idempotent
+  repair; invariant `unavailability_horizon ≥ entry_horizon` guarantees no leak past the entry
+  window.
+- **Mode transition** — `standard↔explicit` must seed/clear blanket coverage via the service.
 - **Changed task/slot dates** — written leaves stay; slot changes raise standard
   `publication_warning`; the request keeps its own window (no retro-rewrite of the log).
 - **"Can no longer work" after planning** — must **not** use standard portal self-unassign (it
@@ -205,16 +308,19 @@ idempotency).
 - **Duplicate email/WhatsApp** — `(request, employee)` uniqueness + wave/reminder counters; WA
   needs an **approved** template + `whatsapp.account`.
 - **Duplicate timesheets** — one WD per slot + `timesheet_id` back-reference → approval is
-  create-or-update.
-- **SOL/task change after hours submitted** — standard recomputes `so_line` unless edited; lock
-  `so_line`/hours on **approved** declarations to avoid silent re-billing.
+  write-once; post-approval edits never touch the timesheet.
+- **Approved-WD immutability / financial lock** — Reopen blocked when the timesheet is
+  invoiced / in a locked period / on a posted move; correction via an explicit adjustment WD.
+- **Request never appears "staffed" on availability alone** — Coverage and Staffing kept
+  separate (E/F).
 - **Performance (thousands of crew)** — leaves batched/indexed; candidate search is a skills
-  domain; blanket-leave punching is O(windows), not O(crew²).
+  domain; blanket-leave punching/rolling is O(windows), not O(crew²).
 
 # I. Recommended module structure
 
-- **`crew_planning`** (backend core): availability leaves service, requests, invitations,
-  candidate wizard, work declaration, `planning.slot` glue, WhatsApp orchestration, KPIs.
+- **`crew_planning`** (backend core): availability leaves service (both modes) + mandatory
+  horizon cron, audit log, requests, invitations, transient candidate wizard, work declaration,
+  `planning.slot` glue, WhatsApp orchestration, KPIs.
   *Depends:* `planning`, `sale_project_forecast`, `sale_timesheet`, `hr_skills`, `hr_timesheet`,
   `whatsapp`, `resource`.
 - **`crew_portal`** (portal): controllers, pages, portal `ir.rule`/security, "report can't work".
@@ -227,27 +333,38 @@ a deliberate "reuse standard" cost, not custom weight.)*
 
 # J. Implementation phases
 
+**No new phases vs rev. 1; two items are re-scoped earlier/mandatory and two are refinements:**
+
 - **Phase 0 — Foundation:** install/configure the standard stack (hr, project, planning,
   sale_project_forecast, sale_timesheet, hr_skills, hr_timesheet, whatsapp, portal); seed the
   shared Crew calendar; confirm `planning.slot.task_id`/billing chain live.
-- **Phase 1 — Availability engine:** leaves service + audit log + backend "enter availability"
-  (§4E) + unit tests (overlap/DST).
-- **Phase 2 — Requests & invitations:** request models (task/project/period), candidate wizard
-  (skills), waves, **email** invitations, overview + KPIs.
+- **Phase 1 — Availability engine:** `crew_availability_mode` + the two-mode service branch +
+  the **mandatory horizon roll & idempotent repair cron** (moved up from "polish") + audit log
+  + backend "enter availability" (§4E) + unit tests (overlap/DST/horizon).
+- **Phase 2 — Requests & invitations:** request models (task/project/period), **transient**
+  candidate wizard (no `selected` state), waves, **email** invitations, overview with
+  **coverage-vs-staffing** split, KPIs.
 - **Phase 3 — WhatsApp** channel + reminders.
 - **Phase 4 — Crew Portal:** My Availability, My Planning (+ "can't work"), security rules.
-- **Phase 5 — Work Declaration → Timesheet:** WD model, approval → timesheet (idempotent),
-  My Hours.
-- **Phase 6 — Validity rules & polish:** future-window limits, cut-off hours, dashboards, WA
-  template approval.
+- **Phase 5 — Work Declaration → Timesheet:** WD model, approval → timesheet (write-once),
+  **lock-on-approval + Reopen/adjustment** workflow + financial-lock guard, My Hours.
+- **Phase 6 — Validity rules & polish:** future-window limits (entry horizon), cut-off hours,
+  dashboards, WA template approval.
 
----
+# K. Preserved standard findings (confirmed, subject to re-confirmation once installed)
+
+- `planning.slot.task_id` exists via the standard dependency stack (`sale_project_forecast`);
+- **one operational Planning Shift = one Task**;
+- **Task determines the Sales Order Item**;
+- standard **Timesheets** drive delivered quantity / billing;
+- **scheduling/publication = "you have been scheduled"; no second acceptance**;
+- reuse standard **WhatsApp** infrastructure.
 
 ## Open decisions before Phase 0
 
 1. **Footprint:** greenfield DB means installing the **full enterprise Project / Planning /
-   Timesheet / HR / WhatsApp stack** on a today rental-only system — proceed on this dev branch,
-   or validate on a separate branch/build first?
-2. **Availability model:** bias to the recommended **24×7 blanket-leave** design, or spike a
-   per-crew-calendar variant for comparison before committing?
+   Timesheet / HR / WhatsApp stack** — proceed on this dev branch, or validate on a separate
+   branch/build first?
+2. **Availability spike:** proceed with the recommended broad-calendar + blanket-leave design,
+   or spike a per-crew-calendar variant for comparison first?
 3. **Module naming/split:** confirm `crew_planning` + `crew_portal` (+ optional `orentoo_crew`).
