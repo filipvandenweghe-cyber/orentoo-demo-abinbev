@@ -6,8 +6,8 @@
 | **Project** | Orentoo — Odoo 19.0 (Odoo.sh) |
 | **Scope** | Generic Crew Planning extension (availability, invitations, work declaration) |
 | **Core principle** | Customise the workflow **around** Odoo; standard objects stay the operational source of truth |
-| **Status** | Analysis approved in principle — revised (rev. 2); awaiting go-ahead before development |
-| **Date** | 2026-09-07 (rev. 2) |
+| **Status** | Analysis approved in principle — revised (rev. 3); awaiting go-ahead before development |
+| **Date** | 2026-09-07 (rev. 3) |
 
 > Terminology is neutral (**Crew Member / Crew / Crew Portal / Availability Request**), never
 > "freelancer". Every crew member is an `hr.employee`; a crew member may have **only portal
@@ -19,6 +19,10 @@
 > (4) request state vs staffing separated (coverage ≠ fulfilled), (5) a **mandatory** rolling
 > explicit-availability horizon, (6) approved Work Declarations are immutable with an explicit
 > Reopen/adjustment workflow, (7) validated standard findings preserved.
+>
+> **Revision 3** renames the custom availability service to the **Crew Availability Engine** (to
+> avoid confusion with the rental availability engine in `rental_set`) and consistently calls
+> the authoritative source **standard resource availability**.
 
 ---
 
@@ -55,13 +59,13 @@ crew planning is a clean additive vertical. The only shared touch-points are `sa
 | Req | Requirement | Classification |
 |---|---|---|
 | §2 | Standard = source of truth | Standard (constraint) |
-| §3 | Availability Mode (Standard vs Explicit); positive availability | Small extension — mode field + service mapping declarations to `resource.calendar.leaves` (see D) |
+| §3 | Availability Mode (Standard vs Explicit); positive availability | Small extension — mode field + **Crew Availability Engine** mapping declarations to `resource.calendar.leaves` (see D) |
 | §3b | **Mandatory** rolling explicit-availability horizon | Custom, **mandatory** scheduled mechanism (see D.4) |
 | §4A/B/C | Request from Project / Task / Period | Custom (request model) + prefill from standard |
-| §4D | Crew self-service availability | Custom portal page → same leaves engine |
+| §4D | Crew self-service availability | Custom portal page → same Crew Availability Engine |
 | §4E | Planner enters availability | Small extension — button on employee → leaves service |
 | §5 | Audit log of availability changes | Custom (`crew.availability.log`, audit only) |
-| §6 | Don't re-ask known periods; available/partial/declined | Custom (log drives targeting; engine stays authoritative) |
+| §6 | Don't re-ask known periods; available/partial/declined | Custom (log drives targeting; standard resource availability stays authoritative) |
 | §7 | Validity rules + "can no longer work" | Small extension + custom workflow (replace portal self-unassign) |
 | §8 | Candidate selection by skill/level/role | Standard + config (skills domains) wrapped in a **transient** wizard |
 | §9 | Invitation waves | Custom (invitation model + wave tracking; invitation created only on Invite) |
@@ -108,7 +112,13 @@ and `/my/tasks` routes.
 - **Mandatory:** *explicit-availability horizon roll + idempotent consistency repair* (D.4).
 - invitation reminder cron; optional close-expired-requests.
 
-# D. Availability technical design (single source of truth)
+# D. Crew availability — technical design (standard resource availability stays the source of truth)
+
+> **Naming:** the **Crew Availability Engine** is our thin custom service — Availability Mode
+> handling + the `_apply_availability(...)` leaves mapper + the mandatory horizon cron. It only
+> **writes standard `resource.calendar.leaves`**; it is **not** itself a source of availability
+> and must not be confused with the rental availability engine (`rental_set`). The authoritative
+> source for staffing remains **standard Odoo resource availability** (`_work_intervals_batch`).
 
 ## D.1 Availability Mode
 
@@ -117,8 +127,8 @@ who they are (never "freelancer").
 
 **Field:** `hr.employee.crew_availability_mode` — Selection
 `[('standard','Standard Working Schedule'), ('explicit','Explicit Availability')]`, default
-**`standard`**. It lives on `hr.employee` (a business/HR decision); the availability service
-reaches the engine via `employee.resource_id`.
+**`standard`**. It lives on `hr.employee` (a business/HR decision); the Crew Availability Engine
+reaches standard resource availability via `employee.resource_id`.
 
 - **Standard Working Schedule** — normal Odoo behaviour: the resource's working
   `resource.calendar` + normal Time Off leaves. Available by schedule unless on leave. This is
@@ -138,7 +148,7 @@ applies (do nothing vs maintain blanket coverage). Auto Plan and the candidate
 availability the same way for everyone — a `standard` crew member is available by working
 schedule; an `explicit` crew member is available only where registered (unknown windows are
 blanket-covered → not available). The *availability knowledge* log (D.3) is used separately to
-decide **whom to ask**, never whom the engine considers available.
+decide **whom to ask**, never whom standard resource availability considers available.
 
 ## D.2 Mechanism (Explicit mode)
 
@@ -147,13 +157,16 @@ Broad shared "Crew" `resource.calendar` (generous / 24×7 attendance) + per-reso
 attendance. Alternatives rejected (all investigated): *no calendar* → always available (wrong
 default); *empty-attendance calendar* → leaves only subtract and attendances are weekly-recurring
 so single-date availability is impossible; *`time_type='other'` leaves* do not add availability
-where no attendance exists. Only **broad attendance + carve leaves** works with the standard
-engine (`_leave_intervals_batch` already filters by `resource_id` and merges overlaps).
+where no attendance exists. Only **broad attendance + carve leaves** works with standard
+resource availability (`_leave_intervals_batch` already filters by `resource_id` and merges
+overlaps).
 
-A single idempotent service `_apply_availability(resource, start, end, state, origin, refs)`
-owns all leave create/split/merge: store **UTC**, compute in **resource.tz** (resource tz
-overrides calendar tz), handle **DST** `pytz` fold/gap explicitly, normalise overlaps to
-non-overlapping intervals before writing. *Caveat:* a 24×7 base calendar makes
+The **Crew Availability Engine** — a single idempotent service
+`_apply_availability(resource, start, end, state, origin, refs)` — owns all leave
+create/split/merge: store **UTC**, compute in **resource.tz** (resource tz overrides calendar
+tz), handle **DST** `pytz` fold/gap explicitly, normalise overlaps to non-overlapping intervals
+before writing. It only ever writes standard `resource.calendar.leaves`; it computes no
+availability of its own. *Caveat:* a 24×7 base calendar makes
 `allocated_percentage` meaningless for utilisation reporting — acceptable for event crew
 (flagged).
 
@@ -165,10 +178,11 @@ non-overlapping intervals before writing. *Caveat:* a 24×7 base calendar makes
   `crew.availability`). Pure audit: *what the crew member or planner explicitly communicated*,
   used only to decide **whether to ask again** and to trace origin. It is written **from**
   availability actions and records the leaves it produced, but is **never read by staffing** and
-  must never become a parallel availability engine.
+  must never become a parallel availability source.
 
-The engine cannot distinguish *unknown* vs *definitely-unavailable* (both are "leave"). That
-distinction lives in `crew.availability.log`, which drives §6 "don't re-ask" — not the engine.
+Standard resource availability cannot distinguish *unknown* vs *definitely-unavailable* (both
+are a "leave"). That distinction lives in `crew.availability.log`, which drives §6 "don't
+re-ask" — never in operational availability.
 
 ## D.4 Mandatory explicit-availability horizon
 
@@ -196,7 +210,7 @@ available once coverage runs out. This is **mandatory**, not an optional consist
   window.
 
 Planning `auto_plan_ids()`, `allocated_hours` and conflict detection read `_work_intervals_batch`
-and respect these leaves automatically — **no parallel engine.**
+and respect these leaves automatically — **no parallel availability source.**
 
 # E. Data model (custom)
 
@@ -318,7 +332,7 @@ invitation.
 
 # I. Recommended module structure
 
-- **`crew_planning`** (backend core): availability leaves service (both modes) + mandatory
+- **`crew_planning`** (backend core): the Crew Availability Engine (both modes) + mandatory
   horizon cron, audit log, requests, invitations, transient candidate wizard, work declaration,
   `planning.slot` glue, WhatsApp orchestration, KPIs.
   *Depends:* `planning`, `sale_project_forecast`, `sale_timesheet`, `hr_skills`, `hr_timesheet`,
@@ -338,7 +352,7 @@ a deliberate "reuse standard" cost, not custom weight.)*
 - **Phase 0 — Foundation:** install/configure the standard stack (hr, project, planning,
   sale_project_forecast, sale_timesheet, hr_skills, hr_timesheet, whatsapp, portal); seed the
   shared Crew calendar; confirm `planning.slot.task_id`/billing chain live.
-- **Phase 1 — Availability engine:** `crew_availability_mode` + the two-mode service branch +
+- **Phase 1 — Crew Availability Engine:** `crew_availability_mode` + the two-mode service branch +
   the **mandatory horizon roll & idempotent repair cron** (moved up from "polish") + audit log
   + backend "enter availability" (§4E) + unit tests (overlap/DST/horizon).
 - **Phase 2 — Requests & invitations:** request models (task/project/period), **transient**
