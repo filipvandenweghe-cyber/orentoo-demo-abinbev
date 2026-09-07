@@ -492,14 +492,22 @@ class ProductProduct(models.Model):
             return Move.browse()
         if direction == 'out':
             # Relocations LEAVING this warehouse toward another internal/transit
-            # location (a departure of owned stock).
+            # location (a departure of owned stock) — plus a Rental Purchase
+            # return to the vendor: hired-in (supplier-owned) units physically
+            # leave this warehouse at the scheduled return date, so the
+            # availability must drop then even though the destination is a
+            # supplier location.  ``rental_purchase_order_id`` only exists when
+            # the optional ``rental_purchase`` module is installed (soft dep).
+            dest_clause = [('location_dest_id.usage', 'in', ('internal', 'transit'))]
+            if 'rental_purchase_order_id' in Move._fields:
+                dest_clause = ['|'] + dest_clause \
+                    + [('rental_purchase_order_id', '!=', False)]
             return Move.search([
                 ('product_id', '=', self.id),
                 ('state', 'not in', ('done', 'cancel')),
                 ('location_id', 'in', inside.ids),
                 ('location_dest_id', 'not in', inside.ids),
-                ('location_dest_id.usage', 'in', ('internal', 'transit')),
-            ])
+            ] + dest_clause)
         # direction == 'in': everything arriving into this warehouse from
         # OUTSIDE.
         return Move.search([
@@ -529,9 +537,16 @@ class ProductProduct(models.Model):
         total = 0.0
         if direction == 'out':
             for move in moves:
-                if move.date and move.date <= to_date \
-                        and move.location_dest_id.id not in rental_loc_ids:
-                    total += move.product_uom_qty
+                if not (move.date and move.date <= to_date):
+                    continue
+                if move.location_dest_id.id in rental_loc_ids:
+                    continue
+                # A Rental Purchase return (dest = supplier) is counted from its
+                # scheduled date even while still 'waiting' on the receipt: the
+                # paired hired-in supply is credited operationally on the IN
+                # side (see below), so departure and arrival net out and we
+                # never hide our own stock.
+                total += move.product_uom_qty
             return total
         # direction == 'in'
         for move in moves:
@@ -543,7 +558,17 @@ class ProductProduct(models.Model):
             if policy == 'ignore':
                 continue
             is_relocation = move.location_id.usage in ('internal', 'transit')
-            if policy == 'operational' or is_relocation:
+            # Hired-in (Rental Purchase) supply is trusted operationally by
+            # nature — it is paired with a scheduled supplier return, so it is
+            # credited from its arrival date regardless of the picking type's
+            # incoming policy.  Soft check: the fields only exist when the
+            # optional purchase / rental_purchase modules are installed.
+            rp_supply = False
+            if 'purchase_line_id' in move._fields and move.purchase_line_id:
+                order = move.purchase_line_id.order_id
+                if 'is_rental_purchase' in order._fields:
+                    rp_supply = bool(order.is_rental_purchase)
+            if policy == 'operational' or is_relocation or rp_supply:
                 total += move.product_uom_qty
         return total
 
@@ -658,12 +683,17 @@ class ProductProduct(models.Model):
         # Transfer moves (out / in) — one search each, bucketed by product.
         out_ids, in_ids = defaultdict(list), defaultdict(list)
         if inside_ids:
+            out_dest_clause = [('location_dest_id.usage', 'in', ('internal', 'transit'))]
+            if 'rental_purchase_order_id' in Move._fields:
+                # Rental Purchase returns leave to the vendor location — count
+                # them as departures too (see _rental_transfer_moves).
+                out_dest_clause = ['|'] + out_dest_clause \
+                    + [('rental_purchase_order_id', '!=', False)]
             for m in Move.search([
                     ('product_id', 'in', ids),
                     ('state', 'not in', ('done', 'cancel')),
                     ('location_id', 'in', inside_ids),
-                    ('location_dest_id', 'not in', inside_ids),
-                    ('location_dest_id.usage', 'in', ('internal', 'transit'))]):
+                    ('location_dest_id', 'not in', inside_ids)] + out_dest_clause):
                 out_ids[m.product_id.id].append(m.id)
             for m in Move.search([
                     ('product_id', 'in', ids),
