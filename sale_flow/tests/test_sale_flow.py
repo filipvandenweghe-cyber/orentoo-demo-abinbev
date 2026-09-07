@@ -623,6 +623,50 @@ class TestSaleFlow(TransactionCase):
                 "Return demand must match actual delivered qty (2), not ordered (3)",
             )
 
+    def test_17b_return_reconcile_no_assignable_moves_validates(self):
+        """Regression: return reconciliation must NOT abort ``button_validate``
+        with the native ``UserError('Nothing to check the availability for.')``.
+
+        When the delivered product is swapped, reconciliation cancels the
+        original return move and adds a *draft* replacement.  ``action_assign``
+        excludes draft moves, so the return picking has "no assignable moves"
+        and native ``action_assign`` raises — which used to abort the whole
+        delivery validation.  The reconciliation now guards that call.
+        """
+        now = fields.Datetime.now()
+        prod_a = self.env['product.product'].create({
+            'name': 'Swap A', 'type': 'consu', 'is_storable': True,
+            'rent_ok': True, 'list_price': 10.0})
+        prod_b = self.env['product.product'].create({
+            'name': 'Swap B', 'type': 'consu', 'is_storable': True,
+            'rent_ok': True, 'list_price': 10.0})
+        order = self.env['sale.order'].with_context(in_rental_app=True).create({
+            'partner_id': self.partner.id,
+            'rental_start_date': now,
+            'rental_return_date': now + timedelta(days=3)})
+        self.env['sale.order.line'].with_context(in_rental_app=True).create({
+            'order_id': order.id, 'product_id': prod_a.id,
+            'product_uom_qty': 1, 'price_unit': 10.0})
+        order.with_context(in_rental_app=True).action_confirm()
+
+        out_picking = order.picking_ids.filtered(
+            lambda p: not p.return_id and p.state != 'done')[:1]
+        self.assertTrue(out_picking, "outgoing rental picking must exist")
+        self.assertTrue(
+            order.picking_ids.filtered(lambda p: p.return_id),
+            "rental round-trip must create a return picking")
+
+        # Swap the delivered product A -> B: the original return move (for A)
+        # becomes obsolete → reconciliation cancels it and adds a draft B move,
+        # leaving the return picking with no assignable moves.
+        out_picking.move_ids.filtered(
+            lambda m: m.state != 'cancel').write({'product_id': prod_b.id})
+
+        # Must validate WITHOUT raising (previously: UserError).
+        self._validate_picking_with_done_qty(out_picking, {prod_b.id: 1})
+        self.assertEqual(out_picking.state, 'done',
+                         "delivery must validate despite the empty return picking")
+
     # ── S00724: Sale product added during delivery gets SOL ──────────
 
     def test_18_delivery_added_sale_product_gets_sol(self):

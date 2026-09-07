@@ -390,8 +390,16 @@ class SaleFlowSyncService(models.AbstractModel):
                 # Only add to the first return picking, not all of them
                 existing_products.add(product_id)
 
-            # Re-check availability after adjustments
-            picking.with_context(skip_sale_flow_sync=True).action_assign()
+            # Re-check availability after adjustments — but only when there is
+            # actually something to reserve.  Native ``action_assign`` raises
+            # ``UserError("Nothing to check the availability for.")`` when the
+            # picking has no assignable moves; calling it unconditionally here
+            # would abort the whole ``button_validate`` (e.g. when a delivery's
+            # return picking has nothing left to reserve), so we guard it.
+            assignable = picking.move_ids.filtered(
+                lambda m: m.state not in ('draft', 'cancel', 'done'))
+            if assignable:
+                picking.with_context(skip_sale_flow_sync=True).action_assign()
 
     def _find_sale_line_for_product(self, order, product):
         """Find or return False for a sale line matching a product on the order."""
