@@ -46,6 +46,7 @@ class CrewAvailabilityInvitation(models.Model):
     availability_mode = fields.Selection(related='employee_id.crew_availability_mode')
     date_start = fields.Datetime(related='request_id.date_start')
     date_end = fields.Datetime(related='request_id.date_end')
+    period_label = fields.Char(related='request_id.period_label', string="Period")
 
     _unique_request_employee = models.Constraint(
         'UNIQUE(request_id, employee_id)',

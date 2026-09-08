@@ -6,6 +6,7 @@
         <field name="arch" type="xml">
             <list string="Invitations">
                 <field name="request_id"/>
+                <field name="period_label" string="Period"/>
                 <field name="wave"/>
                 <field name="employee_id"/>
                 <field name="work_email"/>
@@ -60,6 +61,7 @@
                         <group>
                             <field name="work_email"/>
                             <field name="mobile_phone"/>
+                            <field name="period_label" string="Period"/>
                             <field name="date_start"/>
                             <field name="date_end"/>
                             <field name="sent_on"/>
