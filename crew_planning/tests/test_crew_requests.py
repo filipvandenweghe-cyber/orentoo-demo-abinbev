@@ -66,9 +66,8 @@ class TestCrewRequests(TransactionCase):
         vals.update(kw)
         return self.env['crew.availability.request'].create(vals)
 
-    def _wizard(self, req, exclude_answered=True):
-        wiz = self.env['crew.invite.wizard'].create({
-            'request_id': req.id, 'exclude_answered': exclude_answered})
+    def _wizard(self, req):
+        wiz = self.env['crew.invite.wizard'].create({'request_id': req.id})
         wiz.action_refresh()
         return wiz
 
@@ -100,11 +99,15 @@ class TestCrewRequests(TransactionCase):
         wiz.action_invite_selected()
         self.assertEqual(len(req.invitation_ids), 1)
         self.assertEqual(req.invitation_ids.wave, 1)
-        # wave 2: previously invited excluded
+        # wave 2: everyone is still listed, but the invited one is flagged and
+        # its selection toggle is disabled; new people can still be added.
         wiz2 = self._wizard(req)
-        self.assertEqual(len(wiz2.line_ids), 2)
-        self.assertNotIn(self.emp_adv, wiz2.line_ids.employee_id)
-        wiz2.line_ids.filtered(lambda l: l.employee_id == self.emp_int).selected = True
+        self.assertEqual(len(wiz2.line_ids), 3)
+        adv_line = wiz2.line_ids.filtered(lambda l: l.employee_id == self.emp_adv)
+        self.assertTrue(adv_line.already_invited)
+        int_line = wiz2.line_ids.filtered(lambda l: l.employee_id == self.emp_int)
+        self.assertFalse(int_line.already_invited)
+        int_line.selected = True
         wiz2.action_invite_selected()
         self.assertEqual(len(req.invitation_ids), 2)
         self.assertEqual(max(req.invitation_ids.mapped('wave')), 2)
@@ -200,6 +203,28 @@ class TestCrewRequests(TransactionCase):
         wiz.line_ids.filtered(lambda l: l.employee_id == self.emp_noemail).selected = True
         with self.assertRaises(UserError):
             wiz.action_invite_selected()  # channel = email, no work_email
+
+    def test_18_count_known_available_without_sending(self):
+        # A crew member already known-available for the period is shown in the
+        # wizard and can be "taken along" to the count WITHOUT any message being
+        # sent — even if they have no email/phone.
+        self.env['crew.availability'].create({
+            'resource_id': self.emp_noemail.resource_id.id,
+            'employee_id': self.emp_noemail.id,
+            'company_id': self.env.company.id,
+            'date_start': self.d1, 'date_end': self.d2})
+        req = self._make_request(role_id=self.role_sound.id)
+        req.action_open()
+        wiz = self._wizard(req)  # channel defaults to email
+        line = wiz.line_ids.filtered(lambda l: l.employee_id == self.emp_noemail)
+        self.assertEqual(line.known_state, 'available')
+        line.selected = True
+        wiz.action_invite_selected()  # no email needed: counted, not sent
+        inv = req.invitation_ids.filtered(lambda i: i.employee_id == self.emp_noemail)
+        self.assertEqual(inv.response, 'available')
+        self.assertEqual(inv.state, 'responded')
+        self.assertFalse(inv.sent_on)
+        self.assertEqual(req.available_count, 1)
 
     def test_17_send_whatsapp_after_email(self):
         from odoo.exceptions import UserError

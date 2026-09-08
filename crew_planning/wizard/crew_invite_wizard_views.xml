@@ -12,21 +12,28 @@
                     </group>
                     <group>
                         <field name="channel"/>
-                        <field name="exclude_answered"/>
                     </group>
                 </group>
                 <div class="text-muted">
-                    Matching candidates below (already-invited crew are excluded). Tick the ones
-                    to invite in this wave, then click <b>Invite Selected</b>. Reminders on
-                    existing invitations don't create new ones.
+                    Tick who to handle in this wave, then <b>Invite Selected</b>:
+                    <b>New</b> people are invited and messaged on the chosen channel;
+                    people already <b>Available/Unavailable</b> are just counted on the
+                    request (no message sent); <b>already invited</b> rows are left as-is.
                 </div>
                 <field name="line_ids">
-                    <list create="false" delete="false">
-                        <field name="selected" widget="boolean_toggle"/>
+                    <list create="false" delete="false"
+                          decoration-success="known_state == 'available'"
+                          decoration-danger="known_state == 'unavailable'"
+                          decoration-muted="already_invited">
+                        <field name="selected" widget="boolean_toggle"
+                               readonly="already_invited"/>
                         <field name="employee_id" readonly="1"/>
-                        <field name="availability_mode" readonly="1"/>
+                        <field name="status_label" string="Status" readonly="1"/>
+                        <field name="availability_mode" readonly="1" optional="hide"/>
                         <field name="work_email" readonly="1"/>
                         <field name="mobile_phone" readonly="1"/>
+                        <field name="already_invited" column_invisible="1"/>
+                        <field name="known_state" column_invisible="1"/>
                     </list>
                 </field>
                 <footer>

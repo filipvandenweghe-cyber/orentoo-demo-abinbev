@@ -151,7 +151,7 @@ class CrewAvailabilityRequest(models.Model):
     # ------------------------------------------------------------------
     # Candidate matching
     # ------------------------------------------------------------------
-    def _match_candidate_employees(self, exclude_answered=True):
+    def _match_candidate_employees(self, exclude_answered=True, exclude_invited=True):
         self.ensure_one()
         Emp = self.env['hr.employee']
         # Scope to the request's company (+ company-less) so we never reach
@@ -167,7 +167,8 @@ class CrewAvailabilityRequest(models.Model):
             emps = emps.filtered(lambda e: any(
                 s.skill_id == req.skill_id and s.level_progress >= req.min_level_progress
                 for s in e.employee_skill_ids))
-        emps -= self.invitation_ids.employee_id
+        if exclude_invited:
+            emps -= self.invitation_ids.employee_id
         if exclude_answered and self.date_start and self.date_end:
             answered = self.env['crew.availability.log'].search([
                 ('date_start', '<', self.date_end),
@@ -176,6 +177,25 @@ class CrewAvailabilityRequest(models.Model):
             ]).employee_id
             emps -= answered
         return emps
+
+    def _employee_known_state(self, employee):
+        """What we already KNOW about this employee's availability for the
+        request period (independent of any invitation): 'available' if a
+        registered availability window overlaps, else the last declared log
+        state, else 'unknown'."""
+        self.ensure_one()
+        if not (self.date_start and self.date_end):
+            return 'unknown'
+        if self.env['crew.availability'].search_count([
+                ('employee_id', '=', employee.id),
+                ('date_start', '<', self.date_end),
+                ('date_end', '>', self.date_start)]):
+            return 'available'
+        log = self.env['crew.availability.log'].search([
+            ('employee_id', '=', employee.id),
+            ('date_start', '<', self.date_end),
+            ('date_end', '>', self.date_start)], order='id desc', limit=1)
+        return log.declared_state if log else 'unknown'
 
     def action_find_candidates(self):
         self.ensure_one()
