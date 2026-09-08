@@ -38,6 +38,16 @@
                         <field name="already_invited" column_invisible="1"/>
                         <field name="known_state" column_invisible="1"/>
                     </list>
+                    <form string="Candidate">
+                        <group>
+                            <field name="employee_id" readonly="1"/>
+                            <field name="status_label" readonly="1"/>
+                            <field name="availability_mode" readonly="1"/>
+                            <field name="work_email" readonly="1"/>
+                            <field name="mobile_phone" readonly="1"/>
+                            <field name="selected"/>
+                        </group>
+                    </form>
                 </field>
                 <footer>
                     <button name="action_invite_selected" type="object"
