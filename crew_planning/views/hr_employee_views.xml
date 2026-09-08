@@ -14,7 +14,7 @@
                 </button>
             </div>
 
-            <notebook position="inside">
+            <xpath expr="//page[@name='hr_settings']" position="before">
                 <page string="Crew" name="crew">
                     <group>
                         <group string="Crew Planning">
@@ -35,7 +35,7 @@
                         availability authoritative for staffing.
                     </div>
                 </page>
-            </notebook>
+            </xpath>
 
         </field>
     </record>
