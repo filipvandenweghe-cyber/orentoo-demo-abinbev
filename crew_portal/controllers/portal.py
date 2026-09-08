@@ -59,13 +59,33 @@ class CrewPortal(CustomerPortal):
         if 'crew_hours_count' in counters:
             values['crew_hours_count'] = len(
                 self._crew_hours_slots(emp)['to_declare']) if emp else 0
-        # Hide configured portal cards for this crew member by zeroing their
-        # counters (a 0-count card is hidden on the portal home).
-        if emp:
-            for key in emp._crew_portal_hidden_counters():
-                if key in values:
-                    values[key] = 0
         return values
+
+    @http.route()
+    def counters(self, counters, **kw):
+        """Force the configured cards to 0 for this crew member so they stay
+        hidden on the portal home.
+
+        This must run *after* the full ``_prepare_home_portal_values`` chain:
+        other apps (sale, account, purchase, ...) set their real count in their
+        own override, and depending on the controller MRO those bodies can run
+        after ours via ``super()`` and re-populate a count we zeroed. Overriding
+        the ``/my/counters`` route — which only the base ``portal`` defines —
+        makes our zeroing the last word, and we refresh the session cache the
+        template reads so the card is hidden on the very next render too.
+        """
+        res = super().counters(counters, **kw)
+        emp = self._crew_employee()
+        if emp:
+            hidden = emp._crew_portal_hidden_counters()
+            if any(key in res for key in hidden):
+                for key in hidden:
+                    if key in res:
+                        res[key] = 0
+                cache = request.session.get('portal_counters', {}).copy()
+                cache.update({k: bool(v) for k, v in res.items() if k.endswith('_count')})
+                request.session['portal_counters'] = cache
+        return res
 
     # ------------------------------------------------------------------
     # My Availability
