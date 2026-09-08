@@ -120,6 +120,17 @@ class TestWorkDeclaration(TransactionCase):
         self.task.invalidate_recordset(['planning_slot_count'])
         self.assertEqual(self.task.planning_slot_count, 1)
 
+    def test_10_rejected_declaration_can_be_resubmitted(self):
+        slot = self._make_slot()
+        wd = self._declared(slot)
+        wd.action_submit()
+        wd.action_reject()
+        self.assertEqual(wd.state, 'rejected')
+        # the crew fixes it and resubmits -> allowed (reject means "redo")
+        wd.break_minutes = 15
+        wd.action_submit()
+        self.assertEqual(wd.state, 'submitted')
+
     def test_08_approve_requires_project(self):
         slot = self.env['planning.slot'].create({
             'resource_id': self.emp.resource_id.id,

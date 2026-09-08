@@ -150,10 +150,17 @@ class CrewWorkDeclaration(models.Model):
     # ------------------------------------------------------------------
     # State machine
     # ------------------------------------------------------------------
+    # States from which the crew may (re)submit: a fresh draft, a reopened
+    # declaration (approved one sent back for correction) or a rejected one
+    # (planner asked for a redo). Submitted/approved are out of the crew's hands.
+    _SUBMITTABLE_STATES = ('draft', 'reopened', 'rejected')
+
     def action_submit(self):
         for wd in self:
-            if wd.state not in ('draft', 'reopened'):
-                raise UserError(_("Only a draft declaration can be submitted."))
+            if wd.state not in self._SUBMITTABLE_STATES:
+                raise UserError(_(
+                    "This declaration cannot be submitted in its current state "
+                    "(%s).", wd.state))
             if not (wd.actual_start and wd.actual_end):
                 raise UserError(_("Enter the actual start and end before submitting."))
             wd.state = 'submitted'

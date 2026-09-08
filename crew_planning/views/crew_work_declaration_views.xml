@@ -28,7 +28,7 @@
             <form>
                 <header>
                     <button name="action_submit" type="object" string="Submit"
-                            class="btn-primary" invisible="state not in ('draft', 'reopened')"/>
+                            class="btn-primary" invisible="state not in ('draft', 'reopened', 'rejected')"/>
                     <button name="action_approve" type="object" string="Approve"
                             class="btn-primary" invisible="state != 'submitted'"
                             groups="hr.group_hr_user,planning.group_planning_user"/>

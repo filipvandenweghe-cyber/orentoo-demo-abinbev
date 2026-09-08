@@ -205,10 +205,16 @@ class CrewPortal(CustomerPortal):
     # ------------------------------------------------------------------
     # My Hours (work declarations)
     # ------------------------------------------------------------------
+    # A declaration is editable by the crew (shows the Submit form) while it is
+    # a draft, a reopened one (sent back for correction) or a rejected one (the
+    # planner asked for a redo). Submitted/approved are awaiting/handled by the
+    # planner and are shown read-only.
+    _CREW_EDITABLE_WD_STATES = ('draft', 'reopened', 'rejected')
+
     def _crew_hours_slots(self, emp):
         """Partition the crew member's started shifts into those still needing
-        a declaration ('to_declare') and those already submitted/approved
-        ('done'). A shift the crew reported they could not work is excluded."""
+        a declaration ('to_declare') and those already handled ('done'). A shift
+        the crew reported they could not work is excluded."""
         result = {'to_declare': request.env['planning.slot'].sudo().browse(),
                   'done': request.env['planning.slot'].sudo().browse()}
         if not (emp and emp.resource_id):
@@ -220,7 +226,7 @@ class CrewPortal(CustomerPortal):
         ], order='start_datetime desc')
         for slot in slots:
             wd = slot.work_declaration_ids[:1]
-            if wd and wd.state in ('submitted', 'approved'):
+            if wd and wd.state not in self._CREW_EDITABLE_WD_STATES:
                 result['done'] |= slot
             else:
                 result['to_declare'] |= slot
@@ -271,7 +277,9 @@ class CrewPortal(CustomerPortal):
             end = self._parse_portal_dt(post.get('actual_end'))
             if start and end and start < end:
                 wd = slot._get_or_create_work_declaration()
-                if not wd.locked:
+                # Only act on an editable declaration; a stale/double POST on an
+                # already submitted/approved one is a no-op (never a crash).
+                if not wd.locked and wd.state in self._CREW_EDITABLE_WD_STATES:
                     try:
                         break_min = int(post.get('break_minutes') or 0)
                     except (TypeError, ValueError):
