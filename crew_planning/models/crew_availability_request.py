@@ -5,6 +5,23 @@ from odoo.tools import format_date
 
 
 class CrewAvailabilityRequest(models.Model):
+    """A planner's call for availability over a period — the hub of the
+    invitation flow.
+
+    Requirements:
+    - Scoped to a Task, a Project, or a bare period (``request_type``); prefills
+      its window/effort from that source.
+    - Lifecycle ``draft -> open -> closed`` (+ ``cancelled``). There is NO
+      "fulfilled" state: ``availability_coverage`` (sufficient/insufficient) and
+      ``planned_headcount`` are computed, orthogonal *indicators* — closing is
+      always an explicit planner decision, never auto-triggered by coverage.
+    - Candidate selection (skills at/above a minimum level + role) is computed
+      on the fly and scoped to the request's company; invitations are persisted
+      only when the planner actually invites, in ordered *waves* that exclude
+      already-invited/answered people.
+    - Exposes human-readable ``period_label`` / ``indicative_hours`` reused by
+      the portal, invitation list and e-mails.
+    """
     _name = 'crew.availability.request'
     _description = 'Crew Availability Request'
     _inherit = ['mail.thread']

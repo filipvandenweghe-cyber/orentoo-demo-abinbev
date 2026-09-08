@@ -22,7 +22,7 @@ logged-in user's employee and only ever reads/writes that person's data.
     'author': "Orentoo",
     'website': "https://www.orentoo.com",
     'category': 'Human Resources/Planning',
-    'version': '19.0.1.16.0',
+    'version': '19.0.1.17.0',
     'license': 'LGPL-3',
     'depends': [
         'crew_planning',

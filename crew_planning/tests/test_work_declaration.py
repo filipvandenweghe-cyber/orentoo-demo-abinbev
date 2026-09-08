@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from datetime import timedelta
+from unittest.mock import patch
 
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests import TransactionCase, tagged
@@ -130,6 +131,47 @@ class TestWorkDeclaration(TransactionCase):
         wd.break_minutes = 15
         wd.action_submit()
         self.assertEqual(wd.state, 'submitted')
+
+    def test_11_reporting_measures_and_date(self):
+        slot = self._make_slot()
+        wd = self._declared(slot)
+        # work date comes from the actual start
+        self.assertEqual(wd.date, self.start.date())
+        # approved_hours is 0 until approval, then equals worked_hours
+        self.assertEqual(wd.approved_hours, 0.0)
+        wd.action_submit()
+        wd.action_approve()
+        self.assertAlmostEqual(wd.approved_hours, wd.worked_hours, places=2)
+        # with no actuals, the date falls back to the planned start
+        wd2 = self._make_slot()._get_or_create_work_declaration()
+        wd2.write({'actual_start': False, 'actual_end': False})
+        self.assertEqual(wd2.date, wd2.planned_start.date())
+
+    def test_12_reject_from_draft_and_reset_to_draft(self):
+        wd = self._declared(self._make_slot())
+        wd.action_reject()
+        self.assertEqual(wd.state, 'rejected')
+        wd.action_reset_to_draft()
+        self.assertEqual(wd.state, 'draft')
+
+    def test_13_financially_locked_blocks_reopen(self):
+        slot = self._make_slot()
+        wd = self._declared(slot)
+        wd.action_submit()
+        wd.action_approve()
+        self.assertFalse(wd.timesheet_financially_locked)  # nothing billed yet
+        # Force the financial lock (SOL invoiced / period locked) and check the
+        # guard: reopen is refused and the approved timesheet is left intact.
+        def _locked(recs):
+            for r in recs:
+                r.timesheet_financially_locked = True
+        with patch.object(type(wd), '_compute_timesheet_financially_locked', _locked):
+            wd.invalidate_recordset(['timesheet_financially_locked'])
+            self.assertTrue(wd.timesheet_financially_locked)
+            with self.assertRaises(UserError):
+                wd.action_reopen()
+        self.assertEqual(wd.state, 'approved')
+        self.assertTrue(wd.timesheet_id)
 
     def test_08_approve_requires_project(self):
         slot = self.env['planning.slot'].create({

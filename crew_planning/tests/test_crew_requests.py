@@ -393,6 +393,30 @@ class TestCrewRequests(TransactionCase):
                          "Re-assigning a crew member must clear the stale flag.")
         self.assertFalse(slot.crew_unavailable_reason)
 
+    def test_28_invitation_exposes_request_period(self):
+        req = self._make_request()
+        inv = self.env['crew.availability.invitation'].create({
+            'request_id': req.id, 'employee_id': self.emp_adv.id, 'channel': 'email'})
+        self.assertTrue(inv.period_label)
+        self.assertEqual(inv.period_label, req.period_label)
+
+    def test_29_self_unassign_blocked_past_deadline(self):
+        # Unassign policy is on, but the unassignment deadline has passed:
+        # the report must KEEP the assignment (only flag + notify).
+        self.env.company.planning_employee_unavailabilities = 'unassign'
+        self.env.company.planning_self_unassign_days_before = 30
+        req = self._make_request(role_id=self.role_sound.id)
+        slot = self.env['planning.slot'].create({
+            'resource_id': self.emp_adv.resource_id.id,
+            'crew_request_id': req.id,
+            'start_datetime': self.d1, 'end_datetime': self.d2})  # d1 = now + 20d
+        self.assertTrue(slot.is_unassign_deadline_passed)
+        self.assertFalse(slot._crew_may_self_unassign())
+        slot.action_crew_report_cannot_work('too late')
+        self.assertEqual(slot.resource_id, self.emp_adv.resource_id,
+                         "Past the deadline -> assignment kept.")
+        self.assertTrue(slot.crew_unavailable_reported)
+
     def test_17_send_whatsapp_after_email(self):
         from odoo.exceptions import UserError
         req = self._make_request()

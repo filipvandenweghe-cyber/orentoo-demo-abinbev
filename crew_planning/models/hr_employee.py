@@ -4,6 +4,22 @@ from odoo.exceptions import UserError
 
 
 class HrEmployee(models.Model):
+    """Crew extension of the employee.
+
+    Requirements:
+    - ``is_crew`` marks the schedulable pool and gates the portal.
+    - ``crew_availability_mode`` chooses the engine behaviour:
+      *standard* = the normal resource calendar / Time Off; *explicit* =
+      unavailable-by-default (broad 24/7 calendar + engine-managed leaves),
+      used for freelancers who only work when they opt in. Switching modes
+      saves/restores the previous working schedule.
+    - ``crew_portal_hide_*`` let a planner hide standard portal cards
+      (sales/invoices/purchases/projects/tasks/timesheets/subscriptions/
+      signatures) per crew member; ``_crew_portal_hidden_counters`` maps those
+      flags to the home-counter keys the portal zeroes to hide each card.
+    - ``action_crew_grant_portal`` provisions portal access for the crew
+      member's linked user.
+    """
     _inherit = 'hr.employee'
 
     is_crew = fields.Boolean(

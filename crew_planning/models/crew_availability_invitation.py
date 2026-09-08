@@ -4,6 +4,22 @@ from odoo.exceptions import UserError
 
 
 class CrewAvailabilityInvitation(models.Model):
+    """A single *ask* to one crew member about a request's period — NOT a
+    booking.
+
+    Requirements:
+    - One persisted record per (request, employee); duplicates are blocked so a
+      second wave / a reminder never creates another row.
+    - Lifecycle ``sent -> reminded* -> responded -> expired`` (+ ``cancelled``);
+      reminders mutate the existing record (``reminder_count``), they do not
+      spawn new ones.
+    - A response (``pending -> available | partial | unavailable``) is what the
+      crew member tells us; for Explicit-Availability crew an ``available`` /
+      ``partial`` answer punches the matching hole in their managed leaves via
+      the Crew Availability Engine (standard-schedule crew feed nothing).
+    - Messaging is channel-aware (email / WhatsApp) and resilient: a missing
+      WhatsApp account is skipped with a chatter note instead of crashing.
+    """
     _name = 'crew.availability.invitation'
     _description = 'Crew Availability Invitation'
     _inherit = ['mail.thread']

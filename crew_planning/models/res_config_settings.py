@@ -4,6 +4,11 @@ from odoo.exceptions import ValidationError
 
 
 class ResConfigSettings(models.TransientModel):
+    """Crew planning configuration: the rolling unavailability coverage horizon
+    (how far ahead Explicit-Availability crew are guaranteed blanket-unavailable)
+    and the availability entry horizon (how far ahead crew may register
+    availability). The self-unassign policy itself is the standard Planning
+    setting, reused as-is."""
     _inherit = 'res.config.settings'
 
     crew_unavailability_horizon_months = fields.Integer(

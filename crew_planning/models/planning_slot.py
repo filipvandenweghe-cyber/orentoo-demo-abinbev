@@ -4,6 +4,23 @@ from odoo.exceptions import ValidationError
 
 
 class PlanningSlot(models.Model):
+    """Crew extension of a planning shift.
+
+    Requirements:
+    - §14: one operational shift represents one Task — adds ``task_id`` (native
+      slots link only to project / SOL) and a "Schedule Shift" path from a task.
+    - Links a shift to the availability request it staffs (``crew_request_id``)
+      for coverage/staffing KPIs.
+    - "I can no longer work this shift": flags ``crew_unavailable_reported`` +
+      reason and notifies the planner. Whether it also unassigns the crew
+      (making it an open shift) honours the STANDARD Planning policy
+      (Settings > Planning > "Employee Unavailabilities" == unassign) and the
+      same deadline / past-shift guards Odoo uses for native self-unassign
+      (``_crew_may_self_unassign``).
+    - Re-assigning a real resource clears the stale "reported" flag (``write``
+      override), so the shift is a fresh, live assignment in the portal again.
+    - Owns at most one ``crew.work.declaration`` (``_get_or_create_...``).
+    """
     _inherit = 'planning.slot'
 
     # §14 — one operational Planning Shift represents one Task. Standard Odoo 19

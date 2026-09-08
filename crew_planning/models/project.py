@@ -3,6 +3,8 @@ from odoo import _, api, fields, models
 
 
 class ProjectProject(models.Model):
+    """Project-level entry points into crew planning: request availability for
+    the project period and review its availability requests."""
     _inherit = 'project.project'
 
     crew_request_ids = fields.One2many(
@@ -49,6 +51,9 @@ class ProjectProject(models.Model):
 
 
 class ProjectTask(models.Model):
+    """Task-level entry points into crew planning (§14, one shift = one task):
+    Request Availability, Schedule Shift (opens a prefilled planning.slot), and
+    stat buttons to review the task's requests and shifts."""
     _inherit = 'project.task'
 
     crew_request_ids = fields.One2many(
