@@ -229,6 +229,36 @@ class TestSetPricing(TestRentalSetCommon):
         # Order total = 127 * 2 = 254
         self.assertAlmostEqual(order.amount_untaxed, 254.0, places=2)
 
+    def test_06b_component_price_change_is_silently_ignored(self):
+        """A component price change is silently ignored: the price stays 0 and
+        NO chatter notification is ever posted (benign echoes or genuine
+        attempts alike)."""
+        order = self.env['sale.order'].create({'partner_id': self.partner.id})
+        self.env['sale.order.line'].create({
+            'order_id': order.id,
+            'product_id': self.front_light_tmpl.product_variant_id.id,
+            'product_uom_qty': 1,
+        })
+        component = order.order_line.filtered('is_set_component')[:1]
+
+        def ignored_count():
+            order.invalidate_recordset()
+            return len(order.message_ids.filtered(
+                lambda m: 'component price change was ignored' in (m.body or '')
+            ))
+
+        # Benign price_unit=0 echoes (what the form sends on save) → silent.
+        order.write({'order_line': [(1, component.id, {'price_unit': 0.0})]})
+        order.write({'order_line': [
+            (1, component.id, {'price_unit': 0.0, 'product_uom_qty': 2}),
+        ]})
+        # A genuine non-zero attempt → still no note, and price stays 0.
+        order.write({'order_line': [(1, component.id, {'price_unit': 42.0})]})
+        self.assertEqual(ignored_count(), 0,
+                         "the component-price chatter must never be posted")
+        component.invalidate_recordset()
+        self.assertEqual(component.price_unit, 0.0)
+
 
 class TestSetStockAndReservation(TestRentalSetCommon):
     """Test 7-8: substitution and availability warnings."""
@@ -1128,10 +1158,11 @@ class TestSetCornerCases(TestRentalSetCommon):
             f"Standalone demand must reduce set availability (RS12). "
             f"Without: {avail_without}, with 18 standalone: {avail_with}",
         )
-        # Specifically: 20 available - 18 standalone = 2 for set / 3 needed = 0.67
-        self.assertAlmostEqual(
-            avail_with, 0.67, places=1,
-            msg="(20 - 18) / 3 ≈ 0.67 sets available",
+        # Specifically: 20 available - 18 standalone = 2 for set / 3 needed
+        # = 0.67 → floored to 0 whole sets (RAV-08: whole sets only).
+        self.assertEqual(
+            avail_with, 0.0,
+            msg="(20 - 18) / 3 = 0.67 → floor = 0 whole sets available",
         )
 
     # ── Test 26: order_product_demand aggregates correctly ────────────

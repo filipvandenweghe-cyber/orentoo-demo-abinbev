@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="planning_slot_form_crew" model="ir.ui.view">
+        <field name="name">planning.slot.form.crew</field>
+        <field name="model">planning.slot</field>
+        <field name="inherit_id" ref="planning.planning_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[hasclass('oe_button_box')]" position="inside">
+                <button name="action_open_work_declaration" type="object"
+                        class="oe_stat_button" icon="fa-clock-o"
+                        invisible="not id">
+                    <field name="work_declaration_count" widget="statinfo"
+                           string="Work Decl."/>
+                </button>
+            </xpath>
+            <field name="role_id" position="after">
+                <field name="task_id"/>
+                <field name="crew_request_id" readonly="1"
+                       invisible="not crew_request_id"/>
+                <field name="crew_unavailable_reported" readonly="1"
+                       invisible="not crew_unavailable_reported"/>
+                <field name="crew_unavailable_reason" readonly="1"
+                       invisible="not crew_unavailable_reported"/>
+            </field>
+        </field>
+    </record>
+</odoo>

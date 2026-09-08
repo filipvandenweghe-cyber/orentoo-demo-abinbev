@@ -89,8 +89,8 @@ class SaleFlowReturnService(models.AbstractModel):
                 'delivered_qty': fl.delivered_qty,
                 'returned_qty': fl.returned_qty,
                 'missing_qty': item['missing_qty'],
-                'lost_qty': 0,  # default: 0 — user decides what is lost/broken
-                'broken_qty': 0,
+                # All buckets default to 0 — the user classifies what is
+                # fully broken / lost (charged) / lost (not charged).
                 'broken_lost_unit_price': price,
             })
 

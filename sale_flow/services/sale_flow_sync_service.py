@@ -269,29 +269,40 @@ class SaleFlowSyncService(models.AbstractModel):
 
         prec = self.env['decimal.precision'].precision_get('Product Unit of Measure')
 
-        # Build expected map: delivered + pending backorder demand.
-        # This is the total quantity that will eventually be at the
-        # customer and must be returned.
-        expected_map = {}
-        for fl in order.flow_line_ids:
-            if not fl.is_rental:
-                continue
-            if fl.state == 'cancelled':
-                continue
-            product = fl.product_id
-            expected_map[product.id] = expected_map.get(product.id, 0) + fl.delivered_qty
+        # Expected return demand = what has actually gone OUT to the customer
+        # (Option B).  "Until it is out, the client is not expected to return
+        # it."  So we count only DONE outbound moves that reached the customer
+        # / rental location.  This means:
+        #   * multi-step (Pick->Pack->Ship): the intermediate legs never reach
+        #     the customer, so the return is never inflated across the legs —
+        #     it grows only when goods actually ship;
+        #   * over-delivery: whatever was shipped is expected back (7 on a
+        #     5-line -> 7);
+        #   * over-pick then put-back-before-shipping: the excess never ships,
+        #     so it is never expected;
+        #   * back-orders: the pending part is not expected until it ships.
+        rental_loc = order.company_id.rental_loc_id
 
-        # Add pending outgoing backorder demand (not yet delivered)
-        pending_outgoing = order.picking_ids.filtered(
-            lambda p: not p.return_id and p.state not in ('done', 'cancel')
-        )
-        for pick in pending_outgoing:
-            for move in pick.move_ids.filtered(
-                lambda m: m.state not in ('done', 'cancel')
-                and m.product_id.rent_ok
-            ):
-                pid = move.product_id.id
-                expected_map[pid] = expected_map.get(pid, 0) + move.product_uom_qty
+        def _reached_customer(move):
+            dest = move.location_dest_id
+            return (
+                dest == rental_loc
+                or dest.usage in ('customer', 'transit')
+                or (dest.location_id and dest.location_id.usage == 'customer')
+            )
+
+        outbound = order.picking_ids.filtered(lambda p: not p.return_id)
+        expected_map = {}
+        pending_products = set()   # products with a delivery still in progress
+        for m in outbound.move_ids:
+            if m.state == 'cancel' or not m.product_id.rent_ok:
+                continue
+            if m.state == 'done':
+                if _reached_customer(m):
+                    expected_map[m.product_id.id] = \
+                        expected_map.get(m.product_id.id, 0) + m.quantity
+            else:
+                pending_products.add(m.product_id.id)
 
         for picking in return_pickings:
             active_moves = picking.move_ids.filtered(lambda m: m.state != 'cancel')
@@ -307,6 +318,15 @@ class SaleFlowSyncService(models.AbstractModel):
             for pid, moves in product_moves.items():
                 expected = expected_map.get(pid, 0)
                 current_total = sum(m.product_uom_qty for m in moves)
+
+                # Delivery still in progress and nothing has reached the
+                # customer yet: leave the return as-is (do NOT reduce/cancel).
+                # It will be set to the delivered qty once the goods ship.
+                # This keeps the return alive across multi-step legs and only
+                # cancels it when a line is genuinely not being delivered.
+                if float_compare(expected, 0, precision_digits=prec) <= 0 \
+                        and pid in pending_products:
+                    continue
 
                 if float_compare(expected, current_total, precision_digits=prec) == 0:
                     continue  # Already correct
@@ -370,8 +390,16 @@ class SaleFlowSyncService(models.AbstractModel):
                 # Only add to the first return picking, not all of them
                 existing_products.add(product_id)
 
-            # Re-check availability after adjustments
-            picking.with_context(skip_sale_flow_sync=True).action_assign()
+            # Re-check availability after adjustments — but only when there is
+            # actually something to reserve.  Native ``action_assign`` raises
+            # ``UserError("Nothing to check the availability for.")`` when the
+            # picking has no assignable moves; calling it unconditionally here
+            # would abort the whole ``button_validate`` (e.g. when a delivery's
+            # return picking has nothing left to reserve), so we guard it.
+            assignable = picking.move_ids.filtered(
+                lambda m: m.state not in ('draft', 'cancel', 'done'))
+            if assignable:
+                picking.with_context(skip_sale_flow_sync=True).action_assign()
 
     def _find_sale_line_for_product(self, order, product):
         """Find or return False for a sale line matching a product on the order."""

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Starter WhatsApp template for availability invitations. Ships as a
+             draft; an admin links their WhatsApp Account and submits it for Meta
+             approval before it can actually send. Phone is taken from the
+             invitation's mobile_phone (employee's mobile). Kept as a nudge to
+             check email/portal so it needs no dynamic variables to be approved. -->
+        <record id="whatsapp_template_crew_invitation" model="whatsapp.template">
+            <field name="name">Crew: Availability Invitation</field>
+            <field name="model_id" ref="model_crew_availability_invitation"/>
+            <field name="phone_field">mobile_phone</field>
+            <field name="template_type">utility</field>
+            <field name="body">Hello, we would like to know your availability for upcoming work. Please check your email or the Crew Portal to respond. This is only a request for availability — you have not been scheduled yet. Thank you!</field>
+        </record>
+    </data>
+</odoo>

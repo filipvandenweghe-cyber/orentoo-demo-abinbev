@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="crew_invite_wizard_form" model="ir.ui.view">
+        <field name="name">crew.invite.wizard.form</field>
+        <field name="model">crew.invite.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Find &amp; Invite Candidates">
+                <group>
+                    <group>
+                        <field name="request_id" readonly="1"/>
+                        <field name="next_wave" string="Invitation Wave"/>
+                    </group>
+                    <group>
+                        <field name="channel"/>
+                    </group>
+                </group>
+                <div class="text-muted">
+                    Tick who to handle in this wave, then <b>Invite Selected</b>:
+                    <b>New</b> people are invited and messaged on the chosen channel;
+                    <b>Partially available</b> people are counted <i>and</i> asked again
+                    (to fill the unanswered gaps) when reachable; people already
+                    <b>Available/Unavailable</b> are just counted (no message);
+                    <b>already invited</b> rows are left as-is.
+                </div>
+                <field name="line_ids">
+                    <list create="false" delete="false"
+                          decoration-success="known_state == 'available'"
+                          decoration-warning="known_state == 'partial'"
+                          decoration-danger="known_state == 'unavailable'"
+                          decoration-muted="already_invited">
+                        <field name="selected" widget="boolean_toggle"
+                               readonly="already_invited"/>
+                        <field name="employee_id" readonly="1"/>
+                        <field name="status_label" string="Status" readonly="1"/>
+                        <field name="availability_mode" readonly="1" optional="hide"/>
+                        <field name="work_email" readonly="1"/>
+                        <field name="mobile_phone" readonly="1"/>
+                        <field name="already_invited" column_invisible="1"/>
+                        <field name="known_state" column_invisible="1"/>
+                    </list>
+                    <form string="Candidate">
+                        <group>
+                            <field name="employee_id" readonly="1"/>
+                            <field name="status_label" readonly="1"/>
+                            <field name="availability_mode" readonly="1"/>
+                            <field name="work_email" readonly="1"/>
+                            <field name="mobile_phone" readonly="1"/>
+                            <field name="selected"/>
+                        </group>
+                    </form>
+                </field>
+                <footer>
+                    <button name="action_invite_selected" type="object"
+                            string="Invite Selected" class="btn-primary"/>
+                    <button name="action_select_all" type="object" string="Select All"/>
+                    <button name="action_refresh" type="object" string="Refresh"/>
+                    <button string="Close" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

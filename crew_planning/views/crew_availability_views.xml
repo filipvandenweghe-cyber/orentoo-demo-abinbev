@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="crew_availability_view_list" model="ir.ui.view">
+        <field name="name">crew.availability.list</field>
+        <field name="model">crew.availability</field>
+        <field name="arch" type="xml">
+            <list string="Availability Windows" create="false" edit="false" delete="false">
+                <field name="employee_id"/>
+                <field name="resource_id" optional="hide"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="crew_availability_view_form" model="ir.ui.view">
+        <field name="name">crew.availability.form</field>
+        <field name="model">crew.availability</field>
+        <field name="arch" type="xml">
+            <form string="Availability Window">
+                <sheet>
+                    <group>
+                        <field name="employee_id"/>
+                        <field name="resource_id"/>
+                        <field name="date_start"/>
+                        <field name="date_end"/>
+                    </group>
+                    <div class="text-muted">
+                        Positive availability window. It is compiled into the standard
+                        resource calendar (as the absence of a crew-managed leave); it is
+                        not read directly by staffing.
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="crew_availability_view_gantt" model="ir.ui.view">
+        <field name="name">crew.availability.gantt</field>
+        <field name="model">crew.availability</field>
+        <field name="arch" type="xml">
+            <gantt string="Availability" date_start="date_start" date_stop="date_end"
+                   default_group_by="employee_id" create="false" edit="false"
+                   default_scale="week" color="employee_id">
+                <field name="employee_id"/>
+            </gantt>
+        </field>
+    </record>
+
+    <record id="crew_availability_view_calendar" model="ir.ui.view">
+        <field name="name">crew.availability.calendar</field>
+        <field name="model">crew.availability</field>
+        <field name="arch" type="xml">
+            <calendar string="Availability" date_start="date_start" date_stop="date_end"
+                      color="employee_id" mode="month" create="false"
+                      event_open_popup="true">
+                <field name="employee_id"/>
+            </calendar>
+        </field>
+    </record>
+
+    <record id="action_crew_availability" model="ir.actions.act_window">
+        <field name="name">Availability Windows</field>
+        <field name="res_model">crew.availability</field>
+        <field name="view_mode">gantt,calendar,list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No availability registered yet</p>
+            <p>Availability windows are the periods Explicit-Availability crew have
+               declared they can work. Register them from an employee's
+               <b>Enter Availability</b> action (or, later, the Crew Portal).</p>
+        </field>
+    </record>
+</odoo>

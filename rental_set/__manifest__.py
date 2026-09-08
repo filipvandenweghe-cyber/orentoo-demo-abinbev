@@ -1,6 +1,6 @@
 {
     'name': 'Rental Sets',
-    'version': '19.0.1.6.0',
+    'version': '19.0.1.40.0',
     'summary': 'Extend products with Rental Set capabilities',
     'description': (
         'Rental Sets are normal Odoo products that can expand into hidden '
@@ -27,9 +27,13 @@
         'security/ir.model.access.csv',
 
         # Views
+        'views/res_config_settings_views.xml',
         'views/product_template_views.xml',
         'views/sale_order_views.xml',
         'views/stock_picking_views.xml',
+        'views/stock_picking_type_views.xml',
+        'views/rental_availability_report_views.xml',
+        'views/product_catalog_views.xml',
 
         # Wizards
         'views/rental_set_add_component_wizard.xml',
@@ -48,7 +52,10 @@
             'rental_set/static/src/js/rental_set_picking_renderer.js',
             'rental_set/static/src/js/rental_set_qty_widget.xml',
             'rental_set/static/src/js/rental_set_qty_widget.js',
+            'rental_set/static/src/js/availability_matrix.xml',
+            'rental_set/static/src/js/availability_matrix.js',
             'rental_set/static/src/scss/rental_set.scss',
+            'rental_set/static/src/scss/availability_matrix.scss',
         ],
     },
 
@@ -59,4 +66,6 @@
     'installable': True,
     'application': False,
     'auto_install': False,
+
+    'post_init_hook': '_enable_rental_pickings',
 }

@@ -80,6 +80,35 @@ class TestSaleFlow(TransactionCase):
         # Configure company
         cls.env.company.lost_broken_fee_product_id = cls.fee_product
 
+        # ── Rental round-trip environment ────────────────────────────
+        # The tests that use ``in_rental_app=True`` (return-demand: over
+        # delivery, multi-step, back-order, over-pick) rely on Odoo creating
+        # the rental pickup + return pickings at confirmation.  Two things
+        # gate that and are NOT guaranteed on a freshly rebuilt DB:
+        #   1. the "Rental Transfers" setting
+        #      (``sale_stock_renting.group_rental_stock_picking``) must be on,
+        #      otherwise a rental order is tracked by qty only and creates NO
+        #      pickings at all;
+        #   2. the test company needs an at-customer rental location
+        #      (``company.rental_loc_id``); the default SF company ships this
+        #      value empty.
+        # Provision both so the suite is self-contained and deterministic.
+        rental_transfers = cls.env.ref(
+            'sale_stock_renting.group_rental_stock_picking',
+            raise_if_not_found=False)
+        if rental_transfers:
+            cls.env.user.group_ids = [(4, rental_transfers.id)]
+
+        if not cls.env.company.rental_loc_id:
+            customer_parent = cls.env['stock.location'].search(
+                [('usage', '=', 'customer')], limit=1)
+            cls.env.company.rental_loc_id = cls.env['stock.location'].create({
+                'name': 'Rental',
+                'usage': 'internal',
+                'location_id': customer_parent.id if customer_parent else False,
+                'company_id': cls.env.company.id,
+            })
+
         # Stock locations
         cls.stock_location = cls.env.ref('stock.stock_location_stock')
         cls.customer_location = cls.env.ref('stock.stock_location_customers')
@@ -298,8 +327,7 @@ class TestSaleFlow(TransactionCase):
             'delivered_qty': 4,
             'returned_qty': 2,
             'missing_qty': 2,
-            'lost_qty': 2,
-            'broken_qty': 0,
+            'lost_charged_qty': 2,
             'broken_lost_unit_price': 80.0,
         })
 
@@ -337,8 +365,7 @@ class TestSaleFlow(TransactionCase):
             'delivered_qty': 2,
             'returned_qty': 0,
             'missing_qty': 2,
-            'lost_qty': 2,
-            'broken_qty': 0,
+            'lost_charged_qty': 2,
             'broken_lost_unit_price': 80.0,
         })
         wizard.action_confirm()
@@ -372,8 +399,7 @@ class TestSaleFlow(TransactionCase):
             'delivered_qty': 2,
             'returned_qty': 0,
             'missing_qty': 2,
-            'lost_qty': 1,
-            'broken_qty': 0,
+            'lost_charged_qty': 1,
             'broken_lost_unit_price': 0.0,
         })
         wizard.action_confirm()
@@ -402,8 +428,8 @@ class TestSaleFlow(TransactionCase):
             'delivered_qty': 2,
             'returned_qty': 0,
             'missing_qty': 2,
-            'lost_qty': 1,
-            'broken_qty': 1,
+            'lost_charged_qty': 1,
+            'fully_broken_qty': 1,
             'broken_lost_unit_price': 80.0,
         })
         wizard.action_confirm()
@@ -596,6 +622,50 @@ class TestSaleFlow(TransactionCase):
                 rental_return_move.product_uom_qty, 2,
                 "Return demand must match actual delivered qty (2), not ordered (3)",
             )
+
+    def test_17b_return_reconcile_no_assignable_moves_validates(self):
+        """Regression: return reconciliation must NOT abort ``button_validate``
+        with the native ``UserError('Nothing to check the availability for.')``.
+
+        When the delivered product is swapped, reconciliation cancels the
+        original return move and adds a *draft* replacement.  ``action_assign``
+        excludes draft moves, so the return picking has "no assignable moves"
+        and native ``action_assign`` raises — which used to abort the whole
+        delivery validation.  The reconciliation now guards that call.
+        """
+        now = fields.Datetime.now()
+        prod_a = self.env['product.product'].create({
+            'name': 'Swap A', 'type': 'consu', 'is_storable': True,
+            'rent_ok': True, 'list_price': 10.0})
+        prod_b = self.env['product.product'].create({
+            'name': 'Swap B', 'type': 'consu', 'is_storable': True,
+            'rent_ok': True, 'list_price': 10.0})
+        order = self.env['sale.order'].with_context(in_rental_app=True).create({
+            'partner_id': self.partner.id,
+            'rental_start_date': now,
+            'rental_return_date': now + timedelta(days=3)})
+        self.env['sale.order.line'].with_context(in_rental_app=True).create({
+            'order_id': order.id, 'product_id': prod_a.id,
+            'product_uom_qty': 1, 'price_unit': 10.0})
+        order.with_context(in_rental_app=True).action_confirm()
+
+        out_picking = order.picking_ids.filtered(
+            lambda p: not p.return_id and p.state != 'done')[:1]
+        self.assertTrue(out_picking, "outgoing rental picking must exist")
+        self.assertTrue(
+            order.picking_ids.filtered(lambda p: p.return_id),
+            "rental round-trip must create a return picking")
+
+        # Swap the delivered product A -> B: the original return move (for A)
+        # becomes obsolete → reconciliation cancels it and adds a draft B move,
+        # leaving the return picking with no assignable moves.
+        out_picking.move_ids.filtered(
+            lambda m: m.state != 'cancel').write({'product_id': prod_b.id})
+
+        # Must validate WITHOUT raising (previously: UserError).
+        self._validate_picking_with_done_qty(out_picking, {prod_b.id: 1})
+        self.assertEqual(out_picking.state, 'done',
+                         "delivery must validate despite the empty return picking")
 
     # ── S00724: Sale product added during delivery gets SOL ──────────
 
@@ -1074,8 +1144,9 @@ class TestSaleFlow(TransactionCase):
         wiz_line = wizard.line_ids[0]
 
         self.assertEqual(wiz_line.missing_qty, 2)
-        self.assertEqual(wiz_line.lost_qty, 0, "Default lost must be 0")
-        self.assertEqual(wiz_line.broken_qty, 0, "Default broken must be 0")
+        self.assertEqual(wiz_line.fully_broken_qty, 0, "Default broken must be 0")
+        self.assertEqual(wiz_line.lost_charged_qty, 0, "Default lost charged 0")
+        self.assertEqual(wiz_line.lost_uncharged_qty, 0, "Default lost free 0")
 
     def test_27_lost_broken_cannot_exceed_missing(self):
         """Lost + broken cannot exceed missing quantity."""
@@ -1097,8 +1168,8 @@ class TestSaleFlow(TransactionCase):
             'delivered_qty': 4,
             'returned_qty': 2,
             'missing_qty': 2,
-            'lost_qty': 2,
-            'broken_qty': 1,  # total = 3 > missing = 2
+            'lost_charged_qty': 2,
+            'fully_broken_qty': 1,  # total = 3 > missing = 2
             'broken_lost_unit_price': 50.0,
         })
 
@@ -1181,8 +1252,7 @@ class TestSaleFlow(TransactionCase):
             'delivered_qty': fl.delivered_qty,
             'returned_qty': fl.returned_qty,
             'missing_qty': 2,
-            'lost_qty': 1,
-            'broken_qty': 0,
+            'lost_charged_qty': 1,
             'broken_lost_unit_price': 50.0,
         })
         wizard.action_confirm()
@@ -1211,11 +1281,77 @@ class TestSaleFlow(TransactionCase):
         self.assertEqual(charge_fls.current_qty, 1)
         self.assertAlmostEqual(charge_fls.unit_price_effective, 50.0)
 
-        # No broken fee (broken_qty=0)
+        # No broken fee (fully_broken_qty=0)
         broken_fls = order.flow_line_ids.filtered(
             lambda f: f.is_charge_only and f.commercial_policy == 'broken_charge'
         )
-        self.assertFalse(broken_fls, "No broken fee — broken_qty was 0")
+        self.assertFalse(broken_fls, "No broken fee — fully_broken_qty was 0")
+
+    def test_29_wizard_returns_to_picking(self):
+        """Confirm/Cancel navigate back to the return picking (not a blank
+        screen), since the wizard is reached through the backorder flow."""
+        order = self._create_rental_order([
+            {'product': self.rental_product, 'qty': 2, 'price': 10.0},
+        ])
+        picking = order.picking_ids[:1]
+        self.assertTrue(picking, "order should have a picking")
+
+        wizard = self.env['sale.flow.lost.broken.wizard'].create({
+            'picking_id': picking.id,
+            'sale_order_id': order.id,
+        })
+        action = wizard.action_cancel()
+        self.assertEqual(action.get('res_model'), 'stock.picking')
+        self.assertEqual(action.get('res_id'), picking.id)
+
+        # Without a picking (e.g. programmatic use) it just closes.
+        wizard2 = self.env['sale.flow.lost.broken.wizard'].create({
+            'sale_order_id': order.id,
+        })
+        self.assertEqual(
+            wizard2.action_cancel().get('type'),
+            'ir.actions.act_window_close')
+
+    def test_30_charge_uses_service_no_delivery(self):
+        """A charged loss must invoice through a SERVICE fee product — never
+        the physical product — so it spawns no delivery / reservation."""
+        order = self._create_rental_order([
+            {'product': self.rental_product, 'qty': 2, 'price': 10.0},
+        ])
+        fl = order.flow_line_ids.filtered(
+            lambda f: f.product_id == self.rental_product)[:1]
+        fl.write({'delivered_qty': 2, 'returned_qty': 0})
+        pickings_before = set(order.picking_ids.ids)
+
+        wizard = self.env['sale.flow.lost.broken.wizard'].create({
+            'sale_order_id': order.id,
+        })
+        self.env['sale.flow.lost.broken.wizard.line'].create({
+            'wizard_id': wizard.id,
+            'flow_line_id': fl.id,
+            'product_id': self.rental_product.id,
+            'delivered_qty': 2,
+            'returned_qty': 0,
+            'missing_qty': 2,
+            'lost_charged_qty': 1,
+            'broken_lost_unit_price': 50.0,
+        })
+        wizard.action_confirm()
+
+        charge_sols = order.order_line.filtered(
+            lambda l: l.name and 'Fee' in l.name)
+        self.assertTrue(charge_sols, "a charge line must be created")
+        self.assertTrue(
+            all(l.product_id.type == 'service' for l in charge_sols),
+            "charge must use a service fee product")
+        self.assertFalse(
+            any(l.product_id == self.rental_product for l in charge_sols),
+            "charge must NOT use the physical rental product")
+        new_out = order.picking_ids.filtered(
+            lambda p: p.id not in pickings_before
+            and p.picking_type_code == 'outgoing')
+        self.assertFalse(
+            new_out, "charge must not spawn an outgoing delivery")
 
     # ══════════════════════════════════════════════════════════════════
     # Additional corner-case tests from live testing
@@ -1365,16 +1501,36 @@ class TestSaleFlow(TransactionCase):
 
     # ── S03270: Backorder keeps full return demand ───────────────────
 
-    def test_32_backorder_keeps_full_return_demand(self):
-        """R22/S03270: return demand includes pending backorder qty.
+    def test_32_backorder_return_follows_delivery(self):
+        """Option B: the return expects back only what has gone OUT.
 
-        Scenario: order 3 Printers, deliver 2 with backorder for 1.
-        The return must expect 3 back (2 delivered + 1 pending), not 2.
-        Only when the backorder is cancelled should the return reduce to 2.
+        Scenario: order 3, deliver 2 with a backorder for 1.  A *pending*
+        backorder is not at the customer yet, so the return expects 2 (not 3).
+        When the backorder is shipped, the return grows to 3.
         """
-        order = self._create_rental_order([
-            {'product': self.rental_product, 'qty': 3, 'price': 10.0},
-        ])
+        prod = self.env['product.product'].create({
+            'name': 'BO Rental', 'type': 'consu', 'is_storable': True,
+            'rent_ok': True, 'list_price': 10.0,
+        })
+        wh = self.env['stock.warehouse'].search(
+            [('company_id', '=', self.env.company.id)], limit=1)
+        wh.write({'delivery_steps': 'ship_only'})
+        self.env['stock.quant'].with_context(inventory_mode=True).create({
+            'product_id': prod.id, 'location_id': wh.lot_stock_id.id,
+            'inventory_quantity': 20,
+        }).action_apply_inventory()
+
+        now = fields.Datetime.now()
+        order = self.env['sale.order'].with_context(in_rental_app=True).create({
+            'partner_id': self.partner.id,
+            'warehouse_id': wh.id,
+            'rental_start_date': now,
+            'rental_return_date': now + timedelta(days=7),
+            'order_line': [(0, 0, {
+                'product_id': prod.id, 'product_uom_qty': 3, 'price_unit': 10.0,
+            })],
+        })
+        order.action_confirm()
 
         out_picking = order.picking_ids.filtered(
             lambda p: not p.return_id and p.state != 'done'
@@ -1383,23 +1539,18 @@ class TestSaleFlow(TransactionCase):
 
         # Deliver 2 of 3 WITH backorder
         for move in out_picking.move_ids:
-            if move.product_id == self.rental_product:
+            if move.product_id == prod:
                 move.quantity = 2
+                move.picked = True
 
         res = out_picking.with_context(
             skip_lost_broken_check=True,
         ).button_validate()
-
-        # Process backorder wizard if returned
         if isinstance(res, dict) and res.get('res_model') == 'stock.backorder.confirmation':
-            backorder_wiz = self.env['stock.backorder.confirmation'].with_context(
-                **res.get('context', {}),
-            ).create({})
-            backorder_wiz.process()
+            self.env['stock.backorder.confirmation'].with_context(
+                **res.get('context', {})).create({}).process()
 
         self.assertEqual(out_picking.state, 'done')
-
-        # Verify backorder exists
         backorder = order.picking_ids.filtered(
             lambda p: not p.return_id
             and p.state not in ('done', 'cancel')
@@ -1407,31 +1558,200 @@ class TestSaleFlow(TransactionCase):
         )
         self.assertTrue(backorder, "Backorder must exist for remaining 1")
 
-        # Return picking must expect 3 (2 delivered + 1 pending)
-        return_picking = order.picking_ids.filtered(
-            lambda p: p.return_id and p.state not in ('done', 'cancel')
-        )
-        if return_picking:
-            return_move = return_picking.move_ids.filtered(
-                lambda m: m.product_id == self.rental_product
-                and m.state != 'cancel'
-            )
-            self.assertEqual(
-                return_move.product_uom_qty, 3,
-                "Return must expect 3 back (2 delivered + 1 backorder pending)",
-            )
+        def active_return_qty():
+            return_picking = order.picking_ids.filtered(
+                lambda p: p.return_id and p.state not in ('done', 'cancel'))
+            return sum(return_picking.move_ids.filtered(
+                lambda m: m.product_id == prod
+                and m.state != 'cancel').mapped('product_uom_qty'))
 
-            # Now cancel the backorder
-            backorder.action_cancel()
+        # Pending backorder is NOT yet at the customer -> return expects 2.
+        self.assertEqual(
+            active_return_qty(), 2,
+            "Pending backorder is not out yet -> return expects only 2")
 
-            # Return must now expect only 2 (backorder cancelled)
-            return_move.invalidate_recordset()
-            return_picking.invalidate_recordset()
-            active_return = return_picking.move_ids.filtered(
-                lambda m: m.product_id == self.rental_product
-                and m.state != 'cancel'
-            )
+        # Ship the backorder (deliver the remaining 1) -> return grows to 3.
+        for move in backorder.move_ids:
+            if move.product_id == prod:
+                move.quantity = 1
+                move.picked = True
+        backorder.with_context(
+            skip_lost_broken_check=True, skip_backorder=True,
+        ).button_validate()
+        self.assertEqual(
+            active_return_qty(), 3,
+            "After the backorder ships, all 3 are out -> return expects 3")
+
+    # ── Multi-step delivery must NOT inflate the return ──────────────
+    def test_23_multistep_delivery_return_not_inflated(self):
+        """Regression: in a Pick->Pack->Ship route, validating each outbound
+        step must NOT grow the return demand (was 4 -> 8 -> 12, then 4).
+        The return must stay at the ordered rental qty (4) throughout.
+        """
+        prod = self.env['product.product'].create({
+            'name': 'MS Rental', 'type': 'consu', 'is_storable': True,
+            'rent_ok': True, 'list_price': 10.0,
+        })
+        wh = self.env['stock.warehouse'].search(
+            [('company_id', '=', self.env.company.id)], limit=1)
+        wh.write({'delivery_steps': 'pick_pack_ship'})
+        self.env['stock.quant'].with_context(inventory_mode=True).create({
+            'product_id': prod.id,
+            'location_id': wh.lot_stock_id.id,
+            'inventory_quantity': 10,
+        }).action_apply_inventory()
+
+        now = fields.Datetime.now()
+        order = self.env['sale.order'].with_context(in_rental_app=True).create({
+            'partner_id': self.partner.id,
+            'warehouse_id': wh.id,
+            'rental_start_date': now,
+            'rental_return_date': now + timedelta(days=7),
+            'order_line': [(0, 0, {
+                'product_id': prod.id,
+                'product_uom_qty': 4,
+                'price_unit': 10.0,
+            })],
+        })
+        order.action_confirm()
+
+        def return_demand():
+            rp = order.picking_ids.filtered(
+                lambda p: p.return_id and p.state not in ('done', 'cancel'))
+            moves = rp.move_ids.filtered(
+                lambda m: m.product_id == prod
+                and m.state != 'cancel')
+            return sum(moves.mapped('product_uom_qty'))
+
+        self.assertEqual(return_demand(), 4, "return should start at 4")
+
+        for _i in range(4):
+            step = order.picking_ids.filtered(
+                lambda p: not p.return_id
+                and p.state in ('assigned', 'confirmed', 'partially_available')
+                and p.picking_type_code in ('internal', 'outgoing')
+            ).sorted('id')[:1]
+            if not step:
+                break
+            for m in step.move_ids:
+                m.quantity = m.product_uom_qty
+                m.picked = True
+            step.with_context(
+                skip_backorder=True, skip_lost_broken_check=True,
+            ).button_validate()
             self.assertEqual(
-                active_return.product_uom_qty, 2,
-                "After backorder cancel, return must expect only 2 (actually delivered)",
-            )
+                return_demand(), 4,
+                "Return demand must stay 4 after validating %s "
+                "(multi-step legs must not accumulate)" % step.name)
+
+        fl = order.flow_line_ids.filtered(
+            lambda f: f.product_id == prod)[:1]
+        self.assertEqual(fl.delivered_qty, 4, "all 4 delivered at the end")
+
+    # ── Over-pick undo: only what SHIPS to the customer is expected ──
+    def test_33_overpick_not_shipped_is_not_expected(self):
+        """Option B / over-pick undo: if more is picked than actually shipped
+        to the customer, only what shipped is expected back.  Units left in
+        the warehouse (over-pick not sent out) are NOT return demand — no
+        special undo needed, just don't ship the excess."""
+        prod = self.env['product.product'].create({
+            'name': 'OP Rental', 'type': 'consu', 'is_storable': True,
+            'rent_ok': True, 'list_price': 10.0,
+        })
+        wh = self.env['stock.warehouse'].search(
+            [('company_id', '=', self.env.company.id)], limit=1)
+        wh.write({'delivery_steps': 'pick_pack_ship'})
+        self.env['stock.quant'].with_context(inventory_mode=True).create({
+            'product_id': prod.id, 'location_id': wh.lot_stock_id.id,
+            'inventory_quantity': 50,
+        }).action_apply_inventory()
+
+        now = fields.Datetime.now()
+        order = self.env['sale.order'].with_context(in_rental_app=True).create({
+            'partner_id': self.partner.id, 'warehouse_id': wh.id,
+            'rental_start_date': now, 'rental_return_date': now + timedelta(days=7),
+            'order_line': [(0, 0, {
+                'product_id': prod.id, 'product_uom_qty': 5, 'price_unit': 10.0,
+            })],
+        })
+        order.action_confirm()
+
+        def return_demand():
+            rp = order.picking_ids.filtered(
+                lambda p: p.return_id and p.state not in ('done', 'cancel'))
+            return sum(rp.move_ids.filtered(
+                lambda m: m.product_id == prod
+                and m.state != 'cancel').mapped('product_uom_qty'))
+
+        def next_step(code):
+            return order.picking_ids.filtered(
+                lambda p: not p.return_id
+                and p.state in ('assigned', 'confirmed', 'partially_available')
+                and p.picking_type_code == code).sorted('id')[:1]
+
+        def do(step, qty):
+            for m in step.move_ids:
+                m.quantity = qty
+                m.picked = True
+            step.with_context(
+                skip_backorder=True, skip_lost_broken_check=True,
+            ).button_validate()
+
+        # PICK 8 (over-pick on a 5-line), PACK 8, but SHIP only 5.
+        do(next_step('internal'), 8)          # PICK Stock->Packing = 8
+        do(next_step('internal'), 8)          # PACK Packing->Output = 8
+        do(next_step('outgoing'), 5)          # SHIP Output->Customer = 5 (3 stay in Output)
+
+        self.assertEqual(
+            order.order_line.filtered(lambda l: l.product_id == prod).qty_delivered,
+            5, "only 5 shipped to the customer")
+        self.assertEqual(
+            return_demand(), 5,
+            "only the 5 shipped are expected back; the 3 over-picked but not "
+            "shipped stay in the warehouse and are not return demand")
+
+    # ── Over-delivery: return must match what was actually delivered ──
+    def test_24_over_delivery_return_matches_delivered(self):
+        """If more is delivered than ordered (over-pick), the return must
+        expect back the delivered qty, not the ordered qty (S01788)."""
+        prod = self.env['product.product'].create({
+            'name': 'OD Rental', 'type': 'consu', 'is_storable': True,
+            'rent_ok': True, 'list_price': 10.0,
+        })
+        wh = self.env['stock.warehouse'].search(
+            [('company_id', '=', self.env.company.id)], limit=1)
+        wh.write({'delivery_steps': 'ship_only'})
+        self.env['stock.quant'].with_context(inventory_mode=True).create({
+            'product_id': prod.id,
+            'location_id': wh.lot_stock_id.id,
+            'inventory_quantity': 20,
+        }).action_apply_inventory()
+
+        now = fields.Datetime.now()
+        order = self.env['sale.order'].with_context(in_rental_app=True).create({
+            'partner_id': self.partner.id,
+            'warehouse_id': wh.id,
+            'rental_start_date': now,
+            'rental_return_date': now + timedelta(days=7),
+            'order_line': [(0, 0, {
+                'product_id': prod.id, 'product_uom_qty': 5, 'price_unit': 10.0,
+            })],
+        })
+        order.action_confirm()
+
+        out = order.picking_ids.filtered(
+            lambda p: not p.return_id and p.state not in ('done', 'cancel'))[:1]
+        for m in out.move_ids.filtered(lambda m: m.product_id == prod):
+            m.quantity = 7   # over-deliver (7 on a 5-qty line)
+            m.picked = True
+        out.with_context(
+            skip_backorder=True, skip_lost_broken_check=True,
+        ).button_validate()
+
+        rp = order.picking_ids.filtered(
+            lambda p: p.return_id and p.state not in ('done', 'cancel'))
+        rmove = rp.move_ids.filtered(
+            lambda m: m.product_id == prod and m.state != 'cancel')
+        self.assertEqual(
+            sum(rmove.mapped('product_uom_qty')), 7,
+            "return must expect back the 7 actually delivered, not ordered 5")

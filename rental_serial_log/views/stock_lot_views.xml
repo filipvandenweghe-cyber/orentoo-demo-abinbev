@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Rental History tab on the serial/lot form (rows link to the
+         picking / sales order / repair order). -->
+    <record id="view_production_lot_form_rental_log" model="ir.ui.view">
+        <field name="name">stock.lot.form.rental.log</field>
+        <field name="model">stock.lot</field>
+        <field name="inherit_id" ref="stock.view_production_lot_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='main_group']" position="after">
+                <notebook>
+                    <page string="Rental History" name="rental_history">
+                        <field name="rental_log_ids" readonly="1">
+                            <list create="0" edit="0" delete="0"
+                                  decoration-muted="event_type == 'returned'">
+                                <field name="date"/>
+                                <field name="event_type"/>
+                                <field name="sale_order_id"/>
+                                <field name="partner_id"/>
+                                <field name="picking_id"/>
+                                <field name="package_id" optional="show"/>
+                                <field name="package_contents" optional="show"/>
+                                <field name="repair_order_id" optional="show"/>
+                                <field name="note" optional="hide"/>
+                                <button name="action_open_transaction"
+                                        type="object" string="Open"
+                                        icon="fa-external-link"
+                                        title="Open transaction"/>
+                            </list>
+                        </field>
+                    </page>
+                </notebook>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

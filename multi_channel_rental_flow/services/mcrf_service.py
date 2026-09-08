@@ -27,14 +27,20 @@ _DEFAULT_FALLBACK_DURATION_VALUES = [
 ]
 
 
-def _get_unit_labels():
-    """Return translated unit labels. Must be called at request time."""
+def _get_unit_labels(env):
+    """Return translated unit labels. Must be called at request time.
+
+    Takes ``env`` so translation uses the env-aware ``env._()`` rather than
+    the frame-inspecting module-level ``_()``, which cannot detect a language
+    from a plain function scope (it would log "no translation language
+    detected" and skip translation).
+    """
     return {
-        'minute': (_("minute"), _("minutes")),
-        'hour': (_("hour"), _("hours")),
-        'day': (_("day"), _("days")),
-        'week': (_("week"), _("weeks")),
-        'month': (_("month"), _("months")),
+        'minute': (env._("minute"), env._("minutes")),
+        'hour': (env._("hour"), env._("hours")),
+        'day': (env._("day"), env._("days")),
+        'week': (env._("week"), env._("weeks")),
+        'month': (env._("month"), env._("months")),
     }
 
 
@@ -227,7 +233,7 @@ class MultiChannelRentalService(models.AbstractModel):
         tmpl = pp.product_tmpl_id
 
         # Get translated unit labels at call time
-        unit_labels = _get_unit_labels()
+        unit_labels = _get_unit_labels(self.env)
 
         # Try coefficient table
         if pp.requires_duration:
@@ -239,7 +245,7 @@ class MultiChannelRentalService(models.AbstractModel):
                 options = []
                 unit = table.duration_unit
                 singular, plural = unit_labels.get(
-                    unit, (_("unit"), _("units"))
+                    unit, (self.env._("unit"), self.env._("units"))
                 )
                 for line in table.line_ids.sorted('as_from_duration'):
                     val = line.as_from_duration
@@ -268,7 +274,7 @@ class MultiChannelRentalService(models.AbstractModel):
         fallbacks = []
         for d in _DEFAULT_FALLBACK_DURATION_VALUES:
             singular, plural = unit_labels.get(
-                d['unit'], (_("unit"), _("units"))
+                d['unit'], (self.env._("unit"), self.env._("units"))
             )
             label_unit = singular if d['value'] == 1 else plural
             fallbacks.append({
@@ -676,19 +682,28 @@ class MultiChannelRentalService(models.AbstractModel):
     def _get_forecasted_availability(self, product, warehouse, start_dt,
                                       end_dt, quantity=1.0,
                                       item_role='rental'):
-        """Return forecasted stock availability for a product/period.
+        """Return rental availability for a product/period.
 
-        Uses a per-point-in-time approach: checks virtual_available at
-        multiple points across the rental window and returns the minimum.
-        This gives the true availability for the full period — if 8 units
-        are available on day 1 but only 6 on day 3, the result is 6.
+        Uses the SAME central definition as the rest of Orentoo — the
+        canonical Option-A engine ``product.product._rental_available_qty``
+        (from ``rental_set``):
 
-        The check interval adapts to the rental duration:
-        - < 24 hours: check every hour
-        - >= 24 hours: check every day
+            Available = max(Total physical stock
+                            − reserved by OTHER orders (period-aware)
+                            − in repair, 0)
+
+        This is repair-, rental-location- and reservation-aware, and its
+        reserved-by-others term is the *peak* concurrent reservation across
+        the window, so it is the worst-case availability for the **complete**
+        interval.  The multi-channel flow therefore returns exactly the same
+        number the rental order lines would show for that period.
+
+        ``rental_set`` is a soft dependency of this module: if the engine is
+        not installed we fall back to ``_compute_min_availability`` (native
+        ``virtual_available`` sampled across the window).
 
         :returns: dict with:
-            - available_qty: float (min available across the period)
+            - available_qty: float (available across the period)
             - availability_state: 'available', 'unavailable', 'unknown'
             - message: str (explanation when unavailable)
         """
@@ -716,12 +731,18 @@ class MultiChannelRentalService(models.AbstractModel):
             return result
 
         try:
-            stock_loc = warehouse.lot_stock_id
-            avail_qty = self._compute_min_availability(
-                product, stock_loc, start_dt, end_dt,
-            )
+            if hasattr(product, '_rental_available_qty'):
+                # Canonical Orentoo availability (single source of truth).
+                avail_qty = product._rental_available_qty(
+                    start_dt, end_dt, warehouse=warehouse,
+                )
+            else:
+                # rental_set engine absent — soft fallback.
+                avail_qty = self._compute_min_availability(
+                    product, warehouse.lot_stock_id, start_dt, end_dt,
+                )
         except Exception:
-            # Fallback: single-point check
+            # Last-resort single-point check so the flow never hard-fails.
             try:
                 avail_qty = product.with_context(
                     location=warehouse.lot_stock_id.id,

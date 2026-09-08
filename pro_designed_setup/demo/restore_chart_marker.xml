@@ -16,9 +16,13 @@
         in the accounting configuration.
 
         One-time run: `ir.cron` no longer has `numbercall` (removed in Odoo 17+),
-        so the cron deactivates itself at the end of its own code. It is
-        idempotent (no-op if the marker is already set) and only exists on demo
-        builds, so production/staging never gets it.
+        so the cron deactivates itself at the end of its own code via the Odoo 19
+        progress API (`_commit_progress(deactivate=True)`). It must NOT write
+        `active=False` to its own record: Odoo 19 locks the cron row for the
+        duration of the run, so a self-`write` raises "This cron task is currently
+        being executed and may not be modified". It is idempotent (no-op if the
+        marker is already set) and only exists on demo builds, so
+        production/staging never gets it.
     -->
     <record id="cron_restore_chart_marker" model="ir.cron">
         <field name="name">Pro-Designed: restore chart_template marker (one-time)</field>
@@ -30,7 +34,7 @@ if company and not company.chart_template:
     if env['account.account'].sudo().search_count([('company_ids', 'in', company.id)], limit=1):
         company.sudo().write({'chart_template': 'be_comp'})
         log('pro_designed_setup: restored chart_template marker on %s' % company.name)
-env.ref('pro_designed_setup.cron_restore_chart_marker').write({'active': False})
+env['ir.cron']._commit_progress(deactivate=True)
 </field>
         <field name="user_id" ref="base.user_root"/>
         <field name="interval_number">1</field>

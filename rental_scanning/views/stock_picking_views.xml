@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- "Assign prepared package" button on the picking form (PPB-11). -->
+    <record id="view_picking_form_rental_scanning" model="ir.ui.view">
+        <field name="name">stock.picking.form.rental.scanning</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <button name="action_assign" position="after">
+                <button name="%(rental_scanning_assign_action)d"
+                        type="action" string="Assign Prepared Package"
+                        invisible="state in ('done', 'cancel', 'draft')"/>
+                <button name="%(rental_scanning_remove_action)d"
+                        type="action" string="Remove Scanned Package"
+                        invisible="state in ('done', 'cancel', 'draft')
+                                   or not rental_scanning_package_ids"/>
+            </button>
+            <field name="backorder_id" position="after">
+                <field name="rental_scanning_package_ids" widget="many2many_tags"
+                       string="Scanned Packages" readonly="1"
+                       invisible="not rental_scanning_package_ids"/>
+            </field>
+            <xpath expr="//page[@name='operations']/field[@name='move_ids']/list/field[@name='product_id']"
+                   position="after">
+                <field name="rental_scanning_src_package_ids"
+                       string="From Package" widget="many2many_tags"
+                       optional="show" readonly="1"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

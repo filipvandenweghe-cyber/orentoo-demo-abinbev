@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="mail_template_crew_invitation" model="mail.template">
+            <field name="name">Crew: Availability Invitation</field>
+            <field name="model_id" ref="model_crew_availability_invitation"/>
+            <field name="email_from">{{ (object.request_id.company_id.email or user.email_formatted) }}</field>
+            <field name="email_to">{{ object.employee_id.work_email }}</field>
+            <field name="subject">{{ 'Availability request: %s' % (object.request_id.name) }}</field>
+            <field name="body_html" type="html">
+                <div style="margin:0px;padding:0px;font-size:13px;">
+                    <p>Hello <t t-out="object.employee_id.name or ''"/>,</p>
+                    <p>
+                        We would like to know your <strong>availability</strong> for the following period:
+                    </p>
+                    <ul>
+                        <li>Requested availability
+                            <strong t-out="object.request_id.period_label or ''"/></li>
+                        <li t-if="object.request_id.project_id">Project:
+                            <t t-out="object.request_id.project_id.name or ''"/></li>
+                        <li t-if="object.request_id.task_id">Task:
+                            <t t-out="object.request_id.task_id.name or ''"/></li>
+                        <li t-if="object.request_id.indicative_hours">Indicative effort:
+                            ~<t t-out="'%.1f' % object.request_id.indicative_hours"/> h
+                            <span style="color:#888;">(indication only)</span></li>
+                    </ul>
+                    <p style="padding:8px;background:#fff3cd;border:1px solid #ffe69c;border-radius:4px;">
+                        <strong>This is only a request for availability. You have not yet been
+                        scheduled or assigned to this work.</strong>
+                    </p>
+                    <p>Please let us know whether you are available. Thank you!</p>
+                    <div style="margin:16px 0;">
+                        <a t-att-href="'%s/my/availability' % object.get_base_url()"
+                           style="display:inline-block;padding:10px 18px;background:#714B67;
+                                  color:#ffffff;text-decoration:none;border-radius:4px;font-weight:bold;">
+                            Respond in the Crew Portal
+                        </a>
+                    </div>
+                </div>
+            </field>
+            <field name="lang">{{ object.employee_id.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+    </data>
+</odoo>

@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="crew_work_declaration_view_list" model="ir.ui.view">
+        <field name="name">crew.work.declaration.list</field>
+        <field name="model">crew.work.declaration</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="state in ('rejected',)"
+                  decoration-success="state == 'approved'">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="project_id" optional="show"/>
+                <field name="task_id" optional="show"/>
+                <field name="planned_start"/>
+                <field name="worked_hours" sum="Worked Hours"/>
+                <field name="sale_line_id" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'approved'"
+                       decoration-info="state == 'submitted'"/>
+                <field name="company_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="crew_work_declaration_view_form" model="ir.ui.view">
+        <field name="name">crew.work.declaration.form</field>
+        <field name="model">crew.work.declaration</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_submit" type="object" string="Submit"
+                            class="btn-primary" invisible="state not in ('draft', 'reopened', 'rejected')"/>
+                    <button name="action_approve" type="object" string="Approve"
+                            class="btn-primary" invisible="state != 'submitted'"
+                            groups="hr.group_hr_user,planning.group_planning_user"/>
+                    <button name="action_reject" type="object" string="Reject"
+                            invisible="state not in ('draft', 'submitted', 'reopened')"
+                            groups="hr.group_hr_user,planning.group_planning_user"/>
+                    <button name="action_reopen" type="object" string="Reopen"
+                            confirm="Reopen this approved declaration? Its timesheet will be removed."
+                            invisible="state != 'approved' or timesheet_financially_locked"
+                            groups="hr.group_hr_user,planning.group_planning_user"/>
+                    <button name="action_reset_to_draft" type="object" string="Reset to Draft"
+                            invisible="state != 'rejected'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,submitted,approved"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="not timesheet_financially_locked">
+                        This declaration's timesheet is already billed or in a locked
+                        period. It cannot be reopened — file an adjustment instead.
+                    </div>
+                    <group>
+                        <group string="Shift">
+                            <field name="slot_id" readonly="1"/>
+                            <field name="employee_id" readonly="1"/>
+                            <field name="project_id" readonly="1"/>
+                            <field name="task_id" readonly="1"/>
+                            <field name="sale_line_id" readonly="1"/>
+                            <field name="planned_start" readonly="1"/>
+                            <field name="planned_end" readonly="1"/>
+                            <field name="planned_hours" readonly="1"/>
+                        </group>
+                        <group string="Declared work">
+                            <field name="actual_start" readonly="locked"/>
+                            <field name="actual_end" readonly="locked"/>
+                            <field name="break_minutes" readonly="locked"/>
+                            <field name="worked_hours" readonly="1"/>
+                            <field name="timesheet_id" readonly="1"
+                                   invisible="not timesheet_id"/>
+                            <field name="timesheet_financially_locked" invisible="1"/>
+                            <field name="locked" invisible="1"/>
+                            <field name="company_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <group string="Comment">
+                        <field name="comment" nolabel="1" readonly="locked"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="crew_work_declaration_view_search" model="ir.ui.view">
+        <field name="name">crew.work.declaration.search</field>
+        <field name="model">crew.work.declaration</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="project_id"/>
+                <field name="task_id"/>
+                <filter name="to_approve" string="To Approve" domain="[('state', '=', 'submitted')]"/>
+                <filter name="approved" string="Approved" domain="[('state', '=', 'approved')]"/>
+                <separator/>
+                <group>
+                    <filter name="group_employee" string="Crew Member" context="{'group_by': 'employee_id'}"/>
+                    <filter name="group_project" string="Project" context="{'group_by': 'project_id'}"/>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="crew_work_declaration_view_pivot" model="ir.ui.view">
+        <field name="name">crew.work.declaration.pivot</field>
+        <field name="model">crew.work.declaration</field>
+        <field name="arch" type="xml">
+            <pivot string="Crew Hours" sample="1">
+                <field name="employee_id" type="row"/>
+                <field name="state" type="row"/>
+                <field name="date" interval="month" type="col"/>
+                <field name="worked_hours" type="measure" string="All Hours"/>
+                <field name="approved_hours" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="crew_work_declaration_view_graph" model="ir.ui.view">
+        <field name="name">crew.work.declaration.graph</field>
+        <field name="model">crew.work.declaration</field>
+        <field name="arch" type="xml">
+            <graph string="Crew Hours" type="bar" sample="1">
+                <field name="employee_id"/>
+                <field name="state"/>
+                <field name="worked_hours" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_crew_reporting" model="ir.actions.act_window">
+        <field name="name">Crew Hours</field>
+        <field name="res_model">crew.work.declaration</field>
+        <field name="view_mode">pivot,graph,list</field>
+        <field name="search_view_id" ref="crew_work_declaration_view_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No crew hours yet</p>
+            <p>Declared shift hours appear here, pivoted per resource / project
+               over time.</p>
+        </field>
+    </record>
+
+    <record id="action_crew_work_declaration" model="ir.actions.act_window">
+        <field name="name">Work Declarations</field>
+        <field name="res_model">crew.work.declaration</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="crew_work_declaration_view_search"/>
+        <field name="context">{'search_default_to_approve': 1}</field>
+    </record>
+</odoo>

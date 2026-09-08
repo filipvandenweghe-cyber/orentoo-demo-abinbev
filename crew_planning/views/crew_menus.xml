@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_crew_root" name="Crew" sequence="90"
+              web_icon="crew_planning,static/description/icon.png"
+              action="action_crew_availability"
+              groups="hr.group_hr_user,planning.group_planning_user"/>
+
+    <!-- 1) Availability -->
+    <menuitem id="menu_crew_availability_root" name="Availability"
+              parent="menu_crew_root" sequence="10"/>
+    <menuitem id="menu_crew_invitations" name="Invitations"
+              parent="menu_crew_availability_root" action="action_crew_availability_invitation" sequence="10"/>
+    <menuitem id="menu_crew_requests" name="Availability Requests"
+              parent="menu_crew_availability_root" action="action_crew_availability_request" sequence="20"/>
+    <menuitem id="menu_crew_availability" name="Availability Windows"
+              parent="menu_crew_availability_root" action="action_crew_availability" sequence="30"/>
+    <menuitem id="menu_crew_availability_log" name="Availability Log"
+              parent="menu_crew_availability_root" action="action_crew_availability_log" sequence="40"/>
+
+    <!-- 2) Work Declarations -->
+    <menuitem id="menu_crew_work_declaration" name="Work Declarations"
+              parent="menu_crew_root" action="action_crew_work_declaration" sequence="20"/>
+
+    <!-- 3) Reporting -->
+    <menuitem id="menu_crew_reporting_root" name="Reporting"
+              parent="menu_crew_root" sequence="30"/>
+    <menuitem id="menu_crew_reporting_hours" name="Crew Hours"
+              parent="menu_crew_reporting_root" action="action_crew_reporting" sequence="10"/>
+
+    <!-- 4) Configuration -->
+    <menuitem id="menu_crew_config" name="Configuration"
+              parent="menu_crew_root" sequence="90" groups="base.group_system"/>
+    <menuitem id="menu_crew_config_settings" name="Settings"
+              parent="menu_crew_config" sequence="10"
+              action="base_setup.action_general_configuration"/>
+</odoo>

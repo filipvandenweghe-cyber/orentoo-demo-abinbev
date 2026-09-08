@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_rental_availability_report" model="ir.actions.client">
+        <field name="name">Availability Report</field>
+        <field name="tag">rental_availability_matrix</field>
+    </record>
+
+    <!-- Adding a child under "Reporting" turns it into a dropdown, so the
+         parent's own action (action_rental_report) is no longer opened on
+         click.  Re-expose the original report as "Reporting > Reporting" so it
+         stays one click away, alongside the new Availability Report. -->
+    <menuitem id="menu_rental_reporting_report"
+              name="Reporting"
+              parent="sale_renting.menu_rental_reporting"
+              action="sale_renting.action_rental_report"
+              groups="sales_team.group_sale_manager"
+              sequence="10"/>
+
+    <menuitem id="menu_rental_availability_report"
+              name="Availability Report"
+              parent="sale_renting.menu_rental_reporting"
+              action="action_rental_availability_report"
+              groups="sales_team.group_sale_manager"
+              sequence="20"/>
+</odoo>

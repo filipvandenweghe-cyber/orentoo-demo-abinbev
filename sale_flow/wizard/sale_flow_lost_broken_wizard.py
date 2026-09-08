@@ -4,23 +4,21 @@ from odoo.tools import float_compare
 
 
 class SaleFlowLostBrokenWizard(models.TransientModel):
-    """Wizard for handling missing or damaged rental items.
+    """Wizard for classifying missing rental items.
 
     Opened when a return picking is validated and some delivered rental
-    quantities are still unaccounted for.  Works in both scenarios:
+    quantities are still unaccounted for.  Every classified unit is
+    **scrapped** from the rental (at-customer) location; the only difference
+    between the buckets is whether the customer is charged:
 
-      * No backorder: items are definitively missing.
-      * With backorder: items are on a backorder, but the user may
-        already know some are lost or broken.
+      * Fully Broken (charged)   -> fee line + scrap
+      * Lost (charged)           -> fee line + scrap
+      * Lost (not charged)       -> scrap only
 
-    The wizard defaults lost and broken to 0 — the user decides.
-    If the user fills in lost/broken quantities:
-      * Charge lines are created for those items.
-      * The backorder demand is reduced by the lost/broken qty.
-      * Remaining (missing - lost - broken) stays on the backorder.
+    Anything left unclassified stays on the backorder for a later return.
 
-    Constraint: missing >= lost + broken (you cannot have more broken
-    or lost items than those that are missing).
+    Repairable-broken items are handled by the standard Odoo repair flow
+    (they keep their quantity) and are intentionally NOT part of this wizard.
     """
 
     _name = 'sale.flow.lost.broken.wizard'
@@ -43,60 +41,81 @@ class SaleFlowLostBrokenWizard(models.TransientModel):
     )
 
     def action_confirm(self):
-        """Confirm lost/broken quantities and create charge lines.
+        """Validate the classification, then scrap and charge accordingly.
 
-        If any lost/broken qty is specified:
-          1. Create charge lines via the lost/broken service.
-          2. Reduce backorder demand for the processed quantities.
-        If all lost/broken are 0, just close (wait for backorder).
+        If nothing is classified, just close (the missing items stay on the
+        backorder for a later return).
         """
         self.ensure_one()
 
-        # Validate constraints
-        prec = self.env['decimal.precision'].precision_get('Product Unit of Measure')
+        prec = self.env['decimal.precision'].precision_get(
+            'Product Unit of Measure')
         for wiz_line in self.line_ids:
-            total = (wiz_line.lost_qty or 0) + (wiz_line.broken_qty or 0)
-            if float_compare(total, wiz_line.missing_qty, precision_digits=prec) > 0:
+            total = wiz_line._classified_qty()
+            if float_compare(total, wiz_line.missing_qty,
+                             precision_digits=prec) > 0:
                 raise UserError(_(
-                    'Lost + Broken (%(total)s) cannot exceed missing quantity '
-                    '(%(missing)s) for product %(product)s.',
+                    'Classified quantity (%(total)s) cannot exceed the missing '
+                    'quantity (%(missing)s) for product %(product)s.',
                     total=total,
                     missing=wiz_line.missing_qty,
                     product=wiz_line.product_id.display_name,
                 ))
 
-        # Check if user actually marked anything as lost/broken
-        has_lost_broken = any(
-            float_compare(
-                (wl.lost_qty or 0) + (wl.broken_qty or 0), 0,
-                precision_digits=prec,
-            ) > 0
+        has_classified = any(
+            float_compare(wl._classified_qty(), 0, precision_digits=prec) > 0
             for wl in self.line_ids
         )
 
-        if has_lost_broken:
-            # Process lost/broken charges
+        if has_classified:
             self.env['sale.flow.lost.broken.service']._process_lost_broken(self)
-
-            # Reduce backorder demand for processed quantities
             self._reduce_backorder_demand()
 
-        return {'type': 'ir.actions.act_window_close'}
+        return self._return_to_picking()
+
+    def action_cancel(self):
+        """Close the wizard and go back to the return picking.
+
+        The picking has already been validated by this point (the wizard is
+        shown *after* validation), so cancelling only skips the loss
+        classification — the user is returned to the (done) warehouse
+        operation rather than left on an empty screen.
+        """
+        self.ensure_one()
+        return self._return_to_picking()
+
+    def _return_to_picking(self):
+        """Navigate back to the return picking form.
+
+        When this wizard is reached through the backorder confirmation
+        (which re-calls ``button_validate``), closing it does not reload the
+        picking on its own, so we return an explicit action to it.
+        """
+        self.ensure_one()
+        if not self.picking_id:
+            return {'type': 'ir.actions.act_window_close'}
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'stock.picking',
+            'res_id': self.picking_id.id,
+            'view_mode': 'form',
+            'views': [(False, 'form')],
+            'target': 'main',
+        }
 
     def _reduce_backorder_demand(self):
         """Reduce backorder moves for items classified as lost or broken.
 
-        Business rule: if the user marks items as lost/broken while a
-        backorder exists, those items should no longer be expected on the
-        backorder.  The backorder demand is reduced accordingly.  If the
-        entire backorder demand is consumed, the move is cancelled.
+        Classified items are gone (scrapped), so they should no longer be
+        expected on any open backorder for this order.  Fully-consumed moves
+        are cancelled.
         """
         if not self.picking_id or not self.sale_order_id:
             return
 
-        prec = self.env['decimal.precision'].precision_get('Product Unit of Measure')
+        prec = self.env['decimal.precision'].precision_get(
+            'Product Unit of Measure')
 
-        # Find backorder pickings (return pickings not yet done for this order)
         backorder_pickings = self.sale_order_id.picking_ids.filtered(
             lambda p: (
                 p.return_id
@@ -108,14 +127,14 @@ class SaleFlowLostBrokenWizard(models.TransientModel):
             return
 
         for wiz_line in self.line_ids:
-            processed = (wiz_line.lost_qty or 0) + (wiz_line.broken_qty or 0)
-            if float_compare(processed, 0, precision_digits=prec) <= 0:
+            remaining_to_reduce = wiz_line._classified_qty()
+            if float_compare(remaining_to_reduce, 0,
+                             precision_digits=prec) <= 0:
                 continue
 
-            remaining_to_reduce = processed
-
             for picking in backorder_pickings:
-                if float_compare(remaining_to_reduce, 0, precision_digits=prec) <= 0:
+                if float_compare(remaining_to_reduce, 0,
+                                 precision_digits=prec) <= 0:
                     break
 
                 for move in picking.move_ids.filtered(
@@ -128,9 +147,10 @@ class SaleFlowLostBrokenWizard(models.TransientModel):
                     reduce_by = min(remaining_to_reduce, current_demand)
 
                     new_demand = current_demand - reduce_by
-                    if float_compare(new_demand, 0, precision_digits=prec) <= 0:
-                        # Cancel the entire move
-                        move.with_context(skip_sale_flow_sync=True)._action_cancel()
+                    if float_compare(new_demand, 0,
+                                     precision_digits=prec) <= 0:
+                        move.with_context(
+                            skip_sale_flow_sync=True)._action_cancel()
                     else:
                         move.with_context(skip_sale_flow_sync=True).write({
                             'product_uom_qty': new_demand,
@@ -160,49 +180,74 @@ class SaleFlowLostBrokenWizardLine(models.TransientModel):
         readonly=True,
     )
     delivered_qty = fields.Float(
-        string='Delivered Qty',
+        string='Delivered',
         digits='Product Unit of Measure',
         readonly=True,
     )
     returned_qty = fields.Float(
-        string='Returned Qty',
+        string='Returned',
         digits='Product Unit of Measure',
         readonly=True,
     )
     missing_qty = fields.Float(
-        string='Missing Qty',
+        string='Missing',
         digits='Product Unit of Measure',
         readonly=True,
     )
-    lost_qty = fields.Float(
-        string='Lost Qty',
+    fully_broken_qty = fields.Float(
+        string='Fully Broken (charged)',
         digits='Product Unit of Measure',
-        help='Items not returned at all.',
+        help='Returned damaged beyond repair — charged to the customer and '
+             'scrapped.',
     )
-    broken_qty = fields.Float(
-        string='Broken Qty',
+    lost_charged_qty = fields.Float(
+        string='Lost (charged)',
         digits='Product Unit of Measure',
-        help='Items returned damaged.',
+        help='Not returned — charged to the customer and scrapped.',
+    )
+    lost_uncharged_qty = fields.Float(
+        string='Lost (not charged)',
+        digits='Product Unit of Measure',
+        help='Not returned — scrapped without charging the customer.',
+    )
+    still_expected_qty = fields.Float(
+        string='Still Expected',
+        digits='Product Unit of Measure',
+        compute='_compute_still_expected',
+        help='Remaining missing quantity, left on the backorder for a later '
+             'return.',
     )
     broken_lost_unit_price = fields.Float(
-        string='Broken/Lost Unit Price',
+        string='Fee / Unit',
         digits='Product Price',
-        help='Price charged per unit for lost or broken items.',
+        help='Price charged per unit for the charged buckets.',
     )
 
-    @api.onchange('lost_qty', 'broken_qty')
-    def _onchange_quantities(self):
-        """Warn if lost + broken exceeds missing."""
+    def _classified_qty(self):
+        self.ensure_one()
+        return (self.fully_broken_qty or 0.0) \
+            + (self.lost_charged_qty or 0.0) \
+            + (self.lost_uncharged_qty or 0.0)
+
+    @api.depends('missing_qty', 'fully_broken_qty', 'lost_charged_qty',
+                 'lost_uncharged_qty')
+    def _compute_still_expected(self):
         for line in self:
-            total = (line.lost_qty or 0) + (line.broken_qty or 0)
-            if total > line.missing_qty:
+            line.still_expected_qty = max(
+                line.missing_qty - line._classified_qty(), 0.0)
+
+    @api.onchange('fully_broken_qty', 'lost_charged_qty', 'lost_uncharged_qty')
+    def _onchange_quantities(self):
+        for line in self:
+            if line._classified_qty() > line.missing_qty:
                 return {
                     'warning': {
                         'title': _('Quantity Warning'),
                         'message': _(
-                            'Lost + Broken (%(total)s) cannot exceed '
+                            'Classified quantity (%(total)s) cannot exceed the '
                             'missing quantity (%(missing)s).',
-                            total=total, missing=line.missing_qty,
+                            total=line._classified_qty(),
+                            missing=line.missing_qty,
                         ),
                     }
                 }

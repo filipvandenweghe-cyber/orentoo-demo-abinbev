@@ -1,5 +1,9 @@
+import math
+from collections import defaultdict
+
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
+from odoo.tools import float_compare
 
 
 # Hard ceiling on nesting depth -- protects against accidental infinite loops
@@ -194,6 +198,102 @@ class SaleOrderLine(models.Model):
         compute='_compute_all_warehouse_available',
     )
 
+    # ── Rental availability breakdown (pop-up) ──────────────────────────
+    # Period-aware, auditable split shown in the rental availability
+    # pop-up so the availability number explains itself.  (RAV-05, RAV-13)
+    rental_reserved_self = fields.Float(
+        string='Reserved by this order',
+        compute='_compute_rental_breakdown',
+        digits='Product Unit of Measure',
+    )
+    rental_reserved_other = fields.Float(
+        string='Reserved by other orders',
+        compute='_compute_rental_breakdown',
+        digits='Product Unit of Measure',
+    )
+    rental_in_repair = fields.Float(
+        string='In Repair',
+        compute='_compute_rental_breakdown',
+        digits='Product Unit of Measure',
+    )
+    rental_pickable = fields.Float(
+        string='Available to this order',
+        compute='_compute_rental_breakdown',
+        digits='Product Unit of Measure',
+        help='Net quantity available to this order at the picking warehouse.',
+    )
+    rental_total_stock = fields.Float(
+        string='Total Stock',
+        compute='_compute_rental_breakdown',
+        digits='Product Unit of Measure',
+        help='Real units owned right now = current on-hand across the '
+             "warehouse's internal locations plus the internal rental "
+             '(at customer) location. Conserved and stable.',
+    )
+    rental_onhand_json = fields.Json(
+        string='On-hand by Location',
+        compute='_compute_rental_breakdown',
+    )
+    rental_repair_installed = fields.Boolean(
+        string='Repair Module Installed',
+        compute='_compute_rental_breakdown',
+    )
+    rental_show_stock_locations = fields.Boolean(
+        related='company_id.rental_show_stock_locations',
+        string='Show Physical Stock in Availability Pop-up',
+    )
+
+    def get_rental_warehouse_availability(self):
+        """Availability of this line's product for its rental period, per
+        warehouse of the order's company.
+
+        Lazily fetched by the availability pop-up (only when it is opened).
+        Returns ``[]`` — so the pop-up shows no extra section — for
+        non-rental lines, rental sets (sourced per component, not per
+        warehouse), non-storable products, and single-warehouse companies.
+        Fully-empty warehouses are skipped; the order's own warehouse is
+        always included.
+        """
+        self.ensure_one()
+        order = self.order_id
+        product = self.product_id
+        if not product or not self.is_rental or self.is_set:
+            return []
+        if not product.is_storable:
+            return []
+        company = order.company_id or self.env.company
+        warehouses = self.env['stock.warehouse'].search(
+            [('company_id', '=', company.id)])
+        if len(warehouses) < 2:
+            return []
+
+        from_date = getattr(order, 'rental_start_date', None) \
+            or self.start_date or fields.Datetime.now()
+        to_date = getattr(order, 'rental_return_date', None) \
+            or self.return_date or from_date
+        current_wh = order.warehouse_id
+
+        rows = []
+        for wh in warehouses:
+            is_current = wh == current_wh
+            available = product._rental_available_qty(
+                from_date, to_date, warehouse=wh,
+                ignored_soline_id=self.id if is_current else False,
+                company=company,
+            )
+            if not is_current:
+                onhand = product._rental_warehouse_onhand(wh)
+                if available <= 0 and onhand <= 0:
+                    continue  # fully empty here — skip to avoid clutter
+            rows.append({
+                'warehouse_id': wh.id,
+                'name': wh.display_name,
+                'available': available,
+                'is_current': is_current,
+            })
+        rows.sort(key=lambda r: (not r['is_current'], r['name']))
+        return rows
+
     @api.depends('product_id', 'order_id.state', 'product_uom_qty')
     def _compute_all_warehouse_available(self):
         """Compute total stock across all warehouses for this product."""
@@ -299,6 +399,7 @@ class SaleOrderLine(models.Model):
 
             available = self._compute_forecast_availability(
                 line.product_id, line.order_id, wh_id, from_date, to_date,
+                ignored_soline_id=line.id,
             )
             cache[key] = available
             line.free_qty_today = available
@@ -330,81 +431,389 @@ class SaleOrderLine(models.Model):
                 line.free_qty_today = max_free
                 line.virtual_available_at_date = max_virtual
 
-    def _compute_forecast_availability(self, product, order, wh_id,
-                                        from_date, to_date):
-        """Compute availability using the forecast report's move data.
+    def _rental_effective_reserved_qty(self):
+        """Quantity this rental line actually commits over its period.
 
-        Returns the minimum forecasted stock during the rental period,
-        plus the order's own demand (if confirmed) — i.e. "how much
-        CAN this order use".
+        Normally the ordered quantity.  But once the outbound delivery is
+        **closed** (no outgoing move still open) having shipped fewer units
+        than ordered — e.g. picked 2 of 4 with no backorder — the un-shipped
+        remainder will never be picked up, so only what actually reached the
+        customer stays committed.  The remainder is then released to other
+        orders on the SAME warehouse (reservations are warehouse-scoped).
 
-        This matches the forecast report exactly and avoids timing
-        artifacts from the standard rental _get_unavailable_qty.
+        Robust across the flow:
+
+        * multi-step-safe — "what reached the customer" is read from the DONE
+          outgoing moves whose destination is the rental location (only the
+          final ship leg; pick/pack legs target internal locations), so it is
+          never inflated by summing legs;
+        * still fully committed while a delivery is in progress — any open
+          outgoing move (incl. a backorder) means the rest is still coming,
+          so the full ordered quantity is reserved;
+        * transfers-OFF-safe — with rental pickings disabled there are no
+          moves to reconcile, so it falls back to the ordered quantity
+          (native behaviour).
         """
-        # Get all pending moves for this product in this warehouse
-        wh = self.env['stock.warehouse'].browse(wh_id)
-        stock_location = wh.lot_stock_id if wh else False
-        if not stock_location:
-            return product.qty_available
-
-        # Start with current physical stock (save original for capping later)
-        current_stock_original = product.with_context(warehouse_id=wh_id).qty_available
-        current_stock = current_stock_original
-
-        # Collect all pending moves (not done, not cancel) sorted by date
-        domain = [
-            ('product_id', '=', product.id),
-            ('state', 'not in', ('done', 'cancel')),
-        ]
-        # Outgoing moves from this warehouse
-        out_moves = self.env['stock.move'].search(
-            domain + [('location_id', 'child_of', stock_location.id)],
-            order='date asc',
+        self.ensure_one()
+        ordered = self.product_uom_qty
+        if not self.is_rental or not self._are_rental_pickings_enabled():
+            return ordered
+        outgoing = self.move_ids.filtered(
+            lambda m: m.picking_id.picking_type_code == 'outgoing')
+        if not outgoing:
+            return ordered
+        # A delivery still in progress (any non-final/open outgoing move,
+        # including a backorder) keeps the full ordered quantity committed.
+        if any(m.state not in ('done', 'cancel') for m in outgoing):
+            return ordered
+        rental_loc = self.company_id.rental_loc_id
+        if not rental_loc:
+            return self.qty_delivered
+        # Delivery closed: what physically reached the rental location, minus
+        # units scrapped from it (lost/broken write-offs).  Scrapped units are
+        # gone, so they no longer tie up stock.  Returns to the warehouse are
+        # NOT subtracted here — the native qty_returned timing block handles
+        # those, so there is no double counting.
+        delivered_out = sum(
+            m.quantity for m in outgoing
+            if m.state == 'done' and m.location_dest_id == rental_loc
         )
-        # Incoming moves to this warehouse
-        in_moves = self.env['stock.move'].search(
-            domain + [('location_dest_id', 'child_of', stock_location.id)],
-            order='date asc',
+        return max(delivered_out - self._rental_scrapped_qty(), 0.0)
+
+    def _rental_scrapped_qty(self):
+        """Quantity of this line's units scrapped FROM the rental
+        (at-customer) location — the lost/broken write-offs.
+
+        Such units are gone: no longer out on rent and no longer expected
+        back.  Used both to release the reservation and to decide when an
+        order is fully returned (returned + scrapped == delivered).
+        """
+        self.ensure_one()
+        rental_loc = self.company_id.rental_loc_id
+        if not rental_loc:
+            return 0.0
+        return sum(
+            m.quantity for m in self.move_ids
+            if m.state == 'done' and m.scrap_id
+            and m.location_id == rental_loc
         )
 
-        # Build timeline of stock changes during the rental period
-        # Each event: (date, delta)
-        events = []
-        own_out_demand = 0
-        for m in out_moves:
-            if m.date and m.date >= from_date and m.date <= to_date:
-                events.append((m.date, -m.product_uom_qty))
-            elif m.date and m.date < from_date:
-                # Already scheduled before period — stock reduced
-                current_stock -= m.product_uom_qty
-            # Track own order's outgoing demand
-            if m.picking_id and m.picking_id.sale_id == order:
-                own_out_demand += m.product_uom_qty
+    def _rental_effective_return_date(self):
+        """Datetime by which this line's units are actually expected back in
+        the warehouse — the scheduled date of the **first inbound (return)
+        operation** that leaves the customer/rental location, when such a
+        pending operation exists; otherwise the order's declared
+        ``return_date``.
 
-        for m in in_moves:
-            if m.date and m.date >= from_date and m.date <= to_date:
-                events.append((m.date, +m.product_uom_qty))
-            elif m.date and m.date < from_date:
-                current_stock += m.product_uom_qty
+        Grounding the return on the operation (not the declared date) is what
+        keeps availability honest, both ways:
 
-        # Walk the timeline and find the minimum stock level
-        events.sort(key=lambda e: e[0])
-        min_stock = current_stock
-        running = current_stock
-        for date, delta in events:
-            running += delta
-            if running < min_stock:
-                min_stock = running
+        * a unit out at a customer whose return receipt is scheduled *after*
+          the order's stated return_date stays unavailable until that receipt
+          actually brings it back (real case S00338: order says 09-05, return
+          receipt scheduled 09-11).  An overdue pending return (scheduled in
+          the past but not yet done) still holds the units, so the pending date
+          is floored at ``now``.
+        * a unit whose return has already **completed** is released on the
+          ACTUAL return operation date, even when that is *earlier* than the
+          declared return_date (real case S00705: returned 09-03 while the
+          order still says 09-04, so a later window must not treat it as out).
 
-        # For confirmed orders: add back own outgoing demand.
-        # The forecast includes this order's moves as outgoing (reducing
-        # stock).  But "available for this order" means the stock this
-        # order can draw from — including what it already claimed.
-        if order.state == 'sale':
-            min_stock += own_out_demand
+        Transfers-OFF-safe: with rental pickings disabled there are no return
+        moves, so it falls back to the declared ``return_date`` (native
+        behaviour).
+        """
+        self.ensure_one()
+        declared = self.return_date
+        if not self.is_rental or not self._are_rental_pickings_enabled():
+            return declared
+        rental_loc = self.company_id.rental_loc_id
+        if not rental_loc:
+            return declared
+        # Return legs = moves leaving the rental (at-customer) location back
+        # into the warehouse.
+        return_moves = self.move_ids.filtered(
+            lambda m: m.state != 'cancel' and m.location_id == rental_loc)
+        pending = return_moves.filtered(lambda m: m.state != 'done')
+        if pending:
+            op_date = min(pending.mapped('date'))
+            if op_date:
+                # Overdue but not done → units still out at least until now.
+                now = fields.Datetime.now()
+                return op_date if op_date >= now else now
+            return declared
+        done = return_moves.filtered(lambda m: m.state == 'done')
+        if done:
+            # Units are physically back: release on the ACTUAL return operation
+            # date, even when it is earlier than the declared return_date (real
+            # case S00705 — returned a day before its declared date, so it must
+            # not stay reserved for a later window that the declared date would
+            # still overlap).
+            op_date = max(done.mapped('date'))
+            if op_date:
+                return op_date
+        return declared
 
-        # Cap at physical stock — reuse the value fetched at method start
-        return min(max(min_stock, 0), current_stock_original)
+    def _rental_effective_pickup_date(self):
+        """Datetime from which this line's units are actually committed at the
+        warehouse — the scheduled date of the **first outbound (pickup /
+        delivery) operation** that pulls the goods toward the customer, when it
+        is earlier than the order's declared ``reservation_begin``; otherwise
+        the declared ``reservation_begin``.
+
+        Grounding the pickup on the operation (not the declared date) keeps
+        availability honest when a delivery picking is scheduled before the
+        rental formally starts: the units physically leave stock on the picking
+        date and are no longer rentable to others from then on — even when the
+        order's declared start is later (real case S00708: rental starts 09-08
+        but the delivery picking is scheduled 09-07).
+
+        Symmetric to ``_rental_effective_return_date``: the return anchors on
+        the first leg that *leaves* the rental location; the pickup anchors on
+        the first leg that *heads out* of the warehouse toward it.  We take the
+        earlier of the operation date and the declared start, so an
+        early-scheduled picking commits the unit sooner while a normal or late
+        picking never releases it before the declared start.
+
+        Transfers-OFF-safe: with rental pickings disabled there are no outbound
+        moves, so it falls back to the declared ``reservation_begin`` (native
+        behaviour).
+        """
+        self.ensure_one()
+        declared = self.reservation_begin
+        if not self.is_rental or not self._are_rental_pickings_enabled():
+            return declared
+        rental_loc = self.company_id.rental_loc_id
+        if not rental_loc:
+            return declared
+        # Outbound (pickup/delivery) legs head OUT of the warehouse toward the
+        # customer.  Exclude the return legs — the first leaves the rental
+        # location (``location_id == rental_loc``) and the receipt is an
+        # incoming-type picking — so only the delivery chain is considered.
+        # Anchoring on the earliest such leg matches the return side, which
+        # anchors on the first leg leaving the customer (not the final putaway).
+        pending_pickup = self.move_ids.filtered(
+            lambda m: m.state not in ('done', 'cancel')
+            and m.picking_id.picking_type_code != 'incoming'
+            and m.location_id != rental_loc)
+        if not pending_pickup:
+            return declared
+        op_date = min(pending_pickup.mapped('date'))
+        if not op_date:
+            return declared
+        if not declared:
+            return op_date
+        return min(op_date, declared)
+
+    def _get_rented_quantities(self, mandatory_dates):
+        """Override of ``sale_stock_renting``: reserve each line's EFFECTIVE
+        committed quantity instead of the raw ordered quantity, so a rental
+        whose delivery is closed short (no backorder) releases the un-shipped
+        remainder to other orders on the same warehouse; commit the units from
+        the **pickup operation** date rather than the order's declared
+        ``reservation_begin`` (see ``_rental_effective_pickup_date``), so a unit
+        whose delivery picking is scheduled before the rental formally starts is
+        already unavailable to others; and release the commitment on the
+        **return operation** date rather than the order's declared
+        ``return_date`` (see ``_rental_effective_return_date``), so a unit still
+        out at a customer whose return is scheduled later stays reserved until
+        it is physically back.
+
+        Identical to native otherwise — the early pickup / early return
+        timing adjustments are unchanged.  (See
+        ``_rental_effective_reserved_qty``.)
+        """
+        if not self:
+            return defaultdict(float), sorted(set(mandatory_dates))
+        self.product_id.ensure_one()
+        rented_quantities = defaultdict(float)
+        now = fields.Datetime.now()
+        for so_line in self.filtered('is_rental'):
+            effective = so_line._rental_effective_reserved_qty()
+            eff_pickup = so_line._rental_effective_pickup_date() \
+                or so_line.reservation_begin
+            eff_return = so_line._rental_effective_return_date() \
+                or so_line.return_date
+            rented_quantities[eff_pickup] += effective
+            rented_quantities[eff_return] -= effective
+            # Early pickups: units already out before the expected pickup.
+            if eff_pickup > now and so_line.qty_delivered > 0:
+                rented_quantities[now] += so_line.qty_delivered
+                rented_quantities[eff_pickup] -= \
+                    so_line.qty_delivered
+            # Early returns: units already back before the expected return.
+            if eff_return > now and so_line.qty_returned > 0:
+                rented_quantities[now] -= so_line.qty_returned
+                rented_quantities[eff_return] += so_line.qty_returned
+        key_dates = sorted(
+            set(rented_quantities.keys()) | set(mandatory_dates))
+        return rented_quantities, key_dates
+
+    def _rental_physical_total(self, product, order, wh):
+        """Real units owned right now for this warehouse pool.
+
+        Thin wrapper around the canonical, order-independent
+        ``product.product._rental_physical_total`` (single source of truth).
+        The order only supplies the company that owns the rental location.
+        """
+        return product._rental_physical_total(
+            warehouse=wh,
+            company=order.company_id if order else False,
+        )
+
+    def _compute_forecast_availability(self, product, order, wh_id,
+                                        from_date, to_date,
+                                        ignored_soline_id=False):
+        """Availability to THIS order for the rental period (Option A):
+
+            Available = max(Total physical stock
+                            − reserved by OTHER orders (period-aware)
+                            − in repair, 0)
+
+        Delegates to the canonical ``product.product._rental_available_qty``
+        so the sale order, the rental-set component check and the
+        multi-channel rental flow all share ONE definition of availability.
+        Passing ``ignored_soline_id`` keeps an order from subtracting its own
+        reserved/picked units from itself.
+        """
+        wh = order.warehouse_id if order else self.env['stock.warehouse'].browse(wh_id)
+        return product._rental_available_qty(
+            from_date, to_date, warehouse=wh,
+            ignored_soline_id=ignored_soline_id,
+            company=order.company_id if order else False,
+        )
+
+    @api.depends('product_id', 'product_uom_qty', 'is_rental',
+                 'reservation_begin', 'return_date', 'state',
+                 'free_qty_today')
+    def _compute_rental_breakdown(self):
+        """Compute the auditable availability breakdown for the pop-up:
+        per-internal-location on-hand, reserved by this order, reserved by
+        other orders (period-aware), in-repair, and the net pickable figure.
+        (RAV-05, RAV-13)
+        """
+        repair_installed = 'repair.order' in self.env
+        for line in self:
+            line.rental_reserved_self = 0.0
+            line.rental_reserved_other = 0.0
+            line.rental_in_repair = 0.0
+            line.rental_pickable = 0.0
+            line.rental_total_stock = 0.0
+            line.rental_onhand_json = False
+            line.rental_repair_installed = repair_installed
+
+            product = line.product_id
+            order = line.order_id
+            if not product or not product.is_storable or not line.is_rental:
+                continue
+            if not getattr(order, 'is_rental_order', False):
+                continue
+
+            wh = order.warehouse_id
+            wh_id = wh.id if wh else False
+            from_date = getattr(order, 'rental_start_date', None) or \
+                line.start_date or fields.Datetime.now()
+            to_date = getattr(order, 'rental_return_date', None) or \
+                line.return_date or from_date
+
+            # Reserved by OTHER orders — period-aware rental commitment,
+            # excluding this line (same basis as native availability).
+            reserved_other = 0.0
+            if product.rent_ok and hasattr(product, '_get_unavailable_qty'):
+                reserved_other = product._get_unavailable_qty(
+                    from_date, to_date,
+                    ignored_soline_id=line.id, warehouse_id=wh_id,
+                )
+
+            # Reserved by THIS order — its own outgoing rental moves for
+            # this product (only meaningful once confirmed / reserved).
+            reserved_self = 0.0
+            if order.state == 'sale':
+                own_moves = order.picking_ids.move_ids.filtered(
+                    lambda m: m.product_id == product
+                    and m.picking_id.picking_type_code == 'outgoing'
+                    and m.state not in ('done', 'cancel')
+                )
+                reserved_self = sum(own_moves.mapped('product_uom_qty'))
+
+            in_repair = product._get_repair_unavailable_qty(
+                from_date, to_date, warehouse_id=wh_id,
+            )
+
+            line.rental_reserved_self = reserved_self
+            line.rental_reserved_other = reserved_other
+            line.rental_in_repair = in_repair
+            # free_qty_today is already repair-aware (see forecast) and is
+            # the time-based "available to this order" figure.
+            line.rental_pickable = line.free_qty_today
+
+            # Physical stock is a SEPARATE, point-in-time lens (Option A):
+            # Total stock = real units owned = current on-hand across all the
+            # warehouse's internal locations PLUS the internal rental
+            # ("at customer") location.  It is conserved — picking just moves
+            # a unit from Stock to At customer, Total unchanged — so it is a
+            # stable anchor and the partition always sums to it (no phantom).
+            # It is intentionally NOT derived from the time-based forecast.
+            partition, total = self._rental_stock_partition(
+                product, order, wh, in_repair)
+            line.rental_total_stock = total
+            line.rental_onhand_json = partition or False
+
+    def _rental_stock_partition(self, product, order, wh, in_repair):
+        """Return ``(buckets, total)`` — the current physical distribution of
+        this product and its real total owned.
+
+        Buckets cover the warehouse internal locations (Input/QC/Stock…),
+        **At customer** (the internal rental location) and **In repair**
+        (carved out of the stock it physically sits in).  ``total`` is the sum
+        of current on-hand across those locations, so the buckets always sum
+        to Total with no reconciling remainder.  (RAV-14, Option A)
+        """
+        rounding = product.uom_id.rounding or 0.01
+        wh_locs = self.env['stock.location']
+        if wh and wh.view_location_id:
+            wh_locs = self.env['stock.location'].search([
+                ('id', 'child_of', wh.view_location_id.id),
+                ('usage', 'in', ('internal', 'transit')),
+            ])
+        rental_loc = order.company_id.rental_loc_id
+        loc_ids = list(wh_locs.ids)
+        if rental_loc:
+            loc_ids.append(rental_loc.id)
+
+        onhand = {}
+        for loc, qty in self.env['stock.quant']._read_group(
+            [('product_id', '=', product.id),
+             ('location_id', 'in', loc_ids)],
+            ['location_id'], ['quantity:sum'],
+        ):
+            onhand[loc.id] = qty
+
+        # Total owned = every unit sitting in one of these internal locations.
+        total = sum(onhand.values())
+
+        buckets = []
+        # In repair is carved out of the warehouse stock it physically sits in
+        # so it shows as its own bucket without inflating the location count.
+        repair_left = in_repair
+        for loc in wh_locs:
+            qty = onhand.get(loc.id, 0.0)
+            carve = min(max(qty, 0.0), repair_left)
+            qty -= carve
+            repair_left -= carve
+            if float_compare(qty, 0.0, precision_rounding=rounding) > 0:
+                buckets.append({'location': loc.display_name, 'qty': qty})
+
+        if float_compare(in_repair, 0.0, precision_rounding=rounding) > 0:
+            buckets.append({'location': _('In repair'), 'qty': in_repair})
+
+        if rental_loc:
+            at_customer = onhand.get(rental_loc.id, 0.0)
+            if float_compare(at_customer, 0.0, precision_rounding=rounding) > 0:
+                buckets.append({'location': _('At customer'),
+                                'qty': at_customer})
+
+        return buckets, total
 
     # -- Set composition permission check ----------------------------------------
 
@@ -597,24 +1006,16 @@ class SaleOrderLine(models.Model):
                 if other_lines:
                     other_lines.write(vals)
 
-                # For components, ignore price_unit change and keep it at 0
+                # For components, ignore price_unit change and keep it at 0.
                 comp_vals = {k: v for k, v in vals.items()
                              if k not in ('price_unit', 'technical_price_unit')}
                 comp_vals['price_unit'] = 0.0
                 comp_vals['technical_price_unit'] = 0.0
                 super(SaleOrderLine, set_components).write(comp_vals)
 
-                # Notify via chatter
-                orders = set_components.mapped('order_id')
-                for order in orders:
-                    order.message_post(
-                        body=_(
-                            "A component price change was ignored: component "
-                            "lines in a Rental Set do not carry a price. The "
-                            "set price is defined on the parent set line only."
-                        ),
-                        message_type='notification',
-                    )
+                # The price change is silently ignored (component lines in a
+                # Rental Set never carry a price — the set price lives on the
+                # parent line only).  No chatter notification is posted.
                 return True
 
         # Capture set-parent lines before mutation
@@ -1161,10 +1562,11 @@ class SaleOrderLine(models.Model):
                 sets_from_product = available / total_qty if total_qty else 0.0
                 min_sets = min(min_sets, sets_from_product)
 
-            line.set_availability = max(
-                min_sets if min_sets != float('inf') else 0.0,
-                0.0,
-            )
+            # Whole sets only: a partial set cannot be fulfilled.  (RAV-08)
+            line.set_availability = float(max(
+                math.floor(min_sets) if min_sets != float('inf') else 0,
+                0,
+            ))
 
     def _collect_leaf_availability_data(self, set_line, parent_multiplier, result):
         """Recursively collect all leaf components under ``set_line``.
@@ -1199,47 +1601,22 @@ class SaleOrderLine(models.Model):
 
     def _get_component_available_qty(self, product, from_date, to_date,
                                       warehouse_id, ignored_soline_id=False):
-        """Return available quantity of ``product`` for the rental period.
+        """Available quantity of ``product`` for the rental period, using the
+        same Option-A formula as line availability:
 
-        For rental products, computes the total rentable stock and subtracts
-        the rental demand from other orders that overlap with the requested
-        period.
+            max(Total physical stock − reserved by OTHER orders − in repair, 0)
 
-        For current/past dates: uses qty_available (on-hand).
-        For future dates: uses total on-hand stock (ignoring current
-        reservations) because today's reservations are for orders that
-        will be completed before the future rental starts.  Only rental
-        demand that actually overlaps the requested period is subtracted
-        via _get_unavailable_qty.
+        (See ``_compute_forecast_availability``.)  Keeps set-component
+        availability consistent with standalone-line availability.
         """
         if product.rent_ok and hasattr(product, '_get_unavailable_qty'):
-            # Use virtual_available (forecast) plus items currently rented
-            # out that will return before from_date.  This gives a consistent
-            # availability figure for both draft and confirmed orders,
-            # regardless of whether from_date is past/current/future.
-            #
-            # The standard current-date branch (qty_available) is too low
-            # for confirmed orders because their own move reservations
-            # reduce on-hand.  Using virtual_available + rental returns
-            # avoids this — the caller adds back reserved_by_this_order
-            # separately for confirmed orders.
-            rentable = product.with_context(
-                from_date=False, to_date=from_date,
-                warehouse_id=warehouse_id,
-            ).virtual_available
-            rentable += product._get_virtual_unavailable_qty_in_rent(
-                pivot_date=from_date,
+            wh = (self.env['stock.warehouse'].browse(warehouse_id)
+                  if warehouse_id else self.order_id.warehouse_id)
+            return product._rental_available_qty(
+                from_date, to_date, warehouse=wh,
                 ignored_soline_id=ignored_soline_id,
-                warehouse_id=warehouse_id,
+                company=self.order_id.company_id,
             )
-
-            # Subtract rental demand from other orders overlapping this period
-            unavailable = product._get_unavailable_qty(
-                from_date, to_date,
-                ignored_soline_id=ignored_soline_id,
-                warehouse_id=warehouse_id,
-            )
-            return max(rentable - unavailable, 0.0)
         else:
             # Non-rental product: standard stock availability
             return product.with_context(
