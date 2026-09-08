@@ -106,6 +106,44 @@
         </field>
     </record>
 
+    <record id="crew_work_declaration_view_pivot" model="ir.ui.view">
+        <field name="name">crew.work.declaration.pivot</field>
+        <field name="model">crew.work.declaration</field>
+        <field name="arch" type="xml">
+            <pivot string="Crew Hours" sample="1">
+                <field name="resource_id" type="row"/>
+                <field name="project_id" type="row"/>
+                <field name="date" interval="month" type="col"/>
+                <field name="worked_hours" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="crew_work_declaration_view_graph" model="ir.ui.view">
+        <field name="name">crew.work.declaration.graph</field>
+        <field name="model">crew.work.declaration</field>
+        <field name="arch" type="xml">
+            <graph string="Crew Hours" type="bar" sample="1">
+                <field name="date" interval="month"/>
+                <field name="resource_id"/>
+                <field name="worked_hours" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_crew_reporting" model="ir.actions.act_window">
+        <field name="name">Crew Hours</field>
+        <field name="res_model">crew.work.declaration</field>
+        <field name="view_mode">pivot,graph,list</field>
+        <field name="search_view_id" ref="crew_work_declaration_view_search"/>
+        <field name="context">{'search_default_group_state': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No crew hours yet</p>
+            <p>Declared shift hours appear here, pivoted per resource / project
+               over time.</p>
+        </field>
+    </record>
+
     <record id="action_crew_work_declaration" model="ir.actions.act_window">
         <field name="name">Work Declarations</field>
         <field name="res_model">crew.work.declaration</field>

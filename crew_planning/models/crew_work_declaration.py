@@ -40,6 +40,10 @@ class CrewWorkDeclaration(models.Model):
     actual_end = fields.Datetime(tracking=True)
     break_minutes = fields.Integer(string="Break (min)", default=0, tracking=True)
     worked_hours = fields.Float(compute='_compute_worked_hours', store=True, tracking=True)
+    date = fields.Date(
+        compute='_compute_date', store=True, string="Work Date",
+        help="Day the shift took place (actual start, else planned start); "
+             "used as the time axis in reporting.")
     comment = fields.Text()
 
     # --- lifecycle --------------------------------------------------------
@@ -71,6 +75,12 @@ class CrewWorkDeclaration(models.Model):
                 vals['name'] = self.env['ir.sequence'].next_by_code(
                     'crew.work.declaration') or _('New')
         return super().create(vals_list)
+
+    @api.depends('actual_start', 'planned_start')
+    def _compute_date(self):
+        for wd in self:
+            dt = wd.actual_start or wd.planned_start
+            wd.date = dt.date() if dt else False
 
     @api.depends('actual_start', 'actual_end', 'break_minutes')
     def _compute_worked_hours(self):
