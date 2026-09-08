@@ -341,11 +341,14 @@ class TestCrewRequests(TransactionCase):
             wiz.action_invite_selected()
 
     def test_22_report_cannot_work_unassigns_and_notifies(self):
+        # Company policy allows crew to unassign themselves.
+        self.env.company.planning_employee_unavailabilities = 'unassign'
         req = self._make_request(role_id=self.role_sound.id)
         slot = self.env['planning.slot'].create({
             'resource_id': self.emp_adv.resource_id.id,
             'crew_request_id': req.id,
             'start_datetime': self.d1, 'end_datetime': self.d2})
+        self.assertTrue(slot.allow_self_unassign)
         before = len(req.message_ids)
         slot.action_crew_report_cannot_work('Sick')
         self.assertTrue(slot.crew_unavailable_reported)
@@ -354,6 +357,25 @@ class TestCrewRequests(TransactionCase):
         self.assertTrue(slot.exists(), "The shift itself must NOT be deleted.")
         self.assertGreater(len(req.message_ids), before,
                            "The planner must be notified via the request chatter.")
+
+    def test_26_report_cannot_work_switch_policy_keeps_assignment(self):
+        # Company policy is "switch" (the Odoo default): crew may NOT self
+        # unassign. Reporting still flags + notifies, but keeps the assignment.
+        self.env.company.planning_employee_unavailabilities = 'switch'
+        req = self._make_request(role_id=self.role_sound.id)
+        slot = self.env['planning.slot'].create({
+            'resource_id': self.emp_adv.resource_id.id,
+            'crew_request_id': req.id,
+            'start_datetime': self.d1, 'end_datetime': self.d2})
+        self.assertFalse(slot.allow_self_unassign)
+        before = len(req.message_ids)
+        slot.action_crew_report_cannot_work('Sick')
+        self.assertTrue(slot.crew_unavailable_reported)
+        self.assertEqual(slot.crew_unavailable_reason, 'Sick')
+        self.assertEqual(slot.resource_id, self.emp_adv.resource_id,
+                         "Assignment must be kept under the 'switch' policy.")
+        self.assertGreater(len(req.message_ids), before,
+                           "The planner must still be notified.")
 
     def test_17_send_whatsapp_after_email(self):
         from odoo.exceptions import UserError

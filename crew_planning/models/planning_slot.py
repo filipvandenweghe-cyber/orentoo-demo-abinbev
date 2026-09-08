@@ -22,25 +22,47 @@ class PlanningSlot(models.Model):
              "shift. The assignment is kept until the planner handles it.")
     crew_unavailable_reason = fields.Char(string="Reason", copy=False)
 
+    def _crew_may_self_unassign(self):
+        """Whether reporting "cannot work" may self-unassign the crew member.
+        Honours the standard Planning policy (Settings > Planning >
+        "Employee Unavailabilities" == 'unassign') and the same deadline/past
+        guards Odoo uses for its native self-unassign action."""
+        self.ensure_one()
+        return bool(self.allow_self_unassign
+                    and not self.is_unassign_deadline_passed
+                    and not self.is_past)
+
     def action_crew_report_cannot_work(self, reason=False):
-        """Crew reports they can no longer perform this shift: unassign them so
-        the shift becomes an OPEN shift (never deleted), flag it with the reason,
-        and notify the planner. The shift and its task/period are preserved for
-        reassignment."""
+        """Crew reports they can no longer perform this shift. Always flag it
+        with the reason and notify the planner (never delete the shift). Whether
+        the crew member is unassigned (making it an OPEN shift) depends on the
+        company's Planning policy: only self-unassign when the standard
+        'Unassign themselves from shifts' policy is active and the deadline has
+        not passed — otherwise the assignment is kept for the planner to handle
+        (reassign / arrange a switch)."""
         for slot in self:
             emp_name = slot.employee_id.display_name or _("Crew member")
             slot.crew_unavailable_reported = True
             if reason:
                 slot.crew_unavailable_reason = reason
-            body = _(
-                "%(emp)s can no longer work the shift %(start)s → %(end)s; it has "
-                "been unassigned and is now an open shift.",
-                emp=emp_name, start=slot.start_datetime, end=slot.end_datetime)
+            may_unassign = slot._crew_may_self_unassign()
+            if may_unassign:
+                body = _(
+                    "%(emp)s can no longer work the shift %(start)s → %(end)s; it "
+                    "has been unassigned and is now an open shift.",
+                    emp=emp_name, start=slot.start_datetime, end=slot.end_datetime)
+            else:
+                body = _(
+                    "%(emp)s reported they can no longer work the shift "
+                    "%(start)s → %(end)s. The assignment has been kept — please "
+                    "reassign it or arrange a switch.",
+                    emp=emp_name, start=slot.start_datetime, end=slot.end_datetime)
             if reason:
                 body += _(" Reason: %s", reason)
             if slot.crew_request_id:
                 slot.crew_request_id.message_post(body=body)
-            slot.resource_id = False  # unassign -> open shift
+            if may_unassign:
+                slot.resource_id = False  # unassign -> open shift
         return True
 
     @api.onchange('task_id')
