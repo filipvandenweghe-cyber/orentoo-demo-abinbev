@@ -66,6 +66,7 @@
                             <field name="date_start"/>
                             <field name="date_end"/>
                             <field name="headcount_needed"/>
+                            <field name="indicative_hours"/>
                             <field name="company_id" groups="base.group_multi_company"/>
                         </group>
                     </group>

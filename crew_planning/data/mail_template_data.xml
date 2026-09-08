@@ -20,6 +20,9 @@
                             <t t-out="object.request_id.project_id.name or ''"/></li>
                         <li t-if="object.request_id.task_id">Task:
                             <t t-out="object.request_id.task_id.name or ''"/></li>
+                        <li t-if="object.request_id.indicative_hours">Indicative effort:
+                            ~<t t-out="'%.1f' % object.request_id.indicative_hours"/> h
+                            <span style="color:#888;">(indication only)</span></li>
                     </ul>
                     <p style="padding:8px;background:#fff3cd;border:1px solid #ffe69c;border-radius:4px;">
                         <strong>This is only a request for availability. You have not yet been

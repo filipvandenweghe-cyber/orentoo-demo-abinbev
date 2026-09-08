@@ -28,7 +28,7 @@ work-declaration → timesheet flow.
     'author': "Orentoo",
     'website': "https://www.orentoo.com",
     'category': 'Human Resources/Planning',
-    'version': '19.0.2.1.0',
+    'version': '19.0.2.2.0',
     'license': 'LGPL-3',
     'depends': [
         'hr',

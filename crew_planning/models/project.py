@@ -39,5 +39,6 @@ class ProjectTask(models.Model):
                 'default_project_id': self.project_id.id,
                 'default_date_start': self.planned_date_begin,
                 'default_date_end': self.date_deadline,
+                'default_indicative_hours': self.allocated_hours,
             },
         }

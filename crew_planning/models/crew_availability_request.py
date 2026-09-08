@@ -29,6 +29,12 @@ class CrewAvailabilityRequest(models.Model):
     date_end = fields.Datetime(required=True, tracking=True)
     role_id = fields.Many2one('planning.role', string="Planning Role")
     headcount_needed = fields.Integer(string="Headcount Needed", default=1)
+    indicative_hours = fields.Float(
+        string="Indicative Effort (h)",
+        help="Rough effort shown to crew so they can judge whether to make "
+             "themselves available. Prefilled from the task when applicable. "
+             "This is only an indication — the actual assigned hours live on the "
+             "Planning shift / timesheet, not here.")
     company_id = fields.Many2one(
         'res.company', default=lambda self: self.env.company, required=True)
 
@@ -85,6 +91,8 @@ class CrewAvailabilityRequest(models.Model):
                 self.date_start = self.task_id.planned_date_begin
             if self.task_id.date_deadline:
                 self.date_end = self.task_id.date_deadline
+            if self.task_id.allocated_hours:
+                self.indicative_hours = self.task_id.allocated_hours
 
     @api.model_create_multi
     def create(self, vals_list):
