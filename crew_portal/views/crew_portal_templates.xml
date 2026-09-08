@@ -133,22 +133,21 @@
         <t t-call="portal.portal_layout">
             <div class="container o_portal">
                 <h3 class="mt-3">My Planning</h3>
-                <p t-if="not slots" class="text-muted">No upcoming shifts.</p>
-                <t t-foreach="slots" t-as="slot">
+                <p t-if="not slot_rows" class="text-muted">No upcoming shifts.</p>
+                <t t-foreach="slot_rows" t-as="slot">
                     <div class="card mb-2"><div class="card-body">
                         <div>
-                            <strong><span t-field="slot.start_datetime"/> →
-                                <span t-field="slot.end_datetime"/></strong>
+                            <strong><t t-out="slot['start']"/> → <t t-out="slot['end']"/></strong>
                         </div>
-                        <div t-if="slot.project_id">Project: <span t-out="slot.project_id.name"/></div>
-                        <div t-if="slot.task_id">Task: <span t-out="slot.task_id.name"/></div>
-                        <div t-if="slot.role_id">Role: <span t-out="slot.role_id.name"/></div>
-                        <div t-if="slot.crew_unavailable_reported"
+                        <div t-if="slot['project']">Project: <t t-out="slot['project']"/></div>
+                        <div t-if="slot['task']">Task: <t t-out="slot['task']"/></div>
+                        <div t-if="slot['role']">Role: <t t-out="slot['role']"/></div>
+                        <div t-if="slot['reported']"
                              class="alert alert-warning mt-2 mb-0 py-1">
                             You reported you can no longer work this shift. The planner
                             has been notified.
                         </div>
-                        <form t-else="" t-attf-action="/my/planning/{{slot.id}}/cannot-work"
+                        <form t-else="" t-attf-action="/my/planning/{{slot['id']}}/cannot-work"
                               method="post" class="mt-2">
                             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                             <input type="text" name="reason" placeholder="Reason (optional)"

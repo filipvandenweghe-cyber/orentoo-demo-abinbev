@@ -146,10 +146,19 @@ class CrewPortal(CustomerPortal):
             ('resource_id', '=', emp.resource_id.id),
             ('end_datetime', '>=', fields.Datetime.now()),
         ], order='start_datetime') if emp.resource_id else Slot.browse()
+        slot_rows = [{
+            'id': s.id,
+            'start': self._fmt_dt(s.start_datetime),
+            'end': self._fmt_dt(s.end_datetime),
+            'project': s.project_id.display_name,
+            'task': s.task_id.display_name,
+            'role': s.role_id.display_name,
+            'reported': s.crew_unavailable_reported,
+        } for s in slots]
         return request.render('crew_portal.portal_my_planning', {
             'page_name': 'crew_planning',
             'employee': emp,
-            'slots': slots,
+            'slot_rows': slot_rows,
         })
 
     @http.route(['/my/planning/<int:slot_id>/cannot-work'], type='http', auth='user',
