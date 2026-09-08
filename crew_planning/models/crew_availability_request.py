@@ -161,13 +161,18 @@ class CrewAvailabilityRequest(models.Model):
         self.ensure_one()
         if self.state == 'draft':
             self.action_open()
+        # Create a PERSISTED wizard with real candidate lines so the per-line
+        # selection is stored reliably (a brand-new unsaved transient record
+        # can lose the toggle on button-save, esp. with a cached view).
+        wizard = self.env['crew.invite.wizard'].create({'request_id': self.id})
+        wizard.action_refresh()
         return {
             'type': 'ir.actions.act_window',
             'name': _("Find & Invite Candidates"),
             'res_model': 'crew.invite.wizard',
+            'res_id': wizard.id,
             'view_mode': 'form',
             'target': 'new',
-            'context': {'default_request_id': self.id},
         }
 
     def action_view_invitations(self):

@@ -42,6 +42,7 @@ class CrewInviteWizard(models.TransientModel):
 
     def action_refresh(self):
         self.ensure_one()
+        self.next_wave = max(self.request_id.invitation_ids.mapped('wave'), default=0) + 1
         self.line_ids = [(5, 0, 0)] + self._build_lines(self.request_id, self.exclude_answered)
         return self._reopen()
 
