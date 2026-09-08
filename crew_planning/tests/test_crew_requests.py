@@ -30,14 +30,17 @@ class TestCrewRequests(TransactionCase):
         cls.emp_adv = cls._make_emp('Ava Advanced', 'explicit', cls.skill_sound, cls.lvl_adv, cls.role_sound)
         cls.emp_int = cls._make_emp('Ivo Intermediate', 'standard', cls.skill_sound, cls.lvl_int, cls.role_sound)
         cls.emp_light = cls._make_emp('Lena Lighting', 'standard', cls.skill_light, cls.lvl_adv, cls.role_sound)
+        cls.emp_noemail = cls._make_emp('Noel NoEmail', 'standard', cls.skill_sound, cls.lvl_adv, cls.role_sound, email=False)
 
         cls.d1 = cls.now + timedelta(days=20)
         cls.d2 = cls.d1 + timedelta(hours=10)
 
     @classmethod
-    def _make_emp(cls, name, mode, skill, level, role):
-        emp = cls.env['hr.employee'].create({
-            'name': name, 'is_crew': True, 'crew_availability_mode': mode})
+    def _make_emp(cls, name, mode, skill, level, role, email=True):
+        vals = {'name': name, 'is_crew': True, 'crew_availability_mode': mode}
+        if email:
+            vals['work_email'] = name.replace(' ', '.').lower() + '@example.com'
+        emp = cls.env['hr.employee'].create(vals)
         cls.env['hr.employee.skill'].create({
             'employee_id': emp.id,
             'skill_type_id': skill.skill_type_id.id,
@@ -91,16 +94,16 @@ class TestCrewRequests(TransactionCase):
         req = self._make_request(role_id=self.role_sound.id)
         req.action_open()
         wiz = self._wizard(req)
-        self.assertEqual(len(wiz.line_ids), 2)
+        self.assertEqual(len(wiz.line_ids), 3)  # Ava, Ivo, Noel(no-email)
         wiz.line_ids.filtered(lambda l: l.employee_id == self.emp_adv).selected = True
         wiz.action_invite_selected()
         self.assertEqual(len(req.invitation_ids), 1)
         self.assertEqual(req.invitation_ids.wave, 1)
         # wave 2: previously invited excluded
         wiz2 = self._wizard(req)
-        self.assertEqual(len(wiz2.line_ids), 1)
-        self.assertEqual(wiz2.line_ids.employee_id, self.emp_int)
-        wiz2.line_ids.selected = True
+        self.assertEqual(len(wiz2.line_ids), 2)
+        self.assertNotIn(self.emp_adv, wiz2.line_ids.employee_id)
+        wiz2.line_ids.filtered(lambda l: l.employee_id == self.emp_int).selected = True
         wiz2.action_invite_selected()
         self.assertEqual(len(req.invitation_ids), 2)
         self.assertEqual(max(req.invitation_ids.mapped('wave')), 2)
@@ -174,6 +177,15 @@ class TestCrewRequests(TransactionCase):
         wiz = self._wizard(req)  # candidates present, none selected
         with self.assertRaises(UserError):
             wiz.action_invite_selected()
+
+    def test_13_invite_without_email_blocks(self):
+        from odoo.exceptions import UserError
+        req = self._make_request(role_id=self.role_sound.id)
+        req.action_open()
+        wiz = self._wizard(req)
+        wiz.line_ids.filtered(lambda l: l.employee_id == self.emp_noemail).selected = True
+        with self.assertRaises(UserError):
+            wiz.action_invite_selected()  # channel = email, no work_email
 
     def test_11_candidates_scoped_to_request_company(self):
         other = self.env['res.company'].create({'name': 'Crew Other Co'})

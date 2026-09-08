@@ -55,6 +55,14 @@ class CrewInviteWizard(models.TransientModel):
         selected = self.line_ids.filtered(lambda l: l.selected and l.employee_id)
         if not selected:
             raise UserError(_("Please select at least one crew member to invite."))
+        if self.channel in ('email', 'both'):
+            no_email = selected.filtered(lambda l: not l.employee_id.work_email)
+            if no_email:
+                names = "\n".join("- %s" % l.employee_id.name for l in no_email)
+                raise UserError(_(
+                    "The following crew members have no email address and cannot "
+                    "be invited by email. Add a work email, or unselect them:\n%s",
+                    names))
         Invitation = self.env['crew.availability.invitation']
         wave = max(self.request_id.invitation_ids.mapped('wave'), default=0) + 1
         created = Invitation
