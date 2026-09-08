@@ -40,6 +40,10 @@ class CrewWorkDeclaration(models.Model):
     actual_end = fields.Datetime(tracking=True)
     break_minutes = fields.Integer(string="Break (min)", default=0, tracking=True)
     worked_hours = fields.Float(compute='_compute_worked_hours', store=True, tracking=True)
+    approved_hours = fields.Float(
+        compute='_compute_approved_hours', store=True, string="Approved Hours",
+        help="Worked hours once the declaration is approved (0 otherwise); "
+             "lets reporting compare approved vs. all declared hours.")
     date = fields.Date(
         compute='_compute_date', store=True, string="Work Date",
         help="Day the shift took place (actual start, else planned start); "
@@ -75,6 +79,11 @@ class CrewWorkDeclaration(models.Model):
                 vals['name'] = self.env['ir.sequence'].next_by_code(
                     'crew.work.declaration') or _('New')
         return super().create(vals_list)
+
+    @api.depends('worked_hours', 'state')
+    def _compute_approved_hours(self):
+        for wd in self:
+            wd.approved_hours = wd.worked_hours if wd.state == 'approved' else 0.0
 
     @api.depends('actual_start', 'planned_start')
     def _compute_date(self):

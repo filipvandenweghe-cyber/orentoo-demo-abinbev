@@ -114,7 +114,8 @@
                 <field name="resource_id" type="row"/>
                 <field name="project_id" type="row"/>
                 <field name="date" interval="month" type="col"/>
-                <field name="worked_hours" type="measure"/>
+                <field name="worked_hours" type="measure" string="All Hours"/>
+                <field name="approved_hours" type="measure"/>
             </pivot>
         </field>
     </record>
