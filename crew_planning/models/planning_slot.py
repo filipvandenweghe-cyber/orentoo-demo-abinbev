@@ -16,6 +16,28 @@ class PlanningSlot(models.Model):
         'crew.availability.request', string="Availability Request",
         index='btree_not_null', copy=False,
         help="Availability request this shift staffs (for coverage/staffing KPIs).")
+    crew_unavailable_reported = fields.Boolean(
+        string="Crew Reported Unavailable", copy=False,
+        help="The assigned crew member reported they can no longer perform this "
+             "shift. The assignment is kept until the planner handles it.")
+    crew_unavailable_reason = fields.Char(string="Reason", copy=False)
+
+    def action_crew_report_cannot_work(self, reason=False):
+        """Crew reports they can no longer perform this shift. Flag it and
+        notify the planner — never silently remove the assignment (§7/§12)."""
+        for slot in self:
+            slot.crew_unavailable_reported = True
+            if reason:
+                slot.crew_unavailable_reason = reason
+            body = _(
+                "%(emp)s reported they can no longer work the shift %(start)s → %(end)s.",
+                emp=slot.employee_id.display_name or _("Crew member"),
+                start=slot.start_datetime, end=slot.end_datetime)
+            if reason:
+                body += _(" Reason: %s", reason)
+            if slot.crew_request_id:
+                slot.crew_request_id.message_post(body=body)
+        return True
 
     @api.onchange('task_id')
     def _onchange_task_id(self):

@@ -297,6 +297,20 @@ class TestCrewRequests(TransactionCase):
         log.write({'date_start': '2026-08-01 00:00:00', 'date_end': '2026-10-01 00:00:00'})
         self.assertEqual(req._employee_known_state(emp), 'unavailable')
 
+    def test_22_report_cannot_work_keeps_slot_and_notifies(self):
+        req = self._make_request(role_id=self.role_sound.id)
+        slot = self.env['planning.slot'].create({
+            'resource_id': self.emp_adv.resource_id.id,
+            'crew_request_id': req.id,
+            'start_datetime': self.d1, 'end_datetime': self.d2})
+        before = len(req.message_ids)
+        slot.action_crew_report_cannot_work('Sick')
+        self.assertTrue(slot.crew_unavailable_reported)
+        self.assertEqual(slot.crew_unavailable_reason, 'Sick')
+        self.assertTrue(slot.resource_id, "The assignment must NOT be dropped.")
+        self.assertGreater(len(req.message_ids), before,
+                           "The planner must be notified via the request chatter.")
+
     def test_17_send_whatsapp_after_email(self):
         from odoo.exceptions import UserError
         req = self._make_request()
