@@ -102,6 +102,24 @@ class TestWorkDeclaration(TransactionCase):
         with self.assertRaises(ValidationError):
             wd.write({'actual_start': self.end, 'actual_end': self.start})
 
+    def test_09_schedule_shift_from_task_prefills_and_links(self):
+        self.task.write({'planned_date_begin': self.start,
+                         'date_deadline': self.end})
+        action = self.task.action_crew_schedule_shift()
+        ctx = action['context']
+        self.assertEqual(ctx['default_task_id'], self.task.id)
+        self.assertEqual(ctx['default_project_id'], self.project.id)
+        self.assertEqual(ctx['default_start_datetime'], self.start)
+        self.assertEqual(ctx['default_end_datetime'], self.end)
+        # a slot created from that context is linked back to the task
+        slot = self.env['planning.slot'].with_context(**ctx).create({
+            'resource_id': self.emp.resource_id.id})
+        self.assertEqual(slot.task_id, self.task)
+        self.assertEqual(slot.project_id, self.project)
+        self.assertIn(slot, self.task.planning_slot_ids)
+        self.task.invalidate_recordset(['planning_slot_count'])
+        self.assertEqual(self.task.planning_slot_count, 1)
+
     def test_08_approve_requires_project(self):
         slot = self.env['planning.slot'].create({
             'resource_id': self.emp.resource_id.id,
