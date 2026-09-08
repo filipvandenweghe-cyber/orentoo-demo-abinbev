@@ -56,28 +56,62 @@ class CrewAvailabilityInvitation(models.Model):
         return self.env.ref('crew_planning.mail_template_crew_invitation',
                             raise_if_not_found=False)
 
-    def _send_invitation_mail(self):
+    def _send_email(self):
         template = self._mail_template()
-        for inv in self:
-            if inv.channel in ('email', 'both') and template and inv.employee_id.work_email:
+        for inv in self.filtered(lambda i: i.channel in ('email', 'both')):
+            if template and inv.employee_id.work_email:
                 template.send_mail(inv.id, force_send=False)
 
+    def _send_whatsapp(self):
+        """Send the WhatsApp nudge via the standard composer when everything is
+        configured (account + approved template + phone). Otherwise skip with a
+        note on the chatter — never crash the invite (dev has no WA account)."""
+        wa_invs = self.filtered(lambda i: i.channel in ('whatsapp', 'both'))
+        if not wa_invs:
+            return
+        tmpl = self.env.ref('crew_planning.whatsapp_template_crew_invitation',
+                            raise_if_not_found=False)
+        account = self.env['whatsapp.account'].sudo().search([], limit=1)
+        for inv in wa_invs:
+            phone = inv.employee_id.mobile_phone or inv.employee_id.work_phone
+            if not phone:
+                continue
+            if not (tmpl and account and tmpl.status == 'approved'):
+                inv.message_post(body=_(
+                    "WhatsApp not sent — configure a WhatsApp account and get the "
+                    "invitation template approved first."))
+                continue
+            try:
+                composer = self.env['whatsapp.composer'].with_context(
+                    active_model=inv._name, active_ids=inv.ids,
+                ).create({
+                    'res_model': inv._name,
+                    'res_ids': repr(inv.ids),
+                    'wa_template_id': tmpl.id,
+                })
+                composer.action_send_whatsapp_template()
+            except Exception as err:  # noqa: BLE001 - resilience, never block the invite
+                inv.message_post(body=_("WhatsApp send failed: %s", err))
+
+    def _dispatch(self):
+        self._send_email()
+        self._send_whatsapp()
+
     def action_send(self):
-        """(Re)send the initial invitation."""
+        """(Re)send the initial invitation on its channel(s)."""
         for inv in self:
             inv.sent_on = fields.Datetime.now()
             inv.state = 'sent'
-        self._send_invitation_mail()
+        self._dispatch()
 
     def action_remind(self):
         """Reminder on an EXISTING invitation — never a new invitation."""
-        for inv in self:
-            if inv.response != 'pending':
-                continue
+        to_remind = self.filtered(lambda i: i.response == 'pending')
+        for inv in to_remind:
             inv.reminder_count += 1
             inv.last_reminder_on = fields.Datetime.now()
             inv.state = 'reminded'
-        self._send_invitation_mail()
+        to_remind._dispatch()
 
     # ------------------------------------------------------------------
     # Responses — feed the Crew Availability Engine (explicit crew only)

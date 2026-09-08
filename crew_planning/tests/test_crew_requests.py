@@ -40,6 +40,7 @@ class TestCrewRequests(TransactionCase):
         vals = {'name': name, 'is_crew': True, 'crew_availability_mode': mode}
         if email:
             vals['work_email'] = name.replace(' ', '.').lower() + '@example.com'
+            vals['mobile_phone'] = '+3247' + str(abs(hash(name)) % 10000000).zfill(7)
         emp = cls.env['hr.employee'].create(vals)
         cls.env['hr.employee.skill'].create({
             'employee_id': emp.id,
@@ -199,6 +200,29 @@ class TestCrewRequests(TransactionCase):
         wiz.line_ids.filtered(lambda l: l.employee_id == self.emp_noemail).selected = True
         with self.assertRaises(UserError):
             wiz.action_invite_selected()  # channel = email, no work_email
+
+    def test_15_whatsapp_requires_phone(self):
+        from odoo.exceptions import UserError
+        req = self._make_request(role_id=self.role_sound.id)
+        req.action_open()
+        wiz = self._wizard(req)
+        wiz.channel = 'whatsapp'
+        wiz.line_ids.filtered(lambda l: l.employee_id == self.emp_noemail).selected = True
+        with self.assertRaises(UserError):
+            wiz.action_invite_selected()  # no phone -> blocked
+
+    def test_16_whatsapp_invite_resilient_when_unconfigured(self):
+        # emp_adv has a phone; with no WhatsApp account configured the invite
+        # must still succeed (nudge skipped with a chatter note), not crash.
+        req = self._make_request(role_id=self.role_sound.id)
+        req.action_open()
+        wiz = self._wizard(req)
+        wiz.channel = 'whatsapp'
+        wiz.line_ids.filtered(lambda l: l.employee_id == self.emp_adv).selected = True
+        wiz.action_invite_selected()
+        self.assertEqual(len(req.invitation_ids), 1)
+        self.assertEqual(req.invitation_ids.state, 'sent')
+        self.assertEqual(req.invitation_ids.channel, 'whatsapp')
 
     def test_11_candidates_scoped_to_request_company(self):
         other = self.env['res.company'].create({'name': 'Crew Other Co'})

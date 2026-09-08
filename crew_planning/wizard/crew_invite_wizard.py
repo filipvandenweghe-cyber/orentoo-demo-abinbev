@@ -63,6 +63,15 @@ class CrewInviteWizard(models.TransientModel):
                     "The following crew members have no email address and cannot "
                     "be invited by email. Add a work email, or unselect them:\n%s",
                     names))
+        if self.channel in ('whatsapp', 'both'):
+            no_phone = selected.filtered(
+                lambda l: not (l.employee_id.mobile_phone or l.employee_id.work_phone))
+            if no_phone:
+                names = "\n".join("- %s" % l.employee_id.name for l in no_phone)
+                raise UserError(_(
+                    "The following crew members have no phone number and cannot "
+                    "be invited by WhatsApp. Add a phone, or unselect them:\n%s",
+                    names))
         Invitation = self.env['crew.availability.invitation']
         wave = max(self.request_id.invitation_ids.mapped('wave'), default=0) + 1
         created = Invitation
