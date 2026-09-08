@@ -70,8 +70,12 @@ class CrewAvailabilityInvitation(models.Model):
         note on the chatter — never crash the invite (dev has no WA account)."""
         if not self:
             return
+        # Use sudo throughout: WhatsApp models require the WhatsApp admin group,
+        # but an authorised crew planner should be able to fire the nudge without
+        # holding that group.
         tmpl = self.env.ref('crew_planning.whatsapp_template_crew_invitation',
                             raise_if_not_found=False)
+        tmpl = tmpl.sudo() if tmpl else tmpl
         account = self.env['whatsapp.account'].sudo().search([], limit=1)
         for inv in self:
             phone = inv.employee_id.mobile_phone or inv.employee_id.work_phone
@@ -83,7 +87,7 @@ class CrewAvailabilityInvitation(models.Model):
                     "invitation template approved first."))
                 continue
             try:
-                composer = self.env['whatsapp.composer'].with_context(
+                composer = self.env['whatsapp.composer'].sudo().with_context(
                     active_model=inv._name, active_ids=inv.ids,
                 ).create({
                     'res_model': inv._name,
