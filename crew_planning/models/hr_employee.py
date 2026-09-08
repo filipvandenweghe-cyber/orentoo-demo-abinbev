@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import _, api, fields, models
+from odoo.exceptions import UserError
 
 
 class HrEmployee(models.Model):
@@ -68,6 +69,47 @@ class HrEmployee(models.Model):
             'view_mode': 'form',
             'target': 'new',
             'context': {'default_employee_id': self.id},
+        }
+
+    def action_crew_grant_portal(self):
+        """One-click: create (or reuse) a Portal user for this crew member and
+        link it as the employee's Related User, so they can use the Crew
+        Portal. Sends the standard set-password invitation."""
+        self.ensure_one()
+        if self.user_id:
+            raise UserError(_(
+                "%s already has a related user (%s).", self.name, self.user_id.login))
+        if not self.work_email:
+            raise UserError(_("Set the employee's Work Email before granting portal access."))
+        Users = self.env['res.users'].sudo()
+        partner = self.work_contact_id
+        if not partner:
+            partner = self.env['res.partner'].sudo().create({
+                'name': self.name, 'email': self.work_email})
+            self.work_contact_id = partner
+        elif not partner.email:
+            partner.email = self.work_email
+        user = Users.with_context(active_test=False).search(
+            [('login', '=', self.work_email)], limit=1)
+        if not user:
+            user = Users.create({
+                'name': self.name,
+                'login': self.work_email,
+                'email': self.work_email,
+                'partner_id': partner.id,
+                'group_ids': [(6, 0, [self.env.ref('base.group_portal').id])],
+            })
+        self.user_id = user.id
+        try:
+            user.action_reset_password()
+        except Exception:  # noqa: BLE001 - no mail server in dev; user is still created
+            pass
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'hr.employee',
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'current',
         }
 
     def action_view_crew_availability(self):

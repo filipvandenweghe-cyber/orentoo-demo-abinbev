@@ -297,6 +297,22 @@ class TestCrewRequests(TransactionCase):
         log.write({'date_start': '2026-08-01 00:00:00', 'date_end': '2026-10-01 00:00:00'})
         self.assertEqual(req._employee_known_state(emp), 'unavailable')
 
+    def test_23_grant_portal_access(self):
+        from odoo.exceptions import UserError
+        emp = self.env['hr.employee'].create({
+            'name': 'Grantee', 'is_crew': True, 'work_email': 'grantee@example.com'})
+        emp.action_crew_grant_portal()
+        self.assertTrue(emp.user_id, "A related user must be created/linked.")
+        self.assertTrue(emp.user_id.share, "The granted user must be a Portal user.")
+        self.assertEqual(emp.user_id.login, 'grantee@example.com')
+        # granting again is blocked
+        with self.assertRaises(UserError):
+            emp.action_crew_grant_portal()
+        # no work email -> blocked
+        emp2 = self.env['hr.employee'].create({'name': 'NoMail', 'is_crew': True})
+        with self.assertRaises(UserError):
+            emp2.action_crew_grant_portal()
+
     def test_22_report_cannot_work_keeps_slot_and_notifies(self):
         req = self._make_request(role_id=self.role_sound.id)
         slot = self.env['planning.slot'].create({

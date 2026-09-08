@@ -21,11 +21,15 @@
                             <field name="is_crew"/>
                             <field name="crew_availability_mode"/>
                             <field name="crew_saved_calendar_id" invisible="1"/>
+                            <field name="user_id" string="Portal / Related User" readonly="1"/>
                         </group>
                         <group>
                             <button type="object" name="action_crew_enter_availability"
                                     string="Enter Availability" class="btn-primary"
                                     invisible="crew_availability_mode != 'explicit'"/>
+                            <button type="object" name="action_crew_grant_portal"
+                                    string="Grant Portal Access" class="btn-secondary"
+                                    invisible="not is_crew or user_id"/>
                         </group>
                     </group>
                     <div class="text-muted" invisible="crew_availability_mode != 'explicit'">
