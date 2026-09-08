@@ -2,8 +2,11 @@
 from datetime import timedelta
 from unittest.mock import patch
 
+from psycopg2 import IntegrityError
+
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests import TransactionCase, tagged
+from odoo.tools import mute_logger
 
 
 @tagged('post_install', '-at_install', 'crew_planning')
@@ -86,9 +89,14 @@ class TestWorkDeclaration(TransactionCase):
     def test_05_one_declaration_per_slot(self):
         slot = self._make_slot()
         slot._get_or_create_work_declaration()
-        with self.assertRaises(Exception):
-            self.env['crew.work.declaration'].create({'slot_id': slot.id})
-            self.env.flush_all()
+        # The UNIQUE(slot_id) constraint must reject a second declaration. Wrap
+        # the failing INSERT in a savepoint so the aborted statement does not
+        # poison the test transaction, and mute odoo.sql_db so the expected
+        # constraint violation is not logged at ERROR level (build-log noise).
+        with self.assertRaises(IntegrityError), mute_logger('odoo.sql_db'):
+            with self.env.cr.savepoint():
+                self.env['crew.work.declaration'].create({'slot_id': slot.id})
+                self.env.flush_all()
 
     def test_06_cannot_submit_without_actuals(self):
         slot = self._make_slot()
