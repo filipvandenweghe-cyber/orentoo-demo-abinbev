@@ -23,6 +23,21 @@ class CrewAvailability(models.Model):
     date_start = fields.Datetime(required=True)
     date_end = fields.Datetime(required=True)
 
+    @api.depends('employee_id', 'resource_id', 'date_start', 'date_end')
+    def _compute_display_name(self):
+        for rec in self:
+            who = rec.employee_id.name or rec.resource_id.name or _("Availability")
+            if rec.date_start and rec.date_end:
+                start = fields.Datetime.context_timestamp(rec, rec.date_start)
+                end = fields.Datetime.context_timestamp(rec, rec.date_end)
+                same_day = start.date() == end.date()
+                end_fmt = '%H:%M' if same_day else '%d/%m %H:%M'
+                rec.display_name = _("%(who)s — available %(start)s → %(end)s", who=who,
+                                     start=start.strftime('%d/%m %H:%M'),
+                                     end=end.strftime(end_fmt))
+            else:
+                rec.display_name = who
+
     @api.constrains('date_start', 'date_end')
     def _check_period(self):
         for rec in self:
