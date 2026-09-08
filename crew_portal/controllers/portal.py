@@ -75,6 +75,7 @@ class CrewPortal(CustomerPortal):
             'id': w.id,
             'start': self._fmt_dt(w.date_start),
             'end': self._fmt_dt(w.date_end),
+            'updated': self._fmt_dt(w.write_date),
         } for w in windows]
         inv_rows = [{
             'id': inv.id,
