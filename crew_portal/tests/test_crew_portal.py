@@ -42,6 +42,7 @@ class TestCrewPortal(HttpCase):
         self.assertEqual(res2.status_code, 200)
         window = self.env['crew.availability'].search([('employee_id', '=', self.emp.id)])
         self.assertTrue(window, "Portal registration must create an availability window")
+        self.assertIn('January', res2.text, "Dates should be shown with the month spelled out")
 
         # My Planning renders
         res3 = self.url_open('/my/planning')

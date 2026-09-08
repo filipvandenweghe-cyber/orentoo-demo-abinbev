@@ -3,8 +3,9 @@ from datetime import datetime
 
 import pytz
 
-from odoo import fields, http
+from odoo import _, fields, http
 from odoo.http import request
+from odoo.tools import format_datetime
 from odoo.addons.portal.controllers.portal import CustomerPortal
 
 
@@ -17,6 +18,13 @@ class CrewPortal(CustomerPortal):
     def _crew_employee(self):
         return request.env['hr.employee'].sudo().search(
             [('user_id', '=', request.env.user.id)], limit=1)
+
+    def _fmt_dt(self, value):
+        """Localized datetime with the month spelled out, in the user's tz."""
+        if not value:
+            return ''
+        return format_datetime(request.env, value, tz=request.env.user.tz or 'UTC',
+                               dt_format='d MMMM y HH:mm')
 
     def _parse_portal_dt(self, value):
         """A browser datetime-local value ('YYYY-MM-DDTHH:MM') is naive local
@@ -63,11 +71,26 @@ class CrewPortal(CustomerPortal):
         ).filtered(
             lambda i: i.request_id.date_start and i.request_id.date_start.date() >= today
         ).sorted(lambda i: i.request_id.date_start)  # chronological by start date
+        win_rows = [{
+            'id': w.id,
+            'start': self._fmt_dt(w.date_start),
+            'end': self._fmt_dt(w.date_end),
+        } for w in windows]
+        inv_rows = [{
+            'id': inv.id,
+            'header': (inv.request_id.task_id.display_name
+                       or inv.request_id.project_id.display_name
+                       or inv.request_id.name or _("Availability request")),
+            'period': inv.request_id.period_label,
+            'posted': self._fmt_dt(inv.sent_on or inv.create_date),
+            'indicative_hours': inv.request_id.indicative_hours,
+            'planning_id': inv.request_id.name,
+        } for inv in invitations]
         return request.render('crew_portal.portal_my_availability', {
             'page_name': 'crew_availability',
             'employee': emp,
-            'windows': windows,
-            'invitations': invitations,
+            'win_rows': win_rows,
+            'inv_rows': inv_rows,
         })
 
     @http.route(['/my/availability/register'], type='http', auth='user',

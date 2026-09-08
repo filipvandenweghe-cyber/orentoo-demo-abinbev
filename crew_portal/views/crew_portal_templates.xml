@@ -43,32 +43,30 @@
             <div class="container o_portal">
                 <h3 class="mt-3">My Availability</h3>
 
-                <t t-if="invitations">
+                <t t-if="inv_rows">
                     <h5 class="mt-4">Open availability requests</h5>
-                    <t t-foreach="invitations" t-as="inv">
+                    <t t-foreach="inv_rows" t-as="inv">
                         <div class="card mb-2"><div class="card-body">
-                            <div>
-                                <strong t-out="inv.request_id.name"/> —
-                                <span t-field="inv.request_id.period_label"/>
-                            </div>
-                            <div t-if="inv.request_id.project_id">Project:
-                                <span t-out="inv.request_id.project_id.name"/></div>
-                            <div t-if="inv.request_id.task_id">Task:
-                                <span t-out="inv.request_id.task_id.name"/></div>
-                            <div t-if="inv.request_id.indicative_hours" class="text-muted">
-                                Indicative effort: ~<span t-out="inv.request_id.indicative_hours"/> h
+                            <h5 class="card-title mb-1" t-out="inv['header']"/>
+                            <div class="text-muted small">Posted at <t t-out="inv['posted']"/></div>
+                            <div t-if="inv['period']" class="mt-1">Requested availability
+                                <t t-out="inv['period']"/></div>
+                            <div t-if="inv['indicative_hours']" class="text-muted">
+                                Indicative effort: ~<t t-out="inv['indicative_hours']"/> h
                             </div>
                             <div class="alert alert-warning mt-2 mb-2 py-1">
                                 This is only a request for availability — you have not been
                                 scheduled yet.
                             </div>
-                            <form t-attf-action="/my/invitation/{{inv.id}}/respond" method="post">
+                            <form t-attf-action="/my/invitation/{{inv['id']}}/respond" method="post">
                                 <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                                 <button type="submit" name="response" value="available"
                                         class="btn btn-success btn-sm">I'm available</button>
                                 <button type="submit" name="response" value="unavailable"
                                         class="btn btn-secondary btn-sm">Not available</button>
                             </form>
+                            <div class="small text-muted mt-2">Planning ID:
+                                <t t-out="inv['planning_id']"/></div>
                         </div></div>
                     </t>
                 </t>
@@ -103,12 +101,12 @@
                 <table class="table table-sm">
                     <thead><tr><th>From</th><th>To</th><th class="text-end">Action</th></tr></thead>
                     <tbody>
-                        <t t-foreach="windows" t-as="w">
+                        <t t-foreach="win_rows" t-as="w">
                             <tr>
-                                <td><span t-field="w.date_start"/></td>
-                                <td><span t-field="w.date_end"/></td>
+                                <td t-out="w['start']"/>
+                                <td t-out="w['end']"/>
                                 <td class="text-end">
-                                    <form t-attf-action="/my/availability/window/{{w.id}}/remove"
+                                    <form t-attf-action="/my/availability/window/{{w['id']}}/remove"
                                           method="post" class="m-0">
                                         <input type="hidden" name="csrf_token"
                                                t-att-value="request.csrf_token()"/>
@@ -118,7 +116,7 @@
                                 </td>
                             </tr>
                         </t>
-                        <tr t-if="not windows">
+                        <tr t-if="not win_rows">
                             <td colspan="3" class="text-muted">No availability registered yet.</td>
                         </tr>
                     </tbody>
