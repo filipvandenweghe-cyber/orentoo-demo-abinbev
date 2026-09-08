@@ -3,7 +3,7 @@
 
     <!-- Home cards -->
     <template id="crew_portal_home" inherit_id="portal.portal_my_home">
-        <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
+        <xpath expr="//div[@id='portal_common_category']" position="inside">
             <t t-call="portal.portal_docs_entry">
                 <t t-set="title">My Availability</t>
                 <t t-set="url" t-value="'/my/availability'"/>
