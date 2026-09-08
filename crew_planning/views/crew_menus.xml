@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <menuitem id="menu_crew_root" name="Crew" sequence="90"
+              web_icon="crew_planning,static/description/icon.png"
               groups="hr.group_hr_user,planning.group_planning_user"/>
 
     <menuitem id="menu_crew_requests" name="Availability Requests"
