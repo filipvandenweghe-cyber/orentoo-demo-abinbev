@@ -177,7 +177,18 @@
                 <p t-if="not todo_rows" class="text-muted">Nothing to declare right now.</p>
                 <t t-foreach="todo_rows" t-as="s">
                     <div class="card mb-2"><div class="card-body">
-                        <div class="mb-2">
+                        <!-- Portrait / narrow screens: stacked lines -->
+                        <div class="mb-2 d-md-none">
+                            <div><strong><t t-out="s['start']"/> →</strong></div>
+                            <div><strong><t t-out="s['end']"/></strong></div>
+                            <div t-if="s['project'] or s['task']" class="text-muted">
+                                <t t-out="s['project']"/>
+                                <t t-if="s['project'] and s['task']"> · </t>
+                                <t t-out="s['task']"/>
+                            </div>
+                        </div>
+                        <!-- Landscape / tablet and up: single line (unchanged) -->
+                        <div class="mb-2 d-none d-md-block">
                             <strong><t t-out="s['start']"/> → <t t-out="s['end']"/></strong>
                             <span t-if="s['project']" class="text-muted"> ·
                                 <t t-out="s['project']"/></span>
