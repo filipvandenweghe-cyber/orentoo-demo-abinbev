@@ -29,6 +29,13 @@
                         scheduled or assigned to this work.</strong>
                     </p>
                     <p>Please let us know whether you are available. Thank you!</p>
+                    <div style="margin:16px 0;">
+                        <a t-att-href="'%s/my/availability' % object.get_base_url()"
+                           style="display:inline-block;padding:10px 18px;background:#714B67;
+                                  color:#ffffff;text-decoration:none;border-radius:4px;font-weight:bold;">
+                            Respond in the Crew Portal
+                        </a>
+                    </div>
                 </div>
             </field>
             <field name="lang">{{ object.employee_id.lang }}</field>

@@ -48,6 +48,22 @@ class TestCrewPortal(HttpCase):
         self.assertEqual(res3.status_code, 200)
         self.assertIn('My Planning', res3.text)
 
+    def test_remove_availability(self):
+        self.authenticate('crewportal', 'crewportal')
+        page = self.url_open('/my/availability')
+        csrf = re.search(r'name="csrf_token"[^>]*value="([^"]+)"', page.text).group(1)
+        self.url_open('/my/availability/register', data={
+            'csrf_token': csrf, 'date_start': '2027-02-10T08:00',
+            'date_end': '2027-02-10T18:00', 'state': 'available'})
+        window = self.env['crew.availability'].search([('employee_id', '=', self.emp.id)])
+        self.assertTrue(window)
+        page2 = self.url_open('/my/availability')
+        csrf2 = re.search(r'name="csrf_token"[^>]*value="([^"]+)"', page2.text).group(1)
+        self.url_open('/my/availability/window/%s/remove' % window.id,
+                      data={'csrf_token': csrf2})
+        self.assertFalse(self.env['crew.availability'].search(
+            [('employee_id', '=', self.emp.id)]), "Window should be removed")
+
     def test_home_cards_crew_gated(self):
         # A crew member sees the crew cards on the portal home...
         self.authenticate('crewportal', 'crewportal')

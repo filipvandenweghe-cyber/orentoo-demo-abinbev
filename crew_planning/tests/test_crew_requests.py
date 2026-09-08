@@ -229,14 +229,16 @@ class TestCrewRequests(TransactionCase):
     def test_19_partial_coverage_counts_as_partial(self):
         # A window covering only part of a long request period => 'partial',
         # counted in partial_count (NOT available_count), so coverage stays honest.
+        w0 = self.now + timedelta(days=15)
         self.env['crew.availability'].create({
             'resource_id': self.emp_noemail.resource_id.id,
             'employee_id': self.emp_noemail.id,
             'company_id': self.env.company.id,
-            'date_start': '2026-09-10 08:00:00', 'date_end': '2026-09-11 08:00:00'})
+            'date_start': w0, 'date_end': w0 + timedelta(days=1)})
         req = self.env['crew.availability.request'].create({
             'request_type': 'period',
-            'date_start': '2026-09-01 00:00:00', 'date_end': '2026-09-30 00:00:00',
+            'date_start': self.now + timedelta(days=10),
+            'date_end': self.now + timedelta(days=40),
             'role_id': self.role_sound.id, 'headcount_needed': 1,
             'skill_requirement_ids': [(0, 0, {
                 'skill_type_id': self.skill_type.id, 'skill_id': self.skill_sound.id,
@@ -257,14 +259,16 @@ class TestCrewRequests(TransactionCase):
     def test_20_partial_with_contact_is_counted_and_resent(self):
         # A partially-available crew member who is reachable should be counted as
         # partial AND re-asked (invitation sent) to fill the gaps.
+        w0 = self.now + timedelta(days=15)
         self.env['crew.availability'].create({
             'resource_id': self.emp_adv.resource_id.id,
             'employee_id': self.emp_adv.id,
             'company_id': self.env.company.id,
-            'date_start': '2026-09-10 08:00:00', 'date_end': '2026-09-11 08:00:00'})
+            'date_start': w0, 'date_end': w0 + timedelta(days=1)})
         req = self.env['crew.availability.request'].create({
             'request_type': 'period',
-            'date_start': '2026-09-01 00:00:00', 'date_end': '2026-09-30 00:00:00',
+            'date_start': self.now + timedelta(days=10),
+            'date_end': self.now + timedelta(days=40),
             'role_id': self.role_sound.id, 'headcount_needed': 1,
             'skill_requirement_ids': [(0, 0, {
                 'skill_type_id': self.skill_type.id, 'skill_id': self.skill_sound.id,
@@ -324,6 +328,17 @@ class TestCrewRequests(TransactionCase):
         emp2 = self.env['hr.employee'].create({'name': 'NoMail', 'is_crew': True})
         with self.assertRaises(UserError):
             emp2.action_crew_grant_portal()
+
+    def test_25_cannot_invite_past_started_request(self):
+        from odoo.exceptions import UserError
+        past = self.env['crew.availability.request'].create({
+            'request_type': 'period', 'role_id': self.role_sound.id,
+            'date_start': self.now - timedelta(days=5),
+            'date_end': self.now - timedelta(days=1)})
+        past.action_open()
+        wiz = self._wizard(past)
+        with self.assertRaises(UserError):
+            wiz.action_invite_selected()
 
     def test_22_report_cannot_work_keeps_slot_and_notifies(self):
         req = self._make_request(role_id=self.role_sound.id)

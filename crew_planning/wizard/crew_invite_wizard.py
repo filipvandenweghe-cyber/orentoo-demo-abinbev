@@ -82,6 +82,11 @@ class CrewInviteWizard(models.TransientModel):
 
     def action_invite_selected(self):
         self.ensure_one()
+        req = self.request_id
+        if req.date_start and req.date_start.date() < fields.Date.context_today(self):
+            raise UserError(_(
+                "This availability request started before today; you can no "
+                "longer send invitations for it."))
         selected = self.line_ids.filtered(lambda l: l.selected and l.employee_id)
         if not selected:
             raise UserError(_("Please select at least one crew member."))

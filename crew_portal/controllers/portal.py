@@ -57,8 +57,12 @@ class CrewPortal(CustomerPortal):
             return request.render('crew_portal.portal_not_crew', {'page_name': 'crew'})
         windows = request.env['crew.availability'].sudo().search(
             [('employee_id', '=', emp.id)], order='date_start')
+        today = fields.Date.context_today(request.env.user)
         invitations = request.env['crew.availability.invitation'].sudo().search(
-            [('employee_id', '=', emp.id), ('response', '=', 'pending')])
+            [('employee_id', '=', emp.id), ('response', '=', 'pending')]
+        ).filtered(
+            lambda i: i.request_id.date_start and i.request_id.date_start.date() >= today
+        ).sorted(lambda i: i.request_id.date_start)  # chronological by start date
         return request.render('crew_portal.portal_my_availability', {
             'page_name': 'crew_availability',
             'employee': emp,
@@ -77,6 +81,17 @@ class CrewPortal(CustomerPortal):
                 emp.resource_id.sudo(), start, end,
                 available=(post.get('state', 'available') == 'available'),
                 origin='self_portal', employee=emp, enforce_entry_horizon=True)
+        return request.redirect('/my/availability')
+
+    @http.route(['/my/availability/window/<int:window_id>/remove'], type='http',
+                auth='user', methods=['POST'], website=True)
+    def portal_remove_availability(self, window_id, **post):
+        emp = self._crew_employee()
+        window = request.env['crew.availability'].sudo().browse(window_id)
+        if emp and window.exists() and window.employee_id.id == emp.id:
+            resource = window.resource_id
+            window.unlink()
+            request.env['crew.availability.engine'].sudo()._recompile(resource)
         return request.redirect('/my/availability')
 
     @http.route(['/my/invitation/<int:inv_id>/respond'], type='http', auth='user',

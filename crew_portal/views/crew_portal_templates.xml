@@ -101,16 +101,25 @@
 
                 <h5 class="mt-4">My availability</h5>
                 <table class="table table-sm">
-                    <thead><tr><th>From</th><th>To</th></tr></thead>
+                    <thead><tr><th>From</th><th>To</th><th class="text-end">Action</th></tr></thead>
                     <tbody>
                         <t t-foreach="windows" t-as="w">
                             <tr>
                                 <td><span t-field="w.date_start"/></td>
                                 <td><span t-field="w.date_end"/></td>
+                                <td class="text-end">
+                                    <form t-attf-action="/my/availability/window/{{w.id}}/remove"
+                                          method="post" class="m-0">
+                                        <input type="hidden" name="csrf_token"
+                                               t-att-value="request.csrf_token()"/>
+                                        <button type="submit"
+                                                class="btn btn-link btn-sm text-danger p-0">Remove</button>
+                                    </form>
+                                </td>
                             </tr>
                         </t>
                         <tr t-if="not windows">
-                            <td colspan="2" class="text-muted">No availability registered yet.</td>
+                            <td colspan="3" class="text-muted">No availability registered yet.</td>
                         </tr>
                     </tbody>
                 </table>
