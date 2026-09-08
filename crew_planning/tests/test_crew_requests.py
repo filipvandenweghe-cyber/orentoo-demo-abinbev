@@ -377,6 +377,22 @@ class TestCrewRequests(TransactionCase):
         self.assertGreater(len(req.message_ids), before,
                            "The planner must still be notified.")
 
+    def test_27_reassignment_clears_cannot_work_flag(self):
+        self.env.company.planning_employee_unavailabilities = 'unassign'
+        req = self._make_request(role_id=self.role_sound.id)
+        slot = self.env['planning.slot'].create({
+            'resource_id': self.emp_adv.resource_id.id,
+            'crew_request_id': req.id,
+            'start_datetime': self.d1, 'end_datetime': self.d2})
+        slot.action_crew_report_cannot_work('Sick')
+        self.assertFalse(slot.resource_id)
+        self.assertTrue(slot.crew_unavailable_reported)
+        # planner reassigns the shift in the backend -> flag/reason cleared
+        slot.resource_id = self.emp_adv.resource_id
+        self.assertFalse(slot.crew_unavailable_reported,
+                         "Re-assigning a crew member must clear the stale flag.")
+        self.assertFalse(slot.crew_unavailable_reason)
+
     def test_17_send_whatsapp_after_email(self):
         from odoo.exceptions import UserError
         req = self._make_request()

@@ -21,6 +21,18 @@ class PlanningSlot(models.Model):
         help="The assigned crew member reported they can no longer perform this "
              "shift. The assignment is kept until the planner handles it.")
     crew_unavailable_reason = fields.Char(string="Reason", copy=False)
+
+    def write(self, vals):
+        # Re-assigning a real crew member to the shift (in the backend, after a
+        # portal "can no longer work") clears the stale "reported unavailable"
+        # flag, so the portal treats the shift as a fresh, live assignment
+        # again. Skip when the write already manages the flag itself (e.g. the
+        # report action) or when the shift is being unassigned.
+        if vals.get('resource_id') and 'crew_unavailable_reported' not in vals:
+            vals = dict(vals, crew_unavailable_reported=False,
+                        crew_unavailable_reason=False)
+        return super().write(vals)
+
     work_declaration_ids = fields.One2many(
         'crew.work.declaration', 'slot_id', string="Work Declarations")
     work_declaration_count = fields.Integer(compute='_compute_work_declaration_count')
