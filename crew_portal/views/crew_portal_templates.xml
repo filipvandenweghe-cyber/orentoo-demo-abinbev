@@ -4,7 +4,9 @@
     <!-- Home cards -->
     <template id="crew_portal_home" inherit_id="portal.portal_my_home">
         <xpath expr="//div[@id='portal_common_category']" position="after">
-            <div class="o_portal_category row g-2 mt-3" id="crew_portal_category">
+            <t t-set="crew_emp" t-value="request.env['hr.employee'].sudo().search(
+                [('user_id', '=', request.env.user.id), ('is_crew', '=', True)], limit=1)"/>
+            <div t-if="crew_emp" class="o_portal_category row g-2 mt-3" id="crew_portal_category">
                 <t t-call="portal.portal_docs_entry">
                     <t t-set="title">My Availability</t>
                     <t t-set="url" t-value="'/my/availability'"/>

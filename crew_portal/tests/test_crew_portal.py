@@ -47,3 +47,24 @@ class TestCrewPortal(HttpCase):
         res3 = self.url_open('/my/planning')
         self.assertEqual(res3.status_code, 200)
         self.assertIn('My Planning', res3.text)
+
+    def test_home_cards_crew_gated(self):
+        # A crew member sees the crew cards on the portal home...
+        self.authenticate('crewportal', 'crewportal')
+        home = self.url_open('/my/home')
+        self.assertEqual(home.status_code, 200)
+        self.assertIn('My Availability', home.text)
+        self.assertIn('My Planning', home.text)
+
+        # ...a non-crew portal user (no is_crew employee) does not.
+        self.env['res.users'].create({
+            'name': 'Plain Customer',
+            'login': 'custportal',
+            'password': 'custportal',
+            'group_ids': [(6, 0, [self.env.ref('base.group_portal').id])],
+        })
+        self.authenticate('custportal', 'custportal')
+        home2 = self.url_open('/my/home')
+        self.assertEqual(home2.status_code, 200)
+        self.assertNotIn('My Availability', home2.text)
+        self.assertNotIn('My Planning', home2.text)
