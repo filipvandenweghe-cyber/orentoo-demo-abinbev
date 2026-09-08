@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_crew_availability_hr_user,crew.availability.hr.user,model_crew_availability,hr.group_hr_user,1,1,1,1
+access_crew_availability_planning_user,crew.availability.planning.user,model_crew_availability,planning.group_planning_user,1,1,1,1
+access_crew_availability_log_hr_user,crew.availability.log.hr.user,model_crew_availability_log,hr.group_hr_user,1,0,1,0
+access_crew_availability_log_hr_manager,crew.availability.log.hr.manager,model_crew_availability_log,hr.group_hr_manager,1,1,1,1
+access_crew_availability_log_planning_user,crew.availability.log.planning.user,model_crew_availability_log,planning.group_planning_user,1,0,1,0
+access_crew_enter_availability_hr_user,crew.enter.availability.hr.user,model_crew_enter_availability,hr.group_hr_user,1,1,1,1
+access_crew_enter_availability_planning_user,crew.enter.availability.planning.user,model_crew_enter_availability,planning.group_planning_user,1,1,1,1

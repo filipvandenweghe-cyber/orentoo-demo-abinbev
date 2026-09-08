@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="crew_availability_view_list" model="ir.ui.view">
+        <field name="name">crew.availability.list</field>
+        <field name="model">crew.availability</field>
+        <field name="arch" type="xml">
+            <list string="Availability Windows" editable="bottom">
+                <field name="employee_id"/>
+                <field name="resource_id" optional="hide"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="crew_availability_view_form" model="ir.ui.view">
+        <field name="name">crew.availability.form</field>
+        <field name="model">crew.availability</field>
+        <field name="arch" type="xml">
+            <form string="Availability Window">
+                <sheet>
+                    <group>
+                        <field name="employee_id"/>
+                        <field name="resource_id"/>
+                        <field name="date_start"/>
+                        <field name="date_end"/>
+                    </group>
+                    <div class="text-muted">
+                        Positive availability window. It is compiled into the standard
+                        resource calendar (as the absence of a crew-managed leave); it is
+                        not read directly by staffing.
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_crew_availability" model="ir.actions.act_window">
+        <field name="name">Availability Windows</field>
+        <field name="res_model">crew.availability</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

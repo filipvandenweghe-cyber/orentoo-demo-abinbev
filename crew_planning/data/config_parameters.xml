@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="param_unavailability_horizon" model="ir.config_parameter">
+            <field name="key">crew_planning.unavailability_horizon_months</field>
+            <field name="value">12</field>
+        </record>
+        <record id="param_entry_horizon" model="ir.config_parameter">
+            <field name="key">crew_planning.availability_entry_horizon_months</field>
+            <field name="value">6</field>
+        </record>
+    </data>
+</odoo>
