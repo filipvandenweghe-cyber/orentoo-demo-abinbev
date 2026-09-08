@@ -160,6 +160,16 @@ class TestCrewAvailability(TransactionCase):
                 'crew_availability_entry_horizon_months': 12,
             })
 
+    def test_12_today_is_covered_before_now(self):
+        # Coverage is anchored to the start of the day, so "today up to now"
+        # must NOT leak as available for an explicit crew member.
+        emp = self._new_crew()
+        resource = emp.resource_id
+        day_start = datetime.combine(self.now.date(), datetime.min.time())
+        self.assertFalse(
+            self._work_intervals(resource, day_start, self.now + timedelta(hours=1)),
+            "Today (including before 'now') must read as unavailable by default.")
+
     def test_11_log_records_declaration(self):
         emp = self._new_crew()
         resource = emp.resource_id

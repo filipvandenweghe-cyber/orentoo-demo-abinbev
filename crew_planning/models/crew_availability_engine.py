@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from datetime import datetime, time, timedelta
+
 from dateutil.relativedelta import relativedelta
 
 from odoo import _, api, fields, models
@@ -72,6 +74,15 @@ class CrewAvailabilityEngine(models.AbstractModel):
     def _horizon_end(self, now=None):
         now = now or self._now()
         return now + relativedelta(months=self._unavailability_months())
+
+    def _coverage_start(self, now=None):
+        """Blanket unavailability is anchored to the START of the day (with a
+        one-day buffer) rather than the exact instant ``now``, so the current
+        day is fully covered in any timezone. Otherwise "today up to now" would
+        leak as available (there would be no leave before the moment coverage
+        was seeded)."""
+        now = now or self._now()
+        return datetime.combine(now.date(), time.min) - timedelta(days=1)
 
     def _entry_limit(self, now=None):
         now = now or self._now()
@@ -187,16 +198,18 @@ class CrewAvailabilityEngine(models.AbstractModel):
         Leaves = self.env['resource.calendar.leaves'].sudo()
         for resource in resources:
             now = self._now()
+            coverage_start = self._coverage_start(now)
             horizon = self._horizon_end(now)
             # keep the windows table bounded: drop fully-past availability
             self.env['crew.availability'].sudo().search([
                 ('resource_id', '=', resource.id),
-                ('date_end', '<=', now)]).unlink()
+                ('date_end', '<=', coverage_start)]).unlink()
             windows = self._get_windows(resource)
-            desired = _subtract([(now, horizon)], windows)
-            # drop future crew-managed coverage, keep the past as history
+            desired = _subtract([(coverage_start, horizon)], windows)
+            # rebuild crew-managed coverage from the day anchor forward, keeping
+            # older leaves as history
             self._crew_leaves(resource).filtered(
-                lambda l: l.date_to > now).unlink()
+                lambda l: l.date_to > coverage_start).unlink()
             calendar = resource.calendar_id or self._crew_calendar()
             for s, e in desired:
                 Leaves.create({
