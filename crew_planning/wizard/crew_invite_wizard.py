@@ -53,7 +53,7 @@ class CrewInviteWizard(models.TransientModel):
         self.ensure_one()
         selected = self.line_ids.filtered('selected')
         if not selected:
-            raise UserError(_("Select at least one candidate to invite."))
+            raise UserError(_("Please select at least one crew member to invite."))
         Invitation = self.env['crew.availability.invitation']
         wave = max(self.request_id.invitation_ids.mapped('wave'), default=0) + 1
         created = Invitation

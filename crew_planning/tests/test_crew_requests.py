@@ -167,6 +167,14 @@ class TestCrewRequests(TransactionCase):
         self.assertEqual(req.planned_headcount, 1)
         self.assertEqual(req.availability_coverage, 'sufficient')
 
+    def test_12_invite_without_selection_blocks(self):
+        from odoo.exceptions import UserError
+        req = self._make_request(role_id=self.role_sound.id)
+        req.action_open()
+        wiz = self._wizard(req)  # candidates present, none selected
+        with self.assertRaises(UserError):
+            wiz.action_invite_selected()
+
     def test_11_candidates_scoped_to_request_company(self):
         other = self.env['res.company'].create({'name': 'Crew Other Co'})
         emp_other = self.env['hr.employee'].create({
