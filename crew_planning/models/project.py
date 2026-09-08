@@ -1,9 +1,23 @@
 # -*- coding: utf-8 -*-
-from odoo import _, models
+from odoo import _, api, fields, models
 
 
 class ProjectProject(models.Model):
     _inherit = 'project.project'
+
+    crew_request_ids = fields.One2many(
+        'crew.availability.request', 'project_id', string="Availability Requests")
+    crew_request_count = fields.Integer(compute='_compute_crew_request_count')
+
+    @api.depends('crew_request_ids')
+    def _compute_crew_request_count(self):
+        data = {}
+        if self.ids:
+            for grp in self.env['crew.availability.request']._read_group(
+                    [('project_id', 'in', self.ids)], ['project_id'], ['__count']):
+                data[grp[0].id] = grp[1]
+        for project in self:
+            project.crew_request_count = data.get(project.id, 0)
 
     def action_crew_availability_request(self):
         self.ensure_one()
@@ -21,9 +35,35 @@ class ProjectProject(models.Model):
             },
         }
 
+    def action_view_crew_requests(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _("Availability Requests"),
+            'res_model': 'crew.availability.request',
+            'view_mode': 'list,form',
+            'domain': [('project_id', '=', self.id)],
+            'context': {'default_request_type': 'project',
+                        'default_project_id': self.id},
+        }
+
 
 class ProjectTask(models.Model):
     _inherit = 'project.task'
+
+    crew_request_ids = fields.One2many(
+        'crew.availability.request', 'task_id', string="Availability Requests")
+    crew_request_count = fields.Integer(compute='_compute_crew_request_count')
+
+    @api.depends('crew_request_ids')
+    def _compute_crew_request_count(self):
+        data = {}
+        if self.ids:
+            for grp in self.env['crew.availability.request']._read_group(
+                    [('task_id', 'in', self.ids)], ['task_id'], ['__count']):
+                data[grp[0].id] = grp[1]
+        for task in self:
+            task.crew_request_count = data.get(task.id, 0)
 
     def action_crew_availability_request(self):
         self.ensure_one()
@@ -41,4 +81,17 @@ class ProjectTask(models.Model):
                 'default_date_end': self.date_deadline,
                 'default_indicative_hours': self.allocated_hours,
             },
+        }
+
+    def action_view_crew_requests(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _("Availability Requests"),
+            'res_model': 'crew.availability.request',
+            'view_mode': 'list,form',
+            'domain': [('task_id', '=', self.id)],
+            'context': {'default_request_type': 'task',
+                        'default_task_id': self.id,
+                        'default_project_id': self.project_id.id},
         }

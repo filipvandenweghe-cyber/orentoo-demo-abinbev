@@ -9,6 +9,14 @@
                 <button name="action_crew_availability_request" type="object"
                         string="Request Availability" groups="hr.group_hr_user,planning.group_planning_user"/>
             </xpath>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_crew_requests" type="object"
+                        class="oe_stat_button" icon="fa-calendar-check-o"
+                        groups="hr.group_hr_user,planning.group_planning_user"
+                        invisible="crew_request_count == 0">
+                    <field name="crew_request_count" widget="statinfo" string="Availability"/>
+                </button>
+            </xpath>
         </field>
     </record>
 
@@ -20,6 +28,14 @@
             <xpath expr="//header" position="inside">
                 <button name="action_crew_availability_request" type="object"
                         string="Request Availability" groups="hr.group_hr_user,planning.group_planning_user"/>
+            </xpath>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_crew_requests" type="object"
+                        class="oe_stat_button" icon="fa-calendar-check-o"
+                        groups="hr.group_hr_user,planning.group_planning_user"
+                        invisible="crew_request_count == 0">
+                    <field name="crew_request_count" widget="statinfo" string="Availability"/>
+                </button>
             </xpath>
         </field>
     </record>

@@ -134,7 +134,12 @@ class CrewAvailabilityRequest(models.Model):
     def _match_candidate_employees(self, exclude_answered=True):
         self.ensure_one()
         Emp = self.env['hr.employee']
-        emps = Emp.search([('active', '=', True)])
+        # Scope to the request's company (+ company-less) so we never reach
+        # across companies into records the user can't access (multi-company).
+        emps = Emp.search([
+            ('active', '=', True),
+            ('company_id', 'in', [self.company_id.id, False]),
+        ])
         if self.role_id:
             emps = emps.filtered(lambda e: self.role_id in (
                 e.resource_id.role_ids | e.resource_id.default_role_id))

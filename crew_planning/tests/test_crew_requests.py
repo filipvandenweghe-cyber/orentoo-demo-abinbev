@@ -167,6 +167,19 @@ class TestCrewRequests(TransactionCase):
         self.assertEqual(req.planned_headcount, 1)
         self.assertEqual(req.availability_coverage, 'sufficient')
 
+    def test_11_candidates_scoped_to_request_company(self):
+        other = self.env['res.company'].create({'name': 'Crew Other Co'})
+        emp_other = self.env['hr.employee'].create({
+            'name': 'Otto Other', 'company_id': other.id})
+        self.env['hr.employee.skill'].create({
+            'employee_id': emp_other.id, 'skill_type_id': self.skill_type.id,
+            'skill_id': self.skill_sound.id, 'skill_level_id': self.lvl_adv.id})
+        req = self._make_request()  # company = env.company, not `other`
+        cands = req._match_candidate_employees()
+        self.assertIn(self.emp_adv, cands)
+        self.assertNotIn(emp_other, cands,
+                         "Candidates must be scoped to the request's company (multi-company).")
+
     def test_10_exclude_already_answered(self):
         # a candidate who already declared availability for the period is not re-asked
         self.env['crew.availability.log'].create({
