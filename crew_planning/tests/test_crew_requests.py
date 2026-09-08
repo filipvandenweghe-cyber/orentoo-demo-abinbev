@@ -281,6 +281,22 @@ class TestCrewRequests(TransactionCase):
         self.assertTrue(inv.sent_on)
         self.assertEqual(req.partial_count, 1)
 
+    def test_21_partial_decline_is_unknown_full_decline_is_unavailable(self):
+        emp = self.emp_noemail
+        # a 1-day decline inside a 1-month request, no availability -> still ask
+        log = self.env['crew.availability.log'].create({
+            'employee_id': emp.id, 'resource_id': emp.resource_id.id,
+            'company_id': self.env.company.id,
+            'date_start': '2026-09-10 08:00:00', 'date_end': '2026-09-11 08:00:00',
+            'declared_state': 'unavailable', 'origin': 'planner'})
+        req = self.env['crew.availability.request'].create({
+            'request_type': 'period',
+            'date_start': '2026-09-01 00:00:00', 'date_end': '2026-09-30 00:00:00'})
+        self.assertEqual(req._employee_known_state(emp), 'unknown')
+        # decline covering the WHOLE period -> unavailable
+        log.write({'date_start': '2026-08-01 00:00:00', 'date_end': '2026-10-01 00:00:00'})
+        self.assertEqual(req._employee_known_state(emp), 'unavailable')
+
     def test_17_send_whatsapp_after_email(self):
         from odoo.exceptions import UserError
         req = self._make_request()

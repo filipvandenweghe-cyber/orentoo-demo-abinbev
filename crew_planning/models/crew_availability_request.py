@@ -178,43 +178,61 @@ class CrewAvailabilityRequest(models.Model):
             emps -= answered
         return emps
 
+    @staticmethod
+    def _covered_seconds(intervals, start, end):
+        """Seconds of [start, end] covered by the (start, end) intervals,
+        merging overlaps and clipping to the period."""
+        clipped = sorted((max(s, start), min(e, end)) for s, e in intervals
+                         if e > start and s < end)
+        covered, cur_s, cur_e = 0.0, None, None
+        for s, e in clipped:
+            if cur_e is None or s > cur_e:
+                if cur_e is not None:
+                    covered += (cur_e - cur_s).total_seconds()
+                cur_s, cur_e = s, e
+            else:
+                cur_e = max(cur_e, e)
+        if cur_e is not None:
+            covered += (cur_e - cur_s).total_seconds()
+        return covered
+
     def _employee_known_state(self, employee):
         """What we already KNOW about this employee's availability for the
         request period (independent of any invitation):
 
         * 'available'   — registered availability covers the WHOLE period;
         * 'partial'     — registered availability covers only part of it;
-        * 'unavailable' — a declared-unavailable log and no availability;
-        * 'unknown'     — nothing on record.
+        * 'unavailable' — declared unavailable for the WHOLE period, no availability;
+        * 'unknown'     — nothing usable on record, or only a partial decline
+                          (so we should still ask about the rest).
         """
         self.ensure_one()
         if not (self.date_start and self.date_end):
             return 'unknown'
         start, end = self.date_start, self.date_end
         total = (end - start).total_seconds()
+
         wins = self.env['crew.availability'].search([
             ('employee_id', '=', employee.id),
-            ('date_start', '<', end),
-            ('date_end', '>', start)])
-        if wins:
-            # sum the covered time (merge overlaps), clipped to the period
-            clipped = sorted((max(w.date_start, start), min(w.date_end, end)) for w in wins)
-            covered, cur_s, cur_e = 0.0, None, None
-            for s, e in clipped:
-                if cur_e is None or s > cur_e:
-                    if cur_e is not None:
-                        covered += (cur_e - cur_s).total_seconds()
-                    cur_s, cur_e = s, e
-                else:
-                    cur_e = max(cur_e, e)
-            if cur_e is not None:
-                covered += (cur_e - cur_s).total_seconds()
-            return 'available' if total and covered >= total - 1 else 'partial'
-        log = self.env['crew.availability.log'].search([
+            ('date_start', '<', end), ('date_end', '>', start)])
+        avail = self._covered_seconds(
+            [(w.date_start, w.date_end) for w in wins], start, end)
+        if total and avail >= total - 1:
+            return 'available'
+        if avail > 0:
+            return 'partial'
+
+        # No positive availability — only a FULL decline counts as unavailable;
+        # a partial decline leaves the rest open, so we still ask.
+        unlogs = self.env['crew.availability.log'].search([
             ('employee_id', '=', employee.id),
-            ('date_start', '<', end),
-            ('date_end', '>', start)], order='id desc', limit=1)
-        return log.declared_state if log else 'unknown'
+            ('declared_state', '=', 'unavailable'),
+            ('date_start', '<', end), ('date_end', '>', start)])
+        unavail = self._covered_seconds(
+            [(l.date_start, l.date_end) for l in unlogs], start, end)
+        if total and unavail >= total - 1:
+            return 'unavailable'
+        return 'unknown'
 
     def action_find_candidates(self):
         self.ensure_one()
