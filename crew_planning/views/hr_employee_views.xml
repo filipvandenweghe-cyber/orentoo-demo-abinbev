@@ -32,9 +32,16 @@
                                     invisible="not is_crew or user_id"/>
                         </group>
                     </group>
-                    <group string="Crew Portal — hidden sections" invisible="not is_crew">
+                    <group string="Crew Portal — hidden sections" invisible="not is_crew"
+                           col="4">
                         <field name="crew_portal_hide_sales"/>
                         <field name="crew_portal_hide_invoices"/>
+                        <field name="crew_portal_hide_purchases"/>
+                        <field name="crew_portal_hide_projects"/>
+                        <field name="crew_portal_hide_tasks"/>
+                        <field name="crew_portal_hide_timesheets"/>
+                        <field name="crew_portal_hide_subscriptions"/>
+                        <field name="crew_portal_hide_signatures"/>
                     </group>
                     <div class="text-muted" invisible="crew_availability_mode != 'explicit'">
                         Explicit Availability: this crew member is considered

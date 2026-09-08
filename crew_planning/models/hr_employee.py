@@ -19,22 +19,35 @@ class HrEmployee(models.Model):
     crew_saved_calendar_id = fields.Many2one(
         'resource.calendar', copy=False,
         help="Working schedule to restore when leaving Explicit Availability mode.")
-    crew_portal_hide_sales = fields.Boolean(
-        string="Hide Sales Orders in Portal",
-        help="Hide the Quotations/Sales Orders cards from this crew member's portal home.")
-    crew_portal_hide_invoices = fields.Boolean(
-        string="Hide Invoices in Portal",
-        help="Hide the Invoices/Bills cards from this crew member's portal home.")
+    crew_portal_hide_sales = fields.Boolean(string="Hide Sales Orders")
+    crew_portal_hide_invoices = fields.Boolean(string="Hide Invoices")
+    crew_portal_hide_purchases = fields.Boolean(string="Hide Purchases")
+    crew_portal_hide_projects = fields.Boolean(string="Hide Projects")
+    crew_portal_hide_tasks = fields.Boolean(string="Hide Tasks")
+    crew_portal_hide_timesheets = fields.Boolean(string="Hide Timesheets")
+    crew_portal_hide_subscriptions = fields.Boolean(string="Hide Subscriptions")
+    crew_portal_hide_signatures = fields.Boolean(string="Hide Signatures")
+
+    # field name -> portal home counter keys to zero (hides the card)
+    _CREW_PORTAL_HIDE_MAP = {
+        'crew_portal_hide_sales': {'order_count', 'quotation_count'},
+        'crew_portal_hide_invoices': {'invoice_count', 'bill_count', 'overdue_invoice_count'},
+        'crew_portal_hide_purchases': {'purchase_count', 'rfq_count'},
+        'crew_portal_hide_projects': {'project_count'},
+        'crew_portal_hide_tasks': {'task_count'},
+        'crew_portal_hide_timesheets': {'timesheet_count'},
+        'crew_portal_hide_subscriptions': {'subscription_count'},
+        'crew_portal_hide_signatures': {'sign_count', 'to_sign_count'},
+    }
 
     def _crew_portal_hidden_counters(self):
         """Portal home counter keys to force to 0 for this crew member so the
         corresponding cards are hidden."""
         self.ensure_one()
         keys = set()
-        if self.crew_portal_hide_sales:
-            keys |= {'order_count', 'quotation_count'}
-        if self.crew_portal_hide_invoices:
-            keys |= {'invoice_count', 'bill_count'}
+        for field_name, counter_keys in self._CREW_PORTAL_HIDE_MAP.items():
+            if self[field_name]:
+                keys |= counter_keys
         return keys
     crew_availability_ids = fields.One2many(
         'crew.availability', 'employee_id', string="Availability Windows")

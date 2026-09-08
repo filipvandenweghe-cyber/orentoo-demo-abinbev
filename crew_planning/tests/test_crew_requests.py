@@ -300,13 +300,14 @@ class TestCrewRequests(TransactionCase):
     def test_24_portal_hidden_counters(self):
         emp = self.env['hr.employee'].create({
             'name': 'Hider', 'is_crew': True,
-            'crew_portal_hide_sales': True, 'crew_portal_hide_invoices': True})
+            'crew_portal_hide_sales': True, 'crew_portal_hide_invoices': True,
+            'crew_portal_hide_purchases': True, 'crew_portal_hide_timesheets': True})
         keys = emp._crew_portal_hidden_counters()
-        self.assertIn('order_count', keys)
-        self.assertIn('quotation_count', keys)
-        self.assertIn('invoice_count', keys)
+        self.assertTrue({'order_count', 'quotation_count', 'invoice_count',
+                         'purchase_count', 'timesheet_count'} <= keys)
         emp.crew_portal_hide_sales = False
         self.assertNotIn('order_count', emp._crew_portal_hidden_counters())
+        self.assertIn('invoice_count', emp._crew_portal_hidden_counters())
 
     def test_23_grant_portal_access(self):
         from odoo.exceptions import UserError
