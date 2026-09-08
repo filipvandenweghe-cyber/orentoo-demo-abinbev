@@ -5,6 +5,14 @@
         <field name="model">planning.slot</field>
         <field name="inherit_id" ref="planning.planning_view_form"/>
         <field name="arch" type="xml">
+            <xpath expr="//div[hasclass('oe_button_box')]" position="inside">
+                <button name="action_open_work_declaration" type="object"
+                        class="oe_stat_button" icon="fa-clock-o"
+                        invisible="not id">
+                    <field name="work_declaration_count" widget="statinfo"
+                           string="Work Decl."/>
+                </button>
+            </xpath>
             <field name="role_id" position="after">
                 <field name="task_id"/>
                 <field name="crew_request_id" readonly="1"

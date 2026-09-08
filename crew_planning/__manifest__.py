@@ -28,7 +28,7 @@ work-declaration → timesheet flow.
     'author': "Orentoo",
     'website': "https://www.orentoo.com",
     'category': 'Human Resources/Planning',
-    'version': '19.0.4.7.0',
+    'version': '19.0.4.8.0',
     'license': 'LGPL-3',
     'depends': [
         'hr',
@@ -55,6 +55,7 @@ work-declaration → timesheet flow.
         'views/crew_availability_request_views.xml',
         'views/crew_availability_invitation_views.xml',
         'views/planning_slot_views.xml',
+        'views/crew_work_declaration_views.xml',
         'views/project_views.xml',
         'views/hr_employee_views.xml',
         'views/res_config_settings_views.xml',

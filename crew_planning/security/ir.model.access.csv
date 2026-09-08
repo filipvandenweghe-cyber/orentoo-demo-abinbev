@@ -16,3 +16,6 @@ access_crew_invite_wizard_hr_user,crew.invite.wizard.hr.user,model_crew_invite_w
 access_crew_invite_wizard_planning_user,crew.invite.wizard.planning.user,model_crew_invite_wizard,planning.group_planning_user,1,1,1,1
 access_crew_invite_wizard_line_hr_user,crew.invite.wizard.line.hr.user,model_crew_invite_wizard_line,hr.group_hr_user,1,1,1,1
 access_crew_invite_wizard_line_planning_user,crew.invite.wizard.line.planning.user,model_crew_invite_wizard_line,planning.group_planning_user,1,1,1,1
+access_crew_work_declaration_hr_user,crew.work.declaration.hr.user,model_crew_work_declaration,hr.group_hr_user,1,1,1,0
+access_crew_work_declaration_planning_user,crew.work.declaration.planning.user,model_crew_work_declaration,planning.group_planning_user,1,1,1,0
+access_crew_work_declaration_hr_manager,crew.work.declaration.hr.manager,model_crew_work_declaration,hr.group_hr_manager,1,1,1,1

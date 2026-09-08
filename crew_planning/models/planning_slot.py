@@ -21,6 +21,39 @@ class PlanningSlot(models.Model):
         help="The assigned crew member reported they can no longer perform this "
              "shift. The assignment is kept until the planner handles it.")
     crew_unavailable_reason = fields.Char(string="Reason", copy=False)
+    work_declaration_ids = fields.One2many(
+        'crew.work.declaration', 'slot_id', string="Work Declarations")
+    work_declaration_count = fields.Integer(compute='_compute_work_declaration_count')
+
+    def _compute_work_declaration_count(self):
+        data = dict(self.env['crew.work.declaration']._read_group(
+            [('slot_id', 'in', self.ids)], ['slot_id'], ['__count']))
+        for slot in self:
+            slot.work_declaration_count = data.get(slot, 0)
+
+    def _get_or_create_work_declaration(self):
+        """Return the single work declaration of this shift, creating a draft
+        one (prefilled from the plan) if none exists yet."""
+        self.ensure_one()
+        wd = self.work_declaration_ids[:1]
+        if not wd:
+            wd = self.env['crew.work.declaration'].create({
+                'slot_id': self.id,
+                'actual_start': self.start_datetime,
+                'actual_end': self.end_datetime,
+            })
+        return wd
+
+    def action_open_work_declaration(self):
+        self.ensure_one()
+        wd = self._get_or_create_work_declaration()
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'crew.work.declaration',
+            'res_id': wd.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
 
     def _crew_may_self_unassign(self):
         """Whether reporting "cannot work" may self-unassign the crew member.

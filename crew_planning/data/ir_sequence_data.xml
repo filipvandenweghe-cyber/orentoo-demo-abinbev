@@ -8,5 +8,12 @@
             <field name="padding">4</field>
             <field name="company_id" eval="False"/>
         </record>
+        <record id="seq_crew_work_declaration" model="ir.sequence">
+            <field name="name">Crew Work Declaration</field>
+            <field name="code">crew.work.declaration</field>
+            <field name="prefix">WD/%(year)s/</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
+        </record>
     </data>
 </odoo>

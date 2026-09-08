@@ -13,6 +13,9 @@
     <menuitem id="menu_crew_availability" name="Availability Windows"
               parent="menu_crew_root" action="action_crew_availability" sequence="10"/>
 
+    <menuitem id="menu_crew_work_declaration" name="Work Declarations"
+              parent="menu_crew_root" action="action_crew_work_declaration" sequence="15"/>
+
     <menuitem id="menu_crew_availability_log" name="Availability Log"
               parent="menu_crew_root" action="action_crew_availability_log" sequence="20"/>
 

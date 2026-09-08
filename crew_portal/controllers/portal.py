@@ -35,6 +35,15 @@ class CrewPortal(CustomerPortal):
         tz = pytz.timezone(request.env.user.tz or 'UTC')
         return tz.localize(naive).astimezone(pytz.utc).replace(tzinfo=None)
 
+    def _dt_local_input(self, value):
+        """Format a stored (naive UTC) datetime as a 'YYYY-MM-DDTHH:MM' string
+        in the user's tz, for a datetime-local input default value."""
+        if not value:
+            return ''
+        tz = pytz.timezone(request.env.user.tz or 'UTC')
+        local = pytz.utc.localize(value).astimezone(tz)
+        return local.strftime('%Y-%m-%dT%H:%M')
+
     # ------------------------------------------------------------------
     def _prepare_home_portal_values(self, counters):
         values = super()._prepare_home_portal_values(counters)
@@ -47,6 +56,9 @@ class CrewPortal(CustomerPortal):
                 [('resource_id', '=', emp.resource_id.id),
                  ('end_datetime', '>=', fields.Datetime.now())]
             ) if emp and emp.resource_id else 0
+        if 'crew_hours_count' in counters:
+            values['crew_hours_count'] = len(
+                self._crew_hours_slots(emp)['to_declare']) if emp else 0
         # Hide configured portal cards for this crew member by zeroing their
         # counters (a 0-count card is hidden on the portal home).
         if emp:
@@ -169,3 +181,86 @@ class CrewPortal(CustomerPortal):
         if emp and slot.exists() and slot.resource_id.employee_id.id == emp.id:
             slot.action_crew_report_cannot_work(post.get('reason'))
         return request.redirect('/my/planning')
+
+    # ------------------------------------------------------------------
+    # My Hours (work declarations)
+    # ------------------------------------------------------------------
+    def _crew_hours_slots(self, emp):
+        """Partition the crew member's started shifts into those still needing
+        a declaration ('to_declare') and those already submitted/approved
+        ('done'). A shift the crew reported they could not work is excluded."""
+        result = {'to_declare': request.env['planning.slot'].sudo().browse(),
+                  'done': request.env['planning.slot'].sudo().browse()}
+        if not (emp and emp.resource_id):
+            return result
+        slots = request.env['planning.slot'].sudo().search([
+            ('resource_id', '=', emp.resource_id.id),
+            ('start_datetime', '<=', fields.Datetime.now()),
+            ('crew_unavailable_reported', '=', False),
+        ], order='start_datetime desc')
+        for slot in slots:
+            wd = slot.work_declaration_ids[:1]
+            if wd and wd.state in ('submitted', 'approved'):
+                result['done'] |= slot
+            else:
+                result['to_declare'] |= slot
+        return result
+
+    @http.route(['/my/hours'], type='http', auth='user', website=True)
+    def portal_my_hours(self, **kw):
+        emp = self._crew_employee()
+        if not emp:
+            return request.render('crew_portal.portal_not_crew', {'page_name': 'crew'})
+        parts = self._crew_hours_slots(emp)
+        todo_rows = [{
+            'id': s.id,
+            'start': self._fmt_dt(s.start_datetime),
+            'end': self._fmt_dt(s.end_datetime),
+            'project': s.project_id.display_name,
+            'task': s.task_id.display_name,
+            'default_start': self._dt_local_input(s.work_declaration_ids[:1].actual_start
+                                                  or s.start_datetime),
+            'default_end': self._dt_local_input(s.work_declaration_ids[:1].actual_end
+                                                or s.end_datetime),
+            'break_minutes': s.work_declaration_ids[:1].break_minutes or 0,
+            'comment': s.work_declaration_ids[:1].comment or '',
+        } for s in parts['to_declare']]
+        done_rows = [{
+            'start': self._fmt_dt(s.start_datetime),
+            'end': self._fmt_dt(s.end_datetime),
+            'project': s.project_id.display_name,
+            'task': s.task_id.display_name,
+            'worked_hours': round(s.work_declaration_ids[:1].worked_hours, 2),
+            'state': dict(s.work_declaration_ids[:1]._fields['state'].selection).get(
+                s.work_declaration_ids[:1].state),
+        } for s in parts['done']]
+        return request.render('crew_portal.portal_my_hours', {
+            'page_name': 'crew_hours',
+            'employee': emp,
+            'todo_rows': todo_rows,
+            'done_rows': done_rows,
+        })
+
+    @http.route(['/my/hours/<int:slot_id>/declare'], type='http', auth='user',
+                methods=['POST'], website=True)
+    def portal_declare_hours(self, slot_id, **post):
+        emp = self._crew_employee()
+        slot = request.env['planning.slot'].sudo().browse(slot_id)
+        if emp and slot.exists() and slot.resource_id.employee_id.id == emp.id:
+            start = self._parse_portal_dt(post.get('actual_start'))
+            end = self._parse_portal_dt(post.get('actual_end'))
+            if start and end and start < end:
+                wd = slot._get_or_create_work_declaration()
+                if not wd.locked:
+                    try:
+                        break_min = int(post.get('break_minutes') or 0)
+                    except (TypeError, ValueError):
+                        break_min = 0
+                    wd.write({
+                        'actual_start': start,
+                        'actual_end': end,
+                        'break_minutes': max(break_min, 0),
+                        'comment': post.get('comment') or False,
+                    })
+                    wd.action_submit()
+        return request.redirect('/my/hours')
