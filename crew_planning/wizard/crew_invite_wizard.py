@@ -80,7 +80,8 @@ class CrewInviteWizard(models.TransientModel):
         new_lines = selected.filtered(
             lambda l: not l.already_invited and l.known_state == 'unknown')
         known_lines = selected.filtered(
-            lambda l: not l.already_invited and l.known_state in ('available', 'unavailable'))
+            lambda l: not l.already_invited
+            and l.known_state in ('available', 'partial', 'unavailable'))
         if not new_lines and not known_lines:
             raise UserError(_(
                 "The selected crew are already invited — nothing to add."))
@@ -162,6 +163,7 @@ class CrewInviteWizardLine(models.TransientModel):
     known_state = fields.Selection([
         ('unknown', 'Unknown'),
         ('available', 'Available'),
+        ('partial', 'Partial'),
         ('unavailable', 'Unavailable'),
     ], default='unknown')
     status_label = fields.Char(compute='_compute_status_label')
@@ -174,6 +176,8 @@ class CrewInviteWizardLine(models.TransientModel):
                 line.status_label = _("Invited — %s", RESP_LABELS.get(resp, resp))
             elif line.known_state == 'available':
                 line.status_label = _("Available (not invited)")
+            elif line.known_state == 'partial':
+                line.status_label = _("Partially available (not invited)")
             elif line.known_state == 'unavailable':
                 line.status_label = _("Unavailable (not invited)")
             else:

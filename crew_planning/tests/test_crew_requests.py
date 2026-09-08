@@ -226,6 +226,34 @@ class TestCrewRequests(TransactionCase):
         self.assertFalse(inv.sent_on)
         self.assertEqual(req.available_count, 1)
 
+    def test_19_partial_coverage_counts_as_partial(self):
+        # A window covering only part of a long request period => 'partial',
+        # counted in partial_count (NOT available_count), so coverage stays honest.
+        self.env['crew.availability'].create({
+            'resource_id': self.emp_noemail.resource_id.id,
+            'employee_id': self.emp_noemail.id,
+            'company_id': self.env.company.id,
+            'date_start': '2026-09-10 08:00:00', 'date_end': '2026-09-11 08:00:00'})
+        req = self.env['crew.availability.request'].create({
+            'request_type': 'period',
+            'date_start': '2026-09-01 00:00:00', 'date_end': '2026-09-30 00:00:00',
+            'role_id': self.role_sound.id, 'headcount_needed': 1,
+            'skill_requirement_ids': [(0, 0, {
+                'skill_type_id': self.skill_type.id, 'skill_id': self.skill_sound.id,
+                'min_skill_level_id': self.lvl_int.id})]})
+        req.action_open()
+        self.assertEqual(req._employee_known_state(self.emp_noemail), 'partial')
+        wiz = self._wizard(req)
+        line = wiz.line_ids.filtered(lambda l: l.employee_id == self.emp_noemail)
+        self.assertEqual(line.known_state, 'partial')
+        line.selected = True
+        wiz.action_invite_selected()
+        inv = req.invitation_ids.filtered(lambda i: i.employee_id == self.emp_noemail)
+        self.assertEqual(inv.response, 'partial')
+        self.assertEqual(req.partial_count, 1)
+        self.assertEqual(req.available_count, 0)
+        self.assertEqual(req.availability_coverage, 'insufficient')
+
     def test_17_send_whatsapp_after_email(self):
         from odoo.exceptions import UserError
         req = self._make_request()

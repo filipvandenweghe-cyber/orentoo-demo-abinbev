@@ -23,6 +23,7 @@
                 <field name="line_ids">
                     <list create="false" delete="false"
                           decoration-success="known_state == 'available'"
+                          decoration-warning="known_state == 'partial'"
                           decoration-danger="known_state == 'unavailable'"
                           decoration-muted="already_invited">
                         <field name="selected" widget="boolean_toggle"

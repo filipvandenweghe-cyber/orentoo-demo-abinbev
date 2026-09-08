@@ -180,21 +180,40 @@ class CrewAvailabilityRequest(models.Model):
 
     def _employee_known_state(self, employee):
         """What we already KNOW about this employee's availability for the
-        request period (independent of any invitation): 'available' if a
-        registered availability window overlaps, else the last declared log
-        state, else 'unknown'."""
+        request period (independent of any invitation):
+
+        * 'available'   — registered availability covers the WHOLE period;
+        * 'partial'     — registered availability covers only part of it;
+        * 'unavailable' — a declared-unavailable log and no availability;
+        * 'unknown'     — nothing on record.
+        """
         self.ensure_one()
         if not (self.date_start and self.date_end):
             return 'unknown'
-        if self.env['crew.availability'].search_count([
-                ('employee_id', '=', employee.id),
-                ('date_start', '<', self.date_end),
-                ('date_end', '>', self.date_start)]):
-            return 'available'
+        start, end = self.date_start, self.date_end
+        total = (end - start).total_seconds()
+        wins = self.env['crew.availability'].search([
+            ('employee_id', '=', employee.id),
+            ('date_start', '<', end),
+            ('date_end', '>', start)])
+        if wins:
+            # sum the covered time (merge overlaps), clipped to the period
+            clipped = sorted((max(w.date_start, start), min(w.date_end, end)) for w in wins)
+            covered, cur_s, cur_e = 0.0, None, None
+            for s, e in clipped:
+                if cur_e is None or s > cur_e:
+                    if cur_e is not None:
+                        covered += (cur_e - cur_s).total_seconds()
+                    cur_s, cur_e = s, e
+                else:
+                    cur_e = max(cur_e, e)
+            if cur_e is not None:
+                covered += (cur_e - cur_s).total_seconds()
+            return 'available' if total and covered >= total - 1 else 'partial'
         log = self.env['crew.availability.log'].search([
             ('employee_id', '=', employee.id),
-            ('date_start', '<', self.date_end),
-            ('date_end', '>', self.date_start)], order='id desc', limit=1)
+            ('date_start', '<', end),
+            ('date_end', '>', start)], order='id desc', limit=1)
         return log.declared_state if log else 'unknown'
 
     def action_find_candidates(self):
