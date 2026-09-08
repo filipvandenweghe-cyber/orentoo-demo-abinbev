@@ -297,6 +297,17 @@ class TestCrewRequests(TransactionCase):
         log.write({'date_start': '2026-08-01 00:00:00', 'date_end': '2026-10-01 00:00:00'})
         self.assertEqual(req._employee_known_state(emp), 'unavailable')
 
+    def test_24_portal_hidden_counters(self):
+        emp = self.env['hr.employee'].create({
+            'name': 'Hider', 'is_crew': True,
+            'crew_portal_hide_sales': True, 'crew_portal_hide_invoices': True})
+        keys = emp._crew_portal_hidden_counters()
+        self.assertIn('order_count', keys)
+        self.assertIn('quotation_count', keys)
+        self.assertIn('invoice_count', keys)
+        emp.crew_portal_hide_sales = False
+        self.assertNotIn('order_count', emp._crew_portal_hidden_counters())
+
     def test_23_grant_portal_access(self):
         from odoo.exceptions import UserError
         emp = self.env['hr.employee'].create({

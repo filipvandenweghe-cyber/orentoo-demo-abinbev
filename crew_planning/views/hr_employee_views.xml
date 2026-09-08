@@ -32,6 +32,10 @@
                                     invisible="not is_crew or user_id"/>
                         </group>
                     </group>
+                    <group string="Crew Portal — hidden sections" invisible="not is_crew">
+                        <field name="crew_portal_hide_sales"/>
+                        <field name="crew_portal_hide_invoices"/>
+                    </group>
                     <div class="text-muted" invisible="crew_availability_mode != 'explicit'">
                         Explicit Availability: this crew member is considered
                         <b>unavailable</b> unless availability has been registered. A broad

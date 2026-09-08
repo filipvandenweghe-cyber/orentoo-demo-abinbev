@@ -19,6 +19,23 @@ class HrEmployee(models.Model):
     crew_saved_calendar_id = fields.Many2one(
         'resource.calendar', copy=False,
         help="Working schedule to restore when leaving Explicit Availability mode.")
+    crew_portal_hide_sales = fields.Boolean(
+        string="Hide Sales Orders in Portal",
+        help="Hide the Quotations/Sales Orders cards from this crew member's portal home.")
+    crew_portal_hide_invoices = fields.Boolean(
+        string="Hide Invoices in Portal",
+        help="Hide the Invoices/Bills cards from this crew member's portal home.")
+
+    def _crew_portal_hidden_counters(self):
+        """Portal home counter keys to force to 0 for this crew member so the
+        corresponding cards are hidden."""
+        self.ensure_one()
+        keys = set()
+        if self.crew_portal_hide_sales:
+            keys |= {'order_count', 'quotation_count'}
+        if self.crew_portal_hide_invoices:
+            keys |= {'invoice_count', 'bill_count'}
+        return keys
     crew_availability_ids = fields.One2many(
         'crew.availability', 'employee_id', string="Availability Windows")
     crew_availability_count = fields.Integer(compute='_compute_crew_counts')

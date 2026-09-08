@@ -39,6 +39,12 @@ class CrewPortal(CustomerPortal):
                 [('resource_id', '=', emp.resource_id.id),
                  ('end_datetime', '>=', fields.Datetime.now())]
             ) if emp and emp.resource_id else 0
+        # Hide configured portal cards for this crew member by zeroing their
+        # counters (a 0-count card is hidden on the portal home).
+        if emp:
+            for key in emp._crew_portal_hidden_counters():
+                if key in values:
+                    values[key] = 0
         return values
 
     # ------------------------------------------------------------------
