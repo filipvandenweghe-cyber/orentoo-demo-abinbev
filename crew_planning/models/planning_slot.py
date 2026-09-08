@@ -23,20 +23,24 @@ class PlanningSlot(models.Model):
     crew_unavailable_reason = fields.Char(string="Reason", copy=False)
 
     def action_crew_report_cannot_work(self, reason=False):
-        """Crew reports they can no longer perform this shift. Flag it and
-        notify the planner — never silently remove the assignment (§7/§12)."""
+        """Crew reports they can no longer perform this shift: unassign them so
+        the shift becomes an OPEN shift (never deleted), flag it with the reason,
+        and notify the planner. The shift and its task/period are preserved for
+        reassignment."""
         for slot in self:
+            emp_name = slot.employee_id.display_name or _("Crew member")
             slot.crew_unavailable_reported = True
             if reason:
                 slot.crew_unavailable_reason = reason
             body = _(
-                "%(emp)s reported they can no longer work the shift %(start)s → %(end)s.",
-                emp=slot.employee_id.display_name or _("Crew member"),
-                start=slot.start_datetime, end=slot.end_datetime)
+                "%(emp)s can no longer work the shift %(start)s → %(end)s; it has "
+                "been unassigned and is now an open shift.",
+                emp=emp_name, start=slot.start_datetime, end=slot.end_datetime)
             if reason:
                 body += _(" Reason: %s", reason)
             if slot.crew_request_id:
                 slot.crew_request_id.message_post(body=body)
+            slot.resource_id = False  # unassign -> open shift
         return True
 
     @api.onchange('task_id')

@@ -340,7 +340,7 @@ class TestCrewRequests(TransactionCase):
         with self.assertRaises(UserError):
             wiz.action_invite_selected()
 
-    def test_22_report_cannot_work_keeps_slot_and_notifies(self):
+    def test_22_report_cannot_work_unassigns_and_notifies(self):
         req = self._make_request(role_id=self.role_sound.id)
         slot = self.env['planning.slot'].create({
             'resource_id': self.emp_adv.resource_id.id,
@@ -350,7 +350,8 @@ class TestCrewRequests(TransactionCase):
         slot.action_crew_report_cannot_work('Sick')
         self.assertTrue(slot.crew_unavailable_reported)
         self.assertEqual(slot.crew_unavailable_reason, 'Sick')
-        self.assertTrue(slot.resource_id, "The assignment must NOT be dropped.")
+        self.assertFalse(slot.resource_id, "Crew must be unassigned (open shift).")
+        self.assertTrue(slot.exists(), "The shift itself must NOT be deleted.")
         self.assertGreater(len(req.message_ids), before,
                            "The planner must be notified via the request chatter.")
 
