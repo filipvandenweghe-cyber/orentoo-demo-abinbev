@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+from odoo.tools import format_date
 
 
 class CrewAvailabilityRequest(models.Model):
@@ -56,6 +57,25 @@ class CrewAvailabilityRequest(models.Model):
     # --- KPIs (staffing — separate from availability) ---
     planned_headcount = fields.Integer(compute='_compute_planned_headcount')
     staffing_display = fields.Char(compute='_compute_planned_headcount', string="Staffing")
+
+    # Day-level, human-friendly period for the invitation ("for <date>" on a
+    # single day, "from <date> to <date>" across days) — no messy exact times.
+    period_label = fields.Char(compute='_compute_period_label')
+
+    @api.depends('date_start', 'date_end')
+    def _compute_period_label(self):
+        for req in self:
+            if not (req.date_start and req.date_end):
+                req.period_label = False
+                continue
+            start = fields.Datetime.context_timestamp(req, req.date_start).date()
+            end = fields.Datetime.context_timestamp(req, req.date_end).date()
+            if start == end:
+                req.period_label = _("for %s", format_date(self.env, start))
+            else:
+                req.period_label = _("from %s to %s",
+                                     format_date(self.env, start),
+                                     format_date(self.env, end))
 
     @api.depends('invitation_ids.response', 'headcount_needed')
     def _compute_kpis(self):

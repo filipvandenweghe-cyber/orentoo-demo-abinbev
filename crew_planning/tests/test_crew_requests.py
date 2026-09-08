@@ -178,6 +178,19 @@ class TestCrewRequests(TransactionCase):
         with self.assertRaises(UserError):
             wiz.action_invite_selected()
 
+    def test_14_period_label_single_and_multi_day(self):
+        single = self.env['crew.availability.request'].create({
+            'request_type': 'period',
+            'date_start': '2026-11-02 08:00:00', 'date_end': '2026-11-02 17:00:00'})
+        self.assertTrue(single.period_label.lower().startswith('for '),
+                        "Single day should read 'for <date>'.")
+        self.assertNotIn(' to ', single.period_label)
+        multi = self.env['crew.availability.request'].create({
+            'request_type': 'period',
+            'date_start': '2026-11-02 08:00:00', 'date_end': '2026-11-05 17:00:00'})
+        self.assertTrue(multi.period_label.lower().startswith('from '))
+        self.assertIn(' to ', multi.period_label)
+
     def test_13_invite_without_email_blocks(self):
         from odoo.exceptions import UserError
         req = self._make_request(role_id=self.role_sound.id)

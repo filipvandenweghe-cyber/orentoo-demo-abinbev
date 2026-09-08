@@ -14,8 +14,8 @@
                         We would like to know your <strong>availability</strong> for the following period:
                     </p>
                     <ul>
-                        <li>From <strong t-out="object.request_id.date_start or ''"/> to
-                            <strong t-out="object.request_id.date_end or ''"/></li>
+                        <li>Requested availability
+                            <strong t-out="object.request_id.period_label or ''"/></li>
                         <li t-if="object.request_id.project_id">Project:
                             <t t-out="object.request_id.project_id.name or ''"/></li>
                         <li t-if="object.request_id.task_id">Task:
