@@ -17,8 +17,10 @@
                 <div class="text-muted">
                     Tick who to handle in this wave, then <b>Invite Selected</b>:
                     <b>New</b> people are invited and messaged on the chosen channel;
-                    people already <b>Available/Unavailable</b> are just counted on the
-                    request (no message sent); <b>already invited</b> rows are left as-is.
+                    <b>Partially available</b> people are counted <i>and</i> asked again
+                    (to fill the unanswered gaps) when reachable; people already
+                    <b>Available/Unavailable</b> are just counted (no message);
+                    <b>already invited</b> rows are left as-is.
                 </div>
                 <field name="line_ids">
                     <list create="false" delete="false"

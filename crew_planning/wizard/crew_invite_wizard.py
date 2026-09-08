@@ -72,64 +72,63 @@ class CrewInviteWizard(models.TransientModel):
         self.line_ids.filtered(lambda l: not l.already_invited).selected = True
         return self._reopen()
 
+    def _reachable(self, line):
+        emp = line.employee_id
+        if self.channel == 'email':
+            return bool(emp.work_email)
+        if self.channel == 'whatsapp':
+            return bool(emp.mobile_phone or emp.work_phone)
+        return bool(emp.work_email or emp.mobile_phone or emp.work_phone)  # both
+
     def action_invite_selected(self):
         self.ensure_one()
         selected = self.line_ids.filtered(lambda l: l.selected and l.employee_id)
         if not selected:
             raise UserError(_("Please select at least one crew member."))
-        new_lines = selected.filtered(
-            lambda l: not l.already_invited and l.known_state == 'unknown')
-        known_lines = selected.filtered(
-            lambda l: not l.already_invited
-            and l.known_state in ('available', 'partial', 'unavailable'))
-        if not new_lines and not known_lines:
+        actionable = selected.filtered(lambda l: not l.already_invited)
+        if not actionable:
             raise UserError(_(
                 "The selected crew are already invited — nothing to add."))
 
-        # Contact details are only required for people we actually message
-        # (the NEW ones); already-known people are just counted, never messaged.
-        if new_lines and self.channel in ('email', 'both'):
-            missing = new_lines.filtered(lambda l: not l.employee_id.work_email)
-            if missing:
-                names = "\n".join("- %s" % l.employee_id.name for l in missing)
-                raise UserError(_(
-                    "These crew members have no email address and cannot be "
-                    "invited by email. Add a work email, or unselect them:\n%s", names))
-        if new_lines and self.channel in ('whatsapp', 'both'):
-            missing = new_lines.filtered(
-                lambda l: not (l.employee_id.mobile_phone or l.employee_id.work_phone))
-            if missing:
-                names = "\n".join("- %s" % l.employee_id.name for l in missing)
+        # 'unknown' people can only be added by ASKING them, so they must be
+        # reachable on the chosen channel (nothing to count otherwise).
+        unreachable_unknown = actionable.filtered(
+            lambda l: l.known_state == 'unknown' and not self._reachable(l))
+        if unreachable_unknown:
+            names = "\n".join("- %s" % l.employee_id.name for l in unreachable_unknown)
+            if self.channel == 'whatsapp':
                 raise UserError(_(
                     "These crew members have no phone number and cannot be "
                     "invited by WhatsApp. Add a phone, or unselect them:\n%s", names))
+            if self.channel == 'email':
+                raise UserError(_(
+                    "These crew members have no email address and cannot be "
+                    "invited by email. Add a work email, or unselect them:\n%s", names))
+            raise UserError(_(
+                "These crew members have no email or phone and cannot be "
+                "invited. Add a contact, or unselect them:\n%s", names))
 
         Invitation = self.env['crew.availability.invitation']
         wave = max(self.request_id.invitation_ids.mapped('wave'), default=0) + 1
-
-        # Already-known people: recorded on the request to keep the count
-        # correct, WITHOUT sending anything (and without touching the engine —
-        # their availability already exists).
-        for line in known_lines:
-            Invitation.create({
+        to_send = Invitation
+        for line in actionable:
+            ks = line.known_state
+            resp = ks if ks in ('available', 'partial', 'unavailable') else 'pending'
+            inv = Invitation.create({
                 'request_id': self.request_id.id,
                 'employee_id': line.employee_id.id,
                 'wave': wave,
                 'channel': self.channel,
-                'response': line.known_state,
-                'state': 'responded',
+                'response': resp,
             })
-
-        # New people: real invitations that get sent on the chosen channel.
-        sent = Invitation
-        for line in new_lines:
-            sent |= Invitation.create({
-                'request_id': self.request_id.id,
-                'employee_id': line.employee_id.id,
-                'wave': wave,
-                'channel': self.channel,
-            })
-        sent.action_send()
+            # Ask (send) when something is still unanswered — 'unknown', or
+            # 'partial' (to fill the gaps) — and we can reach them. Otherwise the
+            # invitation just records what we already know (count-only).
+            if ks in ('unknown', 'partial') and self._reachable(line):
+                to_send |= inv
+            else:
+                inv.state = 'responded'
+        to_send.action_send()
 
         return {
             'type': 'ir.actions.act_window',
