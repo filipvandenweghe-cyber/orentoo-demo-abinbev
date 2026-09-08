@@ -35,6 +35,10 @@
                 <header>
                     <button name="action_remind" type="object" string="Send Reminder"
                             class="btn-secondary" invisible="response != 'pending'"/>
+                    <button name="action_send_email_now" type="object" string="Send Email"
+                            invisible="not work_email"/>
+                    <button name="action_send_whatsapp_now" type="object" string="Send WhatsApp"
+                            invisible="not mobile_phone"/>
                     <button name="action_set_available" type="object" string="Mark Available"
                             class="btn-primary" invisible="response != 'pending'"/>
                     <button name="action_set_partial" type="object" string="Mark Partial"

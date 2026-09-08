@@ -201,6 +201,19 @@ class TestCrewRequests(TransactionCase):
         with self.assertRaises(UserError):
             wiz.action_invite_selected()  # channel = email, no work_email
 
+    def test_17_send_whatsapp_after_email(self):
+        from odoo.exceptions import UserError
+        req = self._make_request()
+        inv = self.env['crew.availability.invitation'].create({
+            'request_id': req.id, 'employee_id': self.emp_adv.id, 'channel': 'email'})
+        inv.action_send()                 # emailed
+        inv.action_send_whatsapp_now()    # emp_adv has phone; resilient, no crash
+        # a crew member without a phone can't be WhatsApp'd
+        inv2 = self.env['crew.availability.invitation'].create({
+            'request_id': req.id, 'employee_id': self.emp_noemail.id})
+        with self.assertRaises(UserError):
+            inv2.action_send_whatsapp_now()
+
     def test_15_whatsapp_requires_phone(self):
         from odoo.exceptions import UserError
         req = self._make_request(role_id=self.role_sound.id)

@@ -57,8 +57,10 @@ class CrewAvailabilityInvitation(models.Model):
                             raise_if_not_found=False)
 
     def _send_email(self):
+        """Send the email invitation for every record in self (channel-agnostic;
+        channel routing happens in _dispatch)."""
         template = self._mail_template()
-        for inv in self.filtered(lambda i: i.channel in ('email', 'both')):
+        for inv in self:
             if template and inv.employee_id.work_email:
                 template.send_mail(inv.id, force_send=False)
 
@@ -66,13 +68,12 @@ class CrewAvailabilityInvitation(models.Model):
         """Send the WhatsApp nudge via the standard composer when everything is
         configured (account + approved template + phone). Otherwise skip with a
         note on the chatter — never crash the invite (dev has no WA account)."""
-        wa_invs = self.filtered(lambda i: i.channel in ('whatsapp', 'both'))
-        if not wa_invs:
+        if not self:
             return
         tmpl = self.env.ref('crew_planning.whatsapp_template_crew_invitation',
                             raise_if_not_found=False)
         account = self.env['whatsapp.account'].sudo().search([], limit=1)
-        for inv in wa_invs:
+        for inv in self:
             phone = inv.employee_id.mobile_phone or inv.employee_id.work_phone
             if not phone:
                 continue
@@ -94,7 +95,23 @@ class CrewAvailabilityInvitation(models.Model):
                 inv.message_post(body=_("WhatsApp send failed: %s", err))
 
     def _dispatch(self):
+        self.filtered(lambda i: i.channel in ('email', 'both'))._send_email()
+        self.filtered(lambda i: i.channel in ('whatsapp', 'both'))._send_whatsapp()
+
+    def action_send_email_now(self):
+        """Send an email to these invitees regardless of the stored channel
+        (e.g. a follow-up after a WhatsApp, or vice versa)."""
+        for inv in self:
+            if not inv.employee_id.work_email:
+                raise UserError(_("%s has no email address.", inv.employee_id.name))
         self._send_email()
+
+    def action_send_whatsapp_now(self):
+        """Send a WhatsApp nudge to these invitees regardless of the stored
+        channel (e.g. after an email invitation)."""
+        for inv in self:
+            if not (inv.employee_id.mobile_phone or inv.employee_id.work_phone):
+                raise UserError(_("%s has no phone number.", inv.employee_id.name))
         self._send_whatsapp()
 
     def action_send(self):
