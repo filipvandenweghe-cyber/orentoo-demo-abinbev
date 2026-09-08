@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="crew_availability_invitation_view_list" model="ir.ui.view">
+        <field name="name">crew.availability.invitation.list</field>
+        <field name="model">crew.availability.invitation</field>
+        <field name="arch" type="xml">
+            <list string="Invitations">
+                <field name="request_id"/>
+                <field name="wave"/>
+                <field name="employee_id"/>
+                <field name="work_email"/>
+                <field name="mobile_phone"/>
+                <field name="channel"/>
+                <field name="state" widget="badge"/>
+                <field name="response" widget="badge"
+                       decoration-success="response == 'available'"
+                       decoration-warning="response == 'partial'"
+                       decoration-danger="response == 'unavailable'"/>
+                <field name="reminder_count" string="Reminders"/>
+                <button name="action_remind" type="object" string="Remind" icon="fa-bell"
+                        invisible="response != 'pending'"/>
+                <button name="action_set_available" type="object" string="Available"
+                        icon="fa-check" invisible="response != 'pending'"/>
+                <button name="action_set_unavailable" type="object" string="Unavailable"
+                        icon="fa-times" invisible="response != 'pending'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="crew_availability_invitation_view_form" model="ir.ui.view">
+        <field name="name">crew.availability.invitation.form</field>
+        <field name="model">crew.availability.invitation</field>
+        <field name="arch" type="xml">
+            <form string="Invitation">
+                <header>
+                    <button name="action_remind" type="object" string="Send Reminder"
+                            class="btn-secondary" invisible="response != 'pending'"/>
+                    <button name="action_set_available" type="object" string="Mark Available"
+                            class="btn-primary" invisible="response != 'pending'"/>
+                    <button name="action_set_partial" type="object" string="Mark Partial"
+                            invisible="response != 'pending'"/>
+                    <button name="action_set_unavailable" type="object" string="Mark Unavailable"
+                            invisible="response != 'pending'"/>
+                    <button name="action_open_employee" type="object" string="Open Employee"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="request_id"/>
+                            <field name="employee_id"/>
+                            <field name="availability_mode"/>
+                            <field name="wave"/>
+                            <field name="channel"/>
+                        </group>
+                        <group>
+                            <field name="work_email"/>
+                            <field name="mobile_phone"/>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="sent_on"/>
+                            <field name="reminder_count"/>
+                        </group>
+                    </group>
+                    <group string="Response">
+                        <field name="response"/>
+                        <field name="response_start" invisible="response not in ('partial','pending')"/>
+                        <field name="response_end" invisible="response not in ('partial','pending')"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_crew_availability_invitation" model="ir.actions.act_window">
+        <field name="name">Invitations</field>
+        <field name="res_model">crew.availability.invitation</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

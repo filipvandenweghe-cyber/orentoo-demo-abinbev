@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="planning_slot_form_crew" model="ir.ui.view">
+        <field name="name">planning.slot.form.crew</field>
+        <field name="model">planning.slot</field>
+        <field name="inherit_id" ref="planning.planning_view_form"/>
+        <field name="arch" type="xml">
+            <field name="role_id" position="after">
+                <field name="task_id"/>
+                <field name="crew_request_id" readonly="1"
+                       invisible="not crew_request_id"/>
+            </field>
+        </field>
+    </record>
+</odoo>

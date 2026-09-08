@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="project_form_crew" model="ir.ui.view">
+        <field name="name">project.project.form.crew</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_crew_availability_request" type="object"
+                        string="Request Availability" groups="hr.group_hr_user,planning.group_planning_user"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="task_form_crew" model="ir.ui.view">
+        <field name="name">project.task.form.crew</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_crew_availability_request" type="object"
+                        string="Request Availability" groups="hr.group_hr_user,planning.group_planning_user"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

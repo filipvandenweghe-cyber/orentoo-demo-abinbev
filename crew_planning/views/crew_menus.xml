@@ -3,6 +3,12 @@
     <menuitem id="menu_crew_root" name="Crew" sequence="90"
               groups="hr.group_hr_user,planning.group_planning_user"/>
 
+    <menuitem id="menu_crew_requests" name="Availability Requests"
+              parent="menu_crew_root" action="action_crew_availability_request" sequence="4"/>
+
+    <menuitem id="menu_crew_invitations" name="Invitations"
+              parent="menu_crew_root" action="action_crew_availability_invitation" sequence="8"/>
+
     <menuitem id="menu_crew_availability" name="Availability Windows"
               parent="menu_crew_root" action="action_crew_availability" sequence="10"/>
 

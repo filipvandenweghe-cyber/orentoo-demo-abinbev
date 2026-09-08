@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="crew_availability_request_view_list" model="ir.ui.view">
+        <field name="name">crew.availability.request.list</field>
+        <field name="model">crew.availability.request</field>
+        <field name="arch" type="xml">
+            <list string="Availability Requests">
+                <field name="name"/>
+                <field name="request_type"/>
+                <field name="project_id" optional="show"/>
+                <field name="task_id" optional="show"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="headcount_needed"/>
+                <field name="available_count" string="Available"/>
+                <field name="availability_coverage" widget="badge"
+                       decoration-success="availability_coverage == 'sufficient'"
+                       decoration-warning="availability_coverage == 'insufficient'"/>
+                <field name="staffing_display" string="Staffed"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'open'" decoration-muted="state in ('draft','cancelled')"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="crew_availability_request_view_form" model="ir.ui.view">
+        <field name="name">crew.availability.request.form</field>
+        <field name="model">crew.availability.request</field>
+        <field name="arch" type="xml">
+            <form string="Availability Request">
+                <header>
+                    <button name="action_open" type="object" string="Open"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_find_candidates" type="object"
+                            string="Find &amp; Invite Candidates" class="btn-primary"
+                            invisible="state != 'open'"/>
+                    <button name="action_close" type="object" string="Close"
+                            invisible="state != 'open'"/>
+                    <button name="action_cancel" type="object" string="Cancel"
+                            invisible="state in ('cancelled','closed')"/>
+                    <button name="action_reset_to_draft" type="object" string="Reset to Draft"
+                            invisible="state != 'cancelled'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,open,closed"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button type="object" name="action_view_invitations" class="oe_stat_button" icon="fa-envelope">
+                            <field name="invited_count" widget="statinfo" string="Invited"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="request_type"/>
+                            <field name="project_id"
+                                   invisible="request_type == 'period'"
+                                   required="request_type == 'project'"/>
+                            <field name="task_id"
+                                   invisible="request_type != 'task'"
+                                   required="request_type == 'task'"/>
+                            <field name="role_id"/>
+                        </group>
+                        <group>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="headcount_needed"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <group string="KPIs">
+                        <group>
+                            <field name="available_count"/>
+                            <field name="partial_count"/>
+                            <field name="pending_count"/>
+                        </group>
+                        <group>
+                            <field name="unavailable_count"/>
+                            <field name="availability_coverage" widget="badge"
+                                   decoration-success="availability_coverage == 'sufficient'"
+                                   decoration-warning="availability_coverage == 'insufficient'"/>
+                            <field name="staffing_display"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Required Skills" name="skills">
+                            <field name="skill_requirement_ids">
+                                <list editable="bottom">
+                                    <field name="skill_type_id"/>
+                                    <field name="skill_id"/>
+                                    <field name="min_skill_level_id"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Invitations" name="invitations">
+                            <field name="invitation_ids" readonly="1">
+                                <list>
+                                    <field name="wave"/>
+                                    <field name="employee_id"/>
+                                    <field name="work_email"/>
+                                    <field name="mobile_phone"/>
+                                    <field name="channel"/>
+                                    <field name="state" widget="badge"/>
+                                    <field name="response" widget="badge"
+                                           decoration-success="response == 'available'"
+                                           decoration-warning="response == 'partial'"
+                                           decoration-danger="response == 'unavailable'"/>
+                                    <field name="sent_on"/>
+                                    <field name="reminder_count" string="Reminders"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_crew_availability_request" model="ir.actions.act_window">
+        <field name="name">Availability Requests</field>
+        <field name="res_model">crew.availability.request</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

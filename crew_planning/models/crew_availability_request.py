@@ -1,0 +1,191 @@
+# -*- coding: utf-8 -*-
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError
+
+
+class CrewAvailabilityRequest(models.Model):
+    _name = 'crew.availability.request'
+    _description = 'Crew Availability Request'
+    _inherit = ['mail.thread']
+    _order = 'create_date desc, id desc'
+
+    name = fields.Char(default='New', copy=False, readonly=True)
+    request_type = fields.Selection([
+        ('task', 'Task'),
+        ('project', 'Project'),
+        ('period', 'Period'),
+    ], required=True, default='task', tracking=True)
+    state = fields.Selection([
+        ('draft', 'Draft'),
+        ('open', 'Open'),
+        ('closed', 'Closed'),
+        ('cancelled', 'Cancelled'),
+    ], default='draft', required=True, tracking=True)
+
+    project_id = fields.Many2one('project.project', tracking=True)
+    task_id = fields.Many2one(
+        'project.task', domain="[('project_id', '=?', project_id)]", tracking=True)
+    date_start = fields.Datetime(required=True, tracking=True)
+    date_end = fields.Datetime(required=True, tracking=True)
+    role_id = fields.Many2one('planning.role', string="Planning Role")
+    headcount_needed = fields.Integer(string="Headcount Needed", default=1)
+    company_id = fields.Many2one(
+        'res.company', default=lambda self: self.env.company, required=True)
+
+    skill_requirement_ids = fields.One2many(
+        'crew.availability.request.skill', 'request_id', string="Required Skills")
+    invitation_ids = fields.One2many(
+        'crew.availability.invitation', 'request_id', string="Invitations")
+
+    # --- KPIs (availability) ---
+    invited_count = fields.Integer(compute='_compute_kpis')
+    available_count = fields.Integer(compute='_compute_kpis')
+    partial_count = fields.Integer(compute='_compute_kpis')
+    unavailable_count = fields.Integer(compute='_compute_kpis')
+    pending_count = fields.Integer(compute='_compute_kpis')
+    availability_coverage = fields.Selection([
+        ('insufficient', 'Insufficient'),
+        ('sufficient', 'Sufficient'),
+    ], compute='_compute_kpis', string="Availability Coverage")
+    # --- KPIs (staffing — separate from availability) ---
+    planned_headcount = fields.Integer(compute='_compute_planned_headcount')
+    staffing_display = fields.Char(compute='_compute_planned_headcount', string="Staffing")
+
+    @api.depends('invitation_ids.response', 'headcount_needed')
+    def _compute_kpis(self):
+        for req in self:
+            invs = req.invitation_ids
+            req.invited_count = len(invs)
+            req.available_count = len(invs.filtered(lambda i: i.response == 'available'))
+            req.partial_count = len(invs.filtered(lambda i: i.response == 'partial'))
+            req.unavailable_count = len(invs.filtered(lambda i: i.response == 'unavailable'))
+            req.pending_count = len(invs.filtered(lambda i: i.response == 'pending'))
+            req.availability_coverage = (
+                'sufficient' if req.available_count >= req.headcount_needed
+                else 'insufficient')
+
+    @api.depends('task_id', 'invitation_ids')
+    def _compute_planned_headcount(self):
+        Slot = self.env['planning.slot']
+        for req in self:
+            domain = [('crew_request_id', '=', req.id)]
+            if req.task_id:
+                domain = ['|', ('crew_request_id', '=', req.id),
+                          ('task_id', '=', req.task_id.id)]
+            slots = Slot.search(domain + [('resource_id', '!=', False)])
+            req.planned_headcount = len(slots.resource_id)
+            req.staffing_display = "%s / %s" % (req.planned_headcount, req.headcount_needed)
+
+    # ------------------------------------------------------------------
+    @api.onchange('task_id')
+    def _onchange_task_id(self):
+        if self.task_id:
+            self.project_id = self.task_id.project_id
+            if self.task_id.planned_date_begin:
+                self.date_start = self.task_id.planned_date_begin
+            if self.task_id.date_deadline:
+                self.date_end = self.task_id.date_deadline
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('name', 'New') == 'New':
+                vals['name'] = self.env['ir.sequence'].next_by_code(
+                    'crew.availability.request') or 'New'
+        return super().create(vals_list)
+
+    def _origin_code(self):
+        self.ensure_one()
+        return {
+            'task': 'task_request',
+            'project': 'project_request',
+            'period': 'period_request',
+        }.get(self.request_type, 'period_request')
+
+    # ------------------------------------------------------------------
+    # State transitions
+    # ------------------------------------------------------------------
+    def action_open(self):
+        for req in self:
+            if req.date_start >= req.date_end:
+                raise UserError(_("The start must be before the end."))
+        self.write({'state': 'open'})
+
+    def action_close(self):
+        self.write({'state': 'closed'})
+
+    def action_cancel(self):
+        self.write({'state': 'cancelled'})
+
+    def action_reset_to_draft(self):
+        self.write({'state': 'draft'})
+
+    # ------------------------------------------------------------------
+    # Candidate matching
+    # ------------------------------------------------------------------
+    def _match_candidate_employees(self, exclude_answered=True):
+        self.ensure_one()
+        Emp = self.env['hr.employee']
+        emps = Emp.search([('active', '=', True)])
+        if self.role_id:
+            emps = emps.filtered(lambda e: self.role_id in (
+                e.resource_id.role_ids | e.resource_id.default_role_id))
+        for req in self.skill_requirement_ids:
+            emps = emps.filtered(lambda e: any(
+                s.skill_id == req.skill_id and s.level_progress >= req.min_level_progress
+                for s in e.employee_skill_ids))
+        emps -= self.invitation_ids.employee_id
+        if exclude_answered and self.date_start and self.date_end:
+            answered = self.env['crew.availability.log'].search([
+                ('date_start', '<', self.date_end),
+                ('date_end', '>', self.date_start),
+                ('employee_id', 'in', emps.ids),
+            ]).employee_id
+            emps -= answered
+        return emps
+
+    def action_find_candidates(self):
+        self.ensure_one()
+        if self.state == 'draft':
+            self.action_open()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _("Find & Invite Candidates"),
+            'res_model': 'crew.invite.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_request_id': self.id},
+        }
+
+    def action_view_invitations(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _("Invitations"),
+            'res_model': 'crew.availability.invitation',
+            'view_mode': 'list,form',
+            'domain': [('request_id', '=', self.id)],
+            'context': {'default_request_id': self.id},
+        }
+
+
+class CrewAvailabilityRequestSkill(models.Model):
+    _name = 'crew.availability.request.skill'
+    _description = 'Crew Availability Request — Required Skill'
+
+    request_id = fields.Many2one('crew.availability.request', required=True, ondelete='cascade')
+    skill_type_id = fields.Many2one('hr.skill.type', required=True)
+    skill_id = fields.Many2one(
+        'hr.skill', required=True, domain="[('skill_type_id', '=', skill_type_id)]")
+    min_skill_level_id = fields.Many2one(
+        'hr.skill.level', required=True, string="Minimum Level",
+        domain="[('skill_type_id', '=', skill_type_id)]")
+    min_level_progress = fields.Integer(
+        related='min_skill_level_id.level_progress', store=True)
+
+    @api.onchange('skill_type_id')
+    def _onchange_skill_type(self):
+        if self.skill_id.skill_type_id != self.skill_type_id:
+            self.skill_id = False
+        if self.min_skill_level_id.skill_type_id != self.skill_type_id:
+            self.min_skill_level_id = False
