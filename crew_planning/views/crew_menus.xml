@@ -2,6 +2,7 @@
 <odoo>
     <menuitem id="menu_crew_root" name="Crew" sequence="90"
               web_icon="crew_planning,static/description/icon.png"
+              action="action_crew_availability"
               groups="hr.group_hr_user,planning.group_planning_user"/>
 
     <!-- 1) Availability -->
