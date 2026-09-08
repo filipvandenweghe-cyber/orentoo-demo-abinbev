@@ -4,7 +4,7 @@
         <field name="name">crew.availability.list</field>
         <field name="model">crew.availability</field>
         <field name="arch" type="xml">
-            <list string="Availability Windows" editable="bottom">
+            <list string="Availability Windows" create="false" edit="false" delete="false">
                 <field name="employee_id"/>
                 <field name="resource_id" optional="hide"/>
                 <field name="date_start"/>
