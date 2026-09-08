@@ -78,13 +78,15 @@
                         <label class="col-form-label">From</label>
                     </div>
                     <div class="col-auto">
-                        <input type="datetime-local" name="date_start" class="form-control" required="required"/>
+                        <input type="datetime-local" name="date_start" class="form-control"
+                               t-att-value="default_start" required="required"/>
                     </div>
                     <div class="col-auto">
                         <label class="col-form-label">To</label>
                     </div>
                     <div class="col-auto">
-                        <input type="datetime-local" name="date_end" class="form-control" required="required"/>
+                        <input type="datetime-local" name="date_end" class="form-control"
+                               t-att-value="default_end" required="required"/>
                     </div>
                     <div class="col-auto">
                         <select name="state" class="form-select">

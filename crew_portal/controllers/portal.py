@@ -86,11 +86,14 @@ class CrewPortal(CustomerPortal):
             'indicative_hours': inv.request_id.indicative_hours,
             'planning_id': inv.request_id.name,
         } for inv in invitations]
+        today = fields.Date.context_today(request.env.user).isoformat()
         return request.render('crew_portal.portal_my_availability', {
             'page_name': 'crew_availability',
             'employee': emp,
             'win_rows': win_rows,
             'inv_rows': inv_rows,
+            'default_start': '%sT06:00' % today,   # 06:00 today (local), editable
+            'default_end': '%sT18:00' % today,     # 18:00 today (local), editable
         })
 
     @http.route(['/my/availability/register'], type='http', auth='user',
