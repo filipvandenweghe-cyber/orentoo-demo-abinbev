@@ -51,7 +51,7 @@ class CrewInviteWizard(models.TransientModel):
 
     def action_invite_selected(self):
         self.ensure_one()
-        selected = self.line_ids.filtered('selected')
+        selected = self.line_ids.filtered(lambda l: l.selected and l.employee_id)
         if not selected:
             raise UserError(_("Please select at least one crew member to invite."))
         Invitation = self.env['crew.availability.invitation']
@@ -88,7 +88,10 @@ class CrewInviteWizardLine(models.TransientModel):
     _description = 'Crew — Candidate Line'
 
     wizard_id = fields.Many2one('crew.invite.wizard', required=True, ondelete='cascade')
-    employee_id = fields.Many2one('hr.employee', required=True)
+    # Not required on purpose: a stale editable list in the browser can post an
+    # empty phantom row; keeping this optional avoids a hard NOT NULL crash and
+    # we simply ignore employee-less lines when inviting.
+    employee_id = fields.Many2one('hr.employee')
     selected = fields.Boolean()
     work_email = fields.Char(related='employee_id.work_email')
     mobile_phone = fields.Char(related='employee_id.mobile_phone')
